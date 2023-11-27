@@ -152,7 +152,11 @@ public class RecoverFailedReceipt {
                     }
                 }
 
-                if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.FAILED) || receipt.getStatus().equals(ReceiptStatusType.INSERTED))) {
+                if (receipt != null && (
+                        receipt.getStatus().equals(ReceiptStatusType.FAILED) ||
+                        receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
+                        receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
+                )) {
                     if (receipt.getEventData() == null || receipt.getEventData().getDebtorFiscalCode() == null) {
                         BizEventToReceiptUtils.tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
                     }

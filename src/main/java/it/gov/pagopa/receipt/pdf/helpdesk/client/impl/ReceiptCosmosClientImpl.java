@@ -10,6 +10,8 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
+import java.time.OffsetDateTime;
+
 /**
  * Client for the CosmosDB database
  */
@@ -19,6 +21,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
     private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
+
+    private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
 
     private final CosmosClient cosmosClient;
 
@@ -84,7 +88,9 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = "SELECT *CosmosPagedIterable<Receipt> FROM c WHERE c.status = 'FAILED' or c.status= = 'INSERTED' ";
+        String query = "SELECT * FROM c WHERE c.status = 'FAILED' or c.status = 'NOT_QUEUE_SENT' or " +
+                "( c.status= = 'INSERTED' AND ( " + OffsetDateTime.now().toInstant().toEpochMilli() +
+                " c.inserted_at) >= " + millisDiff + " )";
 
         //Query the container
         return cosmosContainer
