@@ -15,3 +15,10 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     When HTTP recovery request is called without eventId
     Then response has a 200 Http status
     And the receipt has not the status "FAILED" after 10000 ms
+
+    Scenario: a receipt stored on datastore with wrong or missing attachment requires regeneration
+      Given a receipt with id "receipt-helpdesk-int-test-id-5" stored into receipt datastore
+      And a biz-event id "receipt-helpdesk-int-test-id-5" stored into biz-event datastore
+      When HTTP regenerate request is called
+      Then response has a 200 Http status
+      And the receipt has the attachment
