@@ -90,7 +90,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         //Build query
         String query = "SELECT * FROM c WHERE c.status = 'FAILED' or c.status = 'NOT_QUEUE_SENT' or " +
                 "( c.status= = 'INSERTED' AND ( " + OffsetDateTime.now().toInstant().toEpochMilli() +
-                " c.inserted_at) >= " + millisDiff + " )";
+                " - c.inserted_at) >= " + millisDiff + " )";
 
         //Query the container
         return cosmosContainer
