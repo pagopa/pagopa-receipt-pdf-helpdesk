@@ -50,8 +50,7 @@ public class ReceiptToReviewed {
                     databaseName = "db",
                     collectionName = "receipts-message-errors",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<ReceiptError>> documentdb,
-            final ExecutionContext context) {
+            OutputBinding<List<ReceiptError>> documentdb) {
 
         List<ReceiptError> receiptList = new ArrayList<>();
 
@@ -86,8 +85,10 @@ public class ReceiptToReviewed {
                 } while (continuationToken != null);
             }
 
+            if(!receiptList.isEmpty()){
+                documentdb.setValue(receiptList);
+            }
 
-            documentdb.setValue(receiptList);
             return request.createResponseBuilder(HttpStatus.OK)
                     .body("OK")
                     .build();
