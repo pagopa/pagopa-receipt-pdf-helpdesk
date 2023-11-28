@@ -21,11 +21,9 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private static ReceiptCosmosClientImpl instance;
 
-    private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
-    private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
-
-    private final String databaseReceiptErrorId = System.getenv("COSMOS_RECEIPT_ERROR_DB_NAME");
-    private final String containerReceiptErrorId = System.getenv("COSMOS_RECEIPT_ERROR_CONTAINER_NAME");
+    private final String databaseId = System.getenv().getOrDefault("COSMOS_RECEIPT_DB_NAME", "db");
+    private final String containerId = System.getenv().getOrDefault("COSMOS_RECEIPT_CONTAINER_NAME", "receipt");
+    private final String containerReceiptErrorId = System.getenv().getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
 
     private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
 
@@ -128,7 +126,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public ReceiptError getReceiptError(String bizEventId) throws  ReceiptNotFoundException {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseReceiptErrorId);
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerReceiptErrorId);
 
@@ -154,12 +152,12 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Iterable<FeedResponse<ReceiptError>> getToReviewReceiptsError(String continuationToken, Integer pageSize){
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseReceiptErrorId);
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerReceiptErrorId);
 
         //Build query
-        String query = String.format("SELECT *CosmosPagedIterable<Receipt> FROM c WHERE c.status = %s", ReceiptErrorStatusType.TO_REVIEW);
+        String query = String.format("SELECT * FROM c WHERE c.status = '%s'", ReceiptErrorStatusType.TO_REVIEW);
 
         //Query the container
         return cosmosContainer
