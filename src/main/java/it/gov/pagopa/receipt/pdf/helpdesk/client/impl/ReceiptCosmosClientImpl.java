@@ -8,6 +8,8 @@ import com.azure.cosmos.models.*;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
 import java.time.OffsetDateTime;
@@ -21,6 +23,9 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
     private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
+
+    private final String databaseReceiptErrorId = System.getenv("COSMOS_RECEIPT_ERROR_DB_NAME");
+    private final String containerReceiptErrorId = System.getenv("COSMOS_RECEIPT_ERROR_CONTAINER_NAME");
 
     private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
 
@@ -112,6 +117,54 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         return cosmosContainer.createItem(receipt);
+    }
+
+    /**
+     * Retrieve receiptError document from CosmosDB database
+     *
+     * @param bizEventId BizEvent ID
+     * @return ReceiptError found
+     * @throws ReceiptNotFoundException If the document isn't found
+     */
+    @Override
+    public ReceiptError getReceiptError(String bizEventId) throws  ReceiptNotFoundException {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseReceiptErrorId);
+
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerReceiptErrorId);
+
+        //Build query
+        String query = "SELECT * FROM c WHERE c.bizEventId = " + "'" + bizEventId + "'";
+
+        //Query the container
+        CosmosPagedIterable<ReceiptError> queryResponse = cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), ReceiptError.class);
+
+        if (queryResponse.iterator().hasNext()) {
+            return queryResponse.iterator().next();
+        } else {
+            throw new ReceiptNotFoundException("Document not found in the defined container");
+        }
+    }
+
+    /**
+     * Retrieve receiptError documents to-review from CosmosDB database
+     * @param continuationToken Paged query continuation token
+     * @param pageSize Page size
+     * @return receiptError documents
+     */
+    @Override
+    public Iterable<FeedResponse<ReceiptError>> getToReviewReceiptsError(String continuationToken, Integer pageSize){
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseReceiptErrorId);
+
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerReceiptErrorId);
+
+        //Build query
+        String query = String.format("SELECT *CosmosPagedIterable<Receipt> FROM c WHERE c.status = %s", ReceiptErrorStatusType.TO_REVIEW);
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), ReceiptError.class)
+                .iterableByPage(continuationToken,pageSize);
     }
 
 }
