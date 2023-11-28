@@ -163,7 +163,7 @@ public class RecoverFailedReceipt {
                     bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
                     if(receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT){
                         receipt.setStatus(ReceiptStatusType.INSERTED);
-                        receipt.setInserted_at(System.currentTimeMillis());
+                        receipt.setInsertedAt(System.currentTimeMillis());
                         receipt.setReasonErr(null);
                         receipt.setReasonErrPayer(null);
                     }

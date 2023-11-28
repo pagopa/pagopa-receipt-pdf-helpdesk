@@ -1,42 +1,147 @@
-# pagoPA Functions template
+# pagoPA Receipt-pdf-helpdesk
 
-Java template to create an Azure Function.
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-receipt-pdf-helpdesk&metric=alert_status)](https://sonarcloud.io/dashboard?id=pagopa_pagopa-receipt-pdf-helpdesk)
 
-## Function examples
-There is an example of a Http Trigger function.
+Java Azure Functions that exposed the following recover APIs:
+- ReceiptToReviewed
+- RecoverFailedReceipt
+- RecoverNotNotifiedReceipt
 
 ---
 
-## Run locally with Docker
-`docker build -t pagopa-functions-template .`
+## Summary 📖
 
-`docker run -p 8999:80 pagopa-functions-template`
+- [Api Documentation 📖](#api-documentation-)
+- [Start Project Locally 🚀](#start-project-locally-)
+  * [Run locally with Docker](#run-locally-with-docker)
+    + [Prerequisites](#prerequisites)
+    + [Run docker container](#run-docker-container)
+  * [Run locally with Maven](#run-locally-with-maven)
+    + [Prerequisites](#prerequisites-1)
+    + [Set environment variables](#set-environment-variables)
+    + [Run the project](#run-the-project)
+  * [Test](#test)
+- [Develop Locally 💻](#develop-locally-)
+  * [Prerequisites](#prerequisites-2)
+  * [Testing 🧪](#testing-)
+    + [Unit testing](#unit-testing)
+    + [Integration testing](#integration-testing)
+    + [Performance testing](#performance-testing)
+- [Contributors 👥](#contributors-)
+  * [Maintainers](#maintainers)
 
-### Test
-`curl http://localhost:8999/example`
+---
 
-## Run locally with Maven
+## Api Documentation 📖
+
+See
+the [OpenApi 3 here](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pagopa/pagopa-receipt-pdf-helpdesk/main/openapi/openapi.json)
+
+## Start Project Locally 🚀
+
+### Run locally with Docker
+
+#### Prerequisites
+
+- docker
+
+#### Set environment variables
+
+`docker build -t pagopa-receip-pdf-helpdesk .`
+
+`cp .env.example .env`
+
+and replace in `.env` with correct values
+
+#### Run docker container
+
+then type :
+
+`docker run -p 80:80 --env-file=./.env pagopa-receip-pdf-helpdesk`
+
+### Run locally with Maven
+
+#### Prerequisites
+
+- maven
+
+#### Set environment variables
+
+On terminal type:
+
+`cp local.settings.json.example local.settings.json`
+
+then replace env variables with correct values
+(if there is NO default value, the variable HAS to be defined)
+
+| VARIABLE                               | USAGE                                                                                                                           |                     DEFAULT VALUE                      |
+|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------:|
+| `RECEIPT_QUEUE_CONN_STRING`            | Connection string to the Receipt Queue                                                                                          |                                                        |
+| `RECEIPT_QUEUE_TOPIC`                  | Topic name of the Receipt Queue                                                                                                 |                                                        |
+| `COSMOS_BIZ_EVENT_CONN_STRING`         | Connection string to the BizEvent CosmosDB                                                                                      |                                                        |
+| `COSMOS_BIZ_EVENT_SERVICE_ENDPOINT`    | Endpoint to the BizEvent CosmosDB                                                                                               |                                                        |
+| `COSMOS_BIZ_EVENT_DB_NAME`             | Database name of the BizEvent database in CosmosDB                                                                              |                                                        |
+| `COSMOS_BIZ_EVENT_CONTAINER_NAME`      | Container name of the BizEvent container in CosmosDB                                                                            |                                                        |
+| `COSMOS_RECEIPTS_CONN_STRING`          | Connection string to the Receipt CosmosDB                                                                                       |                                                        |
+| `COSMOS_RECEIPT_SERVICE_ENDPOINT`      | Endpoint to the Receipt CosmosDB                                                                                                |                                                        |
+| `COSMOS_RECEIPT_KEY`                   | Key to the Receipt CosmosDB                                                                                                     |                                                        |
+| `COSMOS_RECEIPT_DB_NAME`               | Database name of the Receipt database in CosmosDB                                                                               |                                                        |
+| `COSMOS_RECEIPT_CONTAINER_NAME`        | Container name of the Receipt container in CosmosDB                                                                             |                                                        |
+| `COSMOS_RECEIPT_ERROR_CONTAINER_NAME`  | Container name of the Receipt-message-error container in CosmosDB                                                               |                                                        |
+| `PDV_TOKENIZER_BASE_PATH`              | PDV Tokenizer API base path                                                                                                     | "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1" |
+| `PDV_TOKENIZER_SEARCH_TOKEN_ENDPOINT`  | PDV Tokenizer API search token endpoint                                                                                         |                    "/tokens/search"                    |
+| `PDV_TOKENIZER_FIND_PII_ENDPOINT`      | PDV Tokenizer API find pii endpoint                                                                                             |                    "/tokens/%s/pii"                    |
+| `PDV_TOKENIZER_CREATE_TOKEN_ENDPOINT`  | PDV Tokenizer API create token endpoint                                                                                         |                       "/tokens"                        |
+| `PDV_TOKENIZER_SUBSCRIPTION_KEY`       | API azure ocp apim subscription key                                                                                             |                                                        |
+| `PDV_TOKENIZER_INITIAL_INTERVAL`       | PDV Tokenizer initial interval for retry a request that fail with 429 status code                                               |                          200                           |
+| `PDV_TOKENIZER_MULTIPLIER`             | PDV Tokenizer interval multiplier for subsequent request retry                                                                  |                          2.0                           |
+| `PDV_TOKENIZER_RANDOMIZATION_FACTOR`   | PDV Tokenizer randomization factor for interval retry calculation                                                               |                          0.6                           |
+| `PDV_TOKENIZER_MAX_RETRIES`            | PDV Tokenizer max request retry                                                                                                 |                           3                            |
+| `TOKENIZER_APIM_HEADER_KEY`            | Tokenizer APIM header key                                                                                                       |                       x-api-key                        |
+| `MAX_DATE_DIFF_MILLIS`                 | Difference in millis between the current time and the date from witch the receipts will be fetched in massive recover operation |                        360000                          |
+
+> to doc details about AZ fn config
+> see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)
+
+
+#### Run the project
 
 `mvn clean package`
 
 `mvn azure-functions:run`
 
 ### Test
-`curl http://localhost:7071/example` 
+
+`curl http://localhost:8080/info`
 
 ---
 
+## Develop Locally 💻
 
-## TODO
-Once cloned the repo, you should:
-- to deploy on standard Azure service:
-  - rename `deploy-pipelines-standard.yml` to `deploy-pipelines.yml`
-  - remove `helm` folder
-- to deploy on Kubernetes:
-  - rename `deploy-pipelines-aks.yml` to `deploy-pipelines.yml`
-  - customize `helm` configuration
-- configure the following GitHub action in `.github` folder: 
-  - `deploy.yml`
-  - `sonar_analysis.yml`
+### Prerequisites
 
-Configure the SonarCloud project :point_right: [guide](https://pagopa.atlassian.net/wiki/spaces/DEVOPS/pages/147193860/SonarCloud+experimental).
+- git
+- maven
+- jdk-17
+
+### Testing 🧪
+
+#### Unit testing
+
+To run the **Junit** tests:
+
+`mvn clean verify`
+
+#### Integration testing
+
+#### Performance testing
+
+---
+
+## Contributors 👥
+
+Made with ❤️ by PagoPa S.p.A.
+
+### Maintainers
+
+See `CODEOWNERS` file

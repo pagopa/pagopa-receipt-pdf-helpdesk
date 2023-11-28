@@ -6,17 +6,35 @@ import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
 class ReceiptCosmosClientImplTest {
+
+    private static final String RECEIPT_ID = "a valid receipt id";
+
+    private CosmosClient mockClient;
+
+    private ReceiptCosmosClientImpl client;
+
+    @BeforeEach
+    void setUp() {
+        mockClient = mock(CosmosClient.class);
+
+        client = new ReceiptCosmosClientImpl(mockClient);
+    }
 
     @Test
     void testSingletonConnectionError() throws Exception {
@@ -24,16 +42,11 @@ class ReceiptCosmosClientImplTest {
         withEnvironmentVariables(
                 "COSMOS_RECEIPT_KEY", mockKey,
                 "COSMOS_RECEIPT_SERVICE_ENDPOINT", ""
-        ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, ReceiptCosmosClientImpl::getInstance)
-        );
+        ).execute(() -> assertThrows(IllegalArgumentException.class, ReceiptCosmosClientImpl::getInstance));
     }
 
     @Test
-    void runOk() throws ReceiptNotFoundException {
-        String RECEIPT_ID = "a valid receipt id";
-
-        CosmosClient mockClient = mock(CosmosClient.class);
-
+    void runOk() {
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
@@ -54,18 +67,13 @@ class ReceiptCosmosClientImplTest {
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
+        Receipt receiptResponse = assertDoesNotThrow(() -> client.getReceiptDocument(RECEIPT_ID));
 
-        Assertions.assertDoesNotThrow(() -> client.getReceiptDocument(RECEIPT_ID));
-
-        Receipt receiptResponse = client.getReceiptDocument(RECEIPT_ID);
-        Assertions.assertEquals(RECEIPT_ID, receiptResponse.getId());
+        assertEquals(RECEIPT_ID, receiptResponse.getId());
     }
 
     @Test
     void runKo() {
-        CosmosClient mockClient = mock(CosmosClient.class);
-
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
@@ -83,17 +91,11 @@ class ReceiptCosmosClientImplTest {
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
-
-        Assertions.assertThrows(ReceiptNotFoundException.class, () -> client.getReceiptDocument("an invalid receipt id"));
+        assertThrows(ReceiptNotFoundException.class, () -> client.getReceiptDocument("an invalid receipt id"));
     }
 
     @Test
-void runOk_FailedQueryClient() throws ReceiptNotFoundException {
-        String RECEIPT_ID = "a valid receipt id";
-
-        CosmosClient mockClient = mock(CosmosClient.class);
-
+    void runOk_FailedQueryClient() {
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
@@ -114,10 +116,73 @@ void runOk_FailedQueryClient() throws ReceiptNotFoundException {
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
-
-        Assertions.assertDoesNotThrow(() -> client.getFailedReceiptDocuments(null, 100));
-
+        assertDoesNotThrow(() -> client.getFailedReceiptDocuments(null, 100));
     }
 
+    @Test
+    void getNotNotifiedReceiptDocumentsSuccess() {
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+
+        Iterator<Receipt> mockIterator = mock(Iterator.class);
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+        when(mockIterator.hasNext()).thenReturn(true);
+
+        Receipt receipt = new Receipt();
+        receipt.setId(RECEIPT_ID);
+
+        when(mockIterator.next()).thenReturn(receipt);
+
+        assertDoesNotThrow(() -> client.getNotNotifiedReceiptDocuments(
+                null,
+                100,
+                true,
+                true));
+        assertDoesNotThrow(() -> client.getNotNotifiedReceiptDocuments(
+                null,
+                100,
+                false,
+                true));
+        assertDoesNotThrow(() -> client.getNotNotifiedReceiptDocuments(
+                null,
+                100,
+                true,
+                false));
+    }
+
+
+    @Test
+    void getNotNotifiedReceiptDocumentsFailThrowsIllegalArgumentException() {
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+
+        Iterator<Receipt> mockIterator = mock(Iterator.class);
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+        when(mockIterator.hasNext()).thenReturn(true);
+
+        Receipt receipt = new Receipt();
+        receipt.setId(RECEIPT_ID);
+
+        when(mockIterator.next()).thenReturn(receipt);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> client.getNotNotifiedReceiptDocuments(
+                        null,
+                        100,
+                        false,
+                        false));
+    }
 }

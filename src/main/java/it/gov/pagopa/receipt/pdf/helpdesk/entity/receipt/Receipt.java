@@ -1,6 +1,9 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -8,6 +11,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Receipt {
 
     private String eventId;
@@ -21,8 +26,12 @@ public class Receipt {
     private int numRetry;
     private ReasonError reasonErr;
     private ReasonError reasonErrPayer;
-    private long inserted_at;
-    private long generated_at;
-    private long notified_at;
+    private int notificationNumRetry;
+    @JsonProperty("inserted_at")
+    private long insertedAt;
+    @JsonProperty("generated_at")
+    private long generatedAt;
+    @JsonProperty("notified_at")
+    private long notifiedAt;
 
 }
