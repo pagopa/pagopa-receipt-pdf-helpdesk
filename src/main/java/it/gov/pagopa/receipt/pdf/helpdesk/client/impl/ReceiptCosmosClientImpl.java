@@ -50,7 +50,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         if (instance == null) {
             instance = new ReceiptCosmosClientImpl();
         }
-
         return instance;
     }
 
@@ -63,7 +62,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
@@ -78,7 +76,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         } else {
             throw new ReceiptNotFoundException("Document not found in the defined container");
         }
-
     }
 
     /**
@@ -90,7 +87,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     @Override
     public Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize)  {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
@@ -102,7 +98,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         return cosmosContainer
                 .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class)
                 .iterableByPage(continuationToken,pageSize);
-
     }
 
     /**
@@ -114,7 +109,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     @Override
     public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt)  {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         return cosmosContainer.createItem(receipt);
