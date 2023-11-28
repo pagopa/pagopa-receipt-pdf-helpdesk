@@ -4,12 +4,15 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.*;
+import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptErrorStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
 import java.time.OffsetDateTime;
@@ -165,4 +168,44 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 .iterableByPage(continuationToken,pageSize);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<Receipt>> getNotNotifiedReceiptDocuments(
+            String continuationToken,
+            Integer pageSize,
+            boolean ioErrorToNotifyStatus,
+            boolean generatedStatus
+    )  {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        if (!ioErrorToNotifyStatus && !generatedStatus) {
+            throw new IllegalArgumentException("at least one param must be true");
+        }
+
+        //Build query
+        String query = buildQuery(ioErrorToNotifyStatus, generatedStatus);
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class)
+                .iterableByPage(continuationToken,pageSize);
+    }
+
+    private String buildQuery(boolean ioErrorToNotifyStatus, boolean generatedStatus) {
+        String query = "SELECT *CosmosPagedIterable<Receipt> FROM c WHERE ";
+        String ioErrorNotifyParam = String.format("c.status = '%s'", ReceiptStatusType.IO_ERROR_TO_NOTIFY);
+        String generatedParam =  String.format("(c.status= = '%s' AND ( %s - c.inserted_at) >= %s)",
+                ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
+
+        if (ioErrorToNotifyStatus && generatedStatus) {
+           return query.concat(ioErrorNotifyParam).concat(" AND ").concat(generatedParam);
+        }
+        if (ioErrorToNotifyStatus) {
+            return query.concat(ioErrorNotifyParam);
+        }
+        return query.concat(generatedParam);
+    }
 }
