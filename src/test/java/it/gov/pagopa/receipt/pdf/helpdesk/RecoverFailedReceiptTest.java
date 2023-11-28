@@ -34,6 +34,7 @@ import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,9 @@ class RecoverFailedReceiptTest {
     private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
     private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
     private final String EVENT_ID = "a valid id";
+
+    public static final String HTTP_MESSAGE_ERROR = "an error occured";
+
 
     private RecoverFailedReceipt function;
 
@@ -80,7 +84,7 @@ class RecoverFailedReceiptTest {
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock,receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
 
         when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
                 .thenReturn(generateValidBizEvent("1"));
@@ -124,7 +128,7 @@ class RecoverFailedReceiptTest {
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock,receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
 
         when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
                 .thenReturn(generateValidBizEvent("1"));
@@ -171,7 +175,7 @@ class RecoverFailedReceiptTest {
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock,receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
 
         when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
                 .thenReturn(generateValidBizEvent("1"));
@@ -216,7 +220,7 @@ class RecoverFailedReceiptTest {
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock,receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
 
         Receipt receipt = createFailedReceipt("1");
         receipt.getEventData().setPayerFiscalCode(null);
@@ -267,7 +271,7 @@ class RecoverFailedReceiptTest {
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock,receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
 
         Receipt receipt = createFailedReceipt("1");
         receipt.setEventData(null);
@@ -308,7 +312,7 @@ class RecoverFailedReceiptTest {
     @Test
     void requestWithMissingBizEventOnRequestIdShouldReturnBadRequest() throws BizEventNotFoundException {
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock,receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
 
         when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
                 .thenThrow(BizEventNotFoundException.class);
@@ -336,6 +340,250 @@ class RecoverFailedReceiptTest {
         assertEquals(BAD_REQUEST.value(), httpResponseMessage.getStatus().value());
 
     }
+
+    @Test
+    void runDiscardedWithEventNotDONE() throws BizEventNotFoundException {
+
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
+
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
+                .thenReturn(generateNotDoneBizEvent());
+
+        function = new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = new ReceiptFailedRecoveryRequest();
+        receiptFailedRecoveryRequest.setEventId("1");
+
+        HttpRequestMessage<Optional<ReceiptFailedRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptFailedRecoveryRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage httpResponseMessage = assertDoesNotThrow(() -> function.run(request, documentdb, context));
+
+        assertNotNull(httpResponseMessage);
+        verifyNoInteractions(receiptCosmosClient);
+        verifyNoInteractions(queueClient);
+
+    }
+
+    @Test
+    void generateAnonymDebtorBizEvent() throws BizEventNotFoundException {
+
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
+
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
+                .thenReturn(generateAnonymDebtorBizEvent("1"));
+
+        function = new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = new ReceiptFailedRecoveryRequest();
+        receiptFailedRecoveryRequest.setEventId("1");
+
+        HttpRequestMessage<Optional<ReceiptFailedRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptFailedRecoveryRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage httpResponseMessage = assertDoesNotThrow(() -> function.run(request, documentdb, context));
+
+        assertNotNull(httpResponseMessage);
+        verifyNoInteractions(receiptCosmosClient);
+        verifyNoInteractions(queueClient);
+
+    }
+
+    @Test
+    void runDiscardedWithEventNull() throws BizEventNotFoundException {
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
+
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
+                .thenReturn(null);
+
+        function = new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = new ReceiptFailedRecoveryRequest();
+        receiptFailedRecoveryRequest.setEventId("1");
+
+        HttpRequestMessage<Optional<ReceiptFailedRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptFailedRecoveryRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage httpResponseMessage = assertDoesNotThrow(() -> function.run(request, documentdb, context));
+
+        assertNotNull(httpResponseMessage);
+        verifyNoInteractions(receiptCosmosClient);
+        verifyNoInteractions(queueClient);
+
+    }
+
+    @Test
+    void runDiscardedWithCartEvent() throws BizEventNotFoundException {
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
+
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
+                .thenReturn(generateValidBizEvent("2"));
+
+        function = new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = new ReceiptFailedRecoveryRequest();
+        receiptFailedRecoveryRequest.setEventId("1");
+
+        HttpRequestMessage<Optional<ReceiptFailedRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptFailedRecoveryRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage httpResponseMessage = assertDoesNotThrow(() -> function.run(request, documentdb, context));
+
+        assertNotNull(httpResponseMessage);
+        verifyNoInteractions(receiptCosmosClient);
+        verifyNoInteractions(queueClient);
+
+    }
+
+    @Test
+    void runDiscardedWithCartEventWithInvalidTotalNotice() throws BizEventNotFoundException {
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
+
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
+                .thenReturn(generateValidBizEvent("invalid string"));
+
+        function = new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = new ReceiptFailedRecoveryRequest();
+        receiptFailedRecoveryRequest.setEventId("1");
+
+        HttpRequestMessage<Optional<ReceiptFailedRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptFailedRecoveryRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage httpResponseMessage = assertDoesNotThrow(() -> function.run(request, documentdb, context));
+
+        assertNotNull(httpResponseMessage);
+        verifyNoInteractions(receiptCosmosClient);
+        verifyNoInteractions(queueClient);
+
+    }
+
+    @Test
+    void errorTokenizingFiscalCodes() throws PDVTokenizerException, JsonProcessingException, BizEventNotFoundException {
+        lenient().when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
+                .thenThrow(new PDVTokenizerException(HTTP_MESSAGE_ERROR, org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR));
+
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
+                .thenReturn(generateValidBizEvent("1"));
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
+        function = new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = new ReceiptFailedRecoveryRequest();
+        receiptFailedRecoveryRequest.setEventId("1");
+
+        HttpRequestMessage<Optional<ReceiptFailedRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptFailedRecoveryRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage httpResponseMessage = assertDoesNotThrow(() -> function.run(request, documentdb, context));
+
+        assertNotNull(httpResponseMessage);
+        verifyNoInteractions(queueClient);
+
+    }
+
+    @Test
+    void errorAddingMessageToQueue() throws PDVTokenizerException, JsonProcessingException, BizEventNotFoundException, ReceiptNotFoundException {
+
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
+                .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
+                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+        Response<SendMessageResult> response = mock(Response.class);
+        when(response.getStatusCode()).thenReturn(HttpStatus.FORBIDDEN.value());
+        when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, queueClient);
+
+        Receipt receipt = createFailedReceipt("1");
+        receipt.setEventData(null);
+        when(receiptCosmosClient.getReceiptDocument(Mockito.eq("1"))).thenReturn(receipt);
+
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1")))
+                .thenReturn(generateValidBizEvent("1"));
+
+        function = new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = new ReceiptFailedRecoveryRequest();
+        receiptFailedRecoveryRequest.setEventId("1");
+
+        HttpRequestMessage<Optional<ReceiptFailedRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptFailedRecoveryRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        assertDoesNotThrow(() -> function.run(request, documentdb, context));
+
+
+    }
+
 
     private static void setMock(ReceiptQueueClientImpl mock) {
         try {
@@ -412,6 +660,41 @@ class RecoverFailedReceiptTest {
         eventData.setCart(cartItems);
 
         return receipt;
+    }
+
+    private BizEvent generateAnonymDebtorBizEvent(String totalNotice){
+        BizEvent item = new BizEvent();
+
+        Payer payer = new Payer();
+        payer.setEntityUniqueIdentifierValue(PAYER_FISCAL_CODE);
+        Debtor debtor = new Debtor();
+        debtor.setEntityUniqueIdentifierValue("ANONIMO");
+
+        TransactionDetails transactionDetails = new TransactionDetails();
+        Transaction transaction = new Transaction();
+        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transactionDetails.setTransaction(transaction);
+
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setTotalNotice(totalNotice);
+
+        item.setEventStatus(BizEventStatusType.DONE);
+        item.setId(EVENT_ID);
+        item.setPayer(payer);
+        item.setDebtor(debtor);
+        item.setTransactionDetails(transactionDetails);
+        item.setPaymentInfo(paymentInfo);
+
+        return item;
+    }
+
+
+    private BizEvent generateNotDoneBizEvent(){
+        BizEvent item = new BizEvent();
+
+        item.setEventStatus(BizEventStatusType.NA);
+
+        return item;
     }
 
 }

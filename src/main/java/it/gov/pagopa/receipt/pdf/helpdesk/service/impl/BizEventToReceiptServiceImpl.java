@@ -31,18 +31,15 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
 
     private final PDVTokenizerServiceRetryWrapper pdvTokenizerService;
-    private final ReceiptCosmosClient receiptCosmosClient;
     private final ReceiptQueueClient queueClient;
 
     public BizEventToReceiptServiceImpl() {
         this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
-        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
         this.queueClient = ReceiptQueueClientImpl.getInstance();
     }
 
-    public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService, ReceiptCosmosClient receiptCosmosClient, ReceiptQueueClient queueClient) {
+    public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService, ReceiptQueueClient queueClient) {
         this.pdvTokenizerService = pdvTokenizerService;
-        this.receiptCosmosClient = receiptCosmosClient;
         this.queueClient = queueClient;
     }
 
@@ -72,34 +69,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     "[BizEventToReceiptService] Error sending message to queue for receipt with eventId %s",
                     receipt.getEventId());
             handleError(receipt, ReceiptStatusType.NOT_QUEUE_SENT, errorString, statusCode);
-            //Error info
-            logger.error(errorString);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void handleSaveReceipt(Receipt receipt) {
-        int statusCode;
-
-        try {
-            receipt.setStatus(ReceiptStatusType.INSERTED);
-            receipt.setInserted_at(System.currentTimeMillis());
-            CosmosItemResponse<Receipt> response = receiptCosmosClient.saveReceipts(receipt);
-
-            statusCode = response.getStatusCode();
-        } catch (Exception e) {
-            statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
-            logger.error(String.format("Save receipt with eventId %s on cosmos failed", receipt.getEventId()), e);
-        }
-
-        if (statusCode != (HttpStatus.CREATED.value())) {
-            String errorString = String.format(
-                    "[BizEventToReceiptService] Error saving receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
-                    receipt.getEventId(), statusCode);
-            handleError(receipt, ReceiptStatusType.FAILED, errorString, statusCode);
             //Error info
             logger.error(errorString);
         }

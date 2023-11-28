@@ -17,12 +17,6 @@ public interface BizEventToReceiptService {
      */
     void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
 
-    /**
-     * Saves receipts on CosmosDB using {@link ReceiptCosmosClient}
-     *
-     * @param receipt Receipt to save
-     */
-    void handleSaveReceipt(Receipt receipt);
 
     /**
      * Retrieve conditionally the transaction creation date from biz-event
