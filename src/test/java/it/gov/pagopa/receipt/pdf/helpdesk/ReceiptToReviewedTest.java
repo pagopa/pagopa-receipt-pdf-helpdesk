@@ -128,7 +128,7 @@ class ReceiptToReviewedTest {
     @Test
     void requestWithoutRequestBodySaveMultipleReceiptErrorInReviewed() {
         HttpRequestMessage<Optional<ReceiptToReviewedRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(null);
+        when(request.getBody()).thenReturn(Optional.of(new ReceiptToReviewedRequest()));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -203,7 +203,7 @@ class ReceiptToReviewedTest {
     @Test
     void requestWithoutRequestBodyDoesNotFindAnyReceiptError() {
         HttpRequestMessage<Optional<ReceiptToReviewedRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(null);
+        when(request.getBody()).thenReturn(Optional.of(new ReceiptToReviewedRequest()));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
