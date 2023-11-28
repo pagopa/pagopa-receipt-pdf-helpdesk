@@ -16,7 +16,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.helpdesk.model.IONotifyErrorRecoveryRequest;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.NotNotifiedRecoveryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public class RecoverNotNotifiedReceipt {
                     methods = {HttpMethod.PUT},
                     route = "recoverNotNotified",
                     authLevel = AuthorizationLevel.FUNCTION)
-            HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request,
+            HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
@@ -71,11 +71,11 @@ public class RecoverNotNotifiedReceipt {
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        Optional<IONotifyErrorRecoveryRequest> recoveryRequestOptional = request.getBody();
+        Optional<NotNotifiedRecoveryRequest> recoveryRequestOptional = request.getBody();
         if (recoveryRequestOptional.isEmpty()) {
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a valid body").build();
         }
-        IONotifyErrorRecoveryRequest recoveryRequest = recoveryRequestOptional.get();
+        NotNotifiedRecoveryRequest recoveryRequest = recoveryRequestOptional.get();
 
         List<ReceiptStatusType> statusToRestore = getStatusToRestore(recoveryRequest);
         if (statusToRestore.isEmpty()) {
@@ -90,13 +90,13 @@ public class RecoverNotNotifiedReceipt {
             } catch (ReceiptNotFoundException e) {
                 String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
                 logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
-                return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body(responseMsg).build();
+                return request.createResponseBuilder(HttpStatus.NOT_FOUND).body(responseMsg).build();
             }
 
             if (!statusToRestore.contains(receipt.getStatus())) {
                 String responseMsg = String.format("The requested receipt with eventId %s is not in the expected status",
                         receipt.getEventId());
-                return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body(responseMsg).build();
+                return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(responseMsg).build();
             }
 
             Receipt restoredReceipt = restoreReceipt(receipt);
@@ -117,7 +117,7 @@ public class RecoverNotNotifiedReceipt {
         return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
     }
 
-    private List<ReceiptStatusType> getStatusToRestore(IONotifyErrorRecoveryRequest recoveryRequest) {
+    private List<ReceiptStatusType> getStatusToRestore(NotNotifiedRecoveryRequest recoveryRequest) {
         List<ReceiptStatusType> statusToRestore = new ArrayList<>();
         if (recoveryRequest.isGeneratedStatus()) {
             statusToRestore.add(ReceiptStatusType.GENERATED);
@@ -128,7 +128,7 @@ public class RecoverNotNotifiedReceipt {
         return statusToRestore;
     }
 
-    private List<Receipt> receiptMassiveRestore(IONotifyErrorRecoveryRequest recoveryRequest) {
+    private List<Receipt> receiptMassiveRestore(NotNotifiedRecoveryRequest recoveryRequest) {
         List<Receipt> receiptList = new ArrayList<>();
         String continuationToken = null;
         do {

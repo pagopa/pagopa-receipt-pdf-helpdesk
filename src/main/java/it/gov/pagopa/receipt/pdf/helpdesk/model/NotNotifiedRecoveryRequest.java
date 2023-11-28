@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class IONotifyErrorRecoveryRequest {
+public class NotNotifiedRecoveryRequest {
 
     private String eventId;
     private boolean generatedStatus;

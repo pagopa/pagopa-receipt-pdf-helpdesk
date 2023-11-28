@@ -11,7 +11,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.helpdesk.model.IONotifyErrorRecoveryRequest;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.NotNotifiedRecoveryRequest;
 import it.gov.pagopa.receipt.pdf.helpdesk.util.HttpResponseMessageMock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,10 +75,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverNotNotifiedReceiptWithEventIdSuccess() throws ReceiptNotFoundException {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, false, true);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         Receipt receipt = buildReceipt();
@@ -110,10 +110,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverNotNotifiedReceiptWithoutEventIdSuccess() {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(null, false, true);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(null, false, true);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         FeedResponse feedResponseMock = mock(FeedResponse.class);
@@ -154,10 +154,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverNotNotifiedReceiptWithoutEventIdSuccessWithNoReceiptUpdated() {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(null, false, true);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(null, false, true);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         FeedResponse feedResponseMock = mock(FeedResponse.class);
@@ -184,7 +184,7 @@ class RecoverNotNotifiedReceiptTest {
     @Test
     void recoverReceiptFailForEmptyBody() {
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.empty());
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -205,10 +205,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailForInvalidInputParams() {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, false, false);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, false);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -229,10 +229,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailReceiptNotFound() throws ReceiptNotFoundException {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, false, true);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
@@ -247,7 +247,7 @@ class RecoverNotNotifiedReceiptTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
@@ -255,10 +255,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailReceiptFoundIsNull() throws ReceiptNotFoundException {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, false, true);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenReturn(null);
@@ -273,7 +273,7 @@ class RecoverNotNotifiedReceiptTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
@@ -281,10 +281,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailReceiptInGeneratedButOnlyIOErrorToNotify() throws ReceiptNotFoundException {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, false, true);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         Receipt receipt = new Receipt();
@@ -301,7 +301,7 @@ class RecoverNotNotifiedReceiptTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
@@ -309,10 +309,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailReceiptInIOErrorToNotifyButOnlyGenerated() throws ReceiptNotFoundException {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, true, false);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, true, false);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         Receipt receipt = new Receipt();
@@ -329,7 +329,7 @@ class RecoverNotNotifiedReceiptTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
@@ -337,10 +337,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailReceiptInInsertedButOnlyGenerated() throws ReceiptNotFoundException {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, true, false);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, true, false);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         Receipt receipt = new Receipt();
@@ -357,7 +357,7 @@ class RecoverNotNotifiedReceiptTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
@@ -365,10 +365,10 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailReceiptInInsertedButOnlyIOErrorToNotify() throws ReceiptNotFoundException {
-        IONotifyErrorRecoveryRequest recoveryRequest = new IONotifyErrorRecoveryRequest(EVENT_ID, false, true);
+        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
 
         @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<IONotifyErrorRecoveryRequest>> request = mock(HttpRequestMessage.class);
+        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
         when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
 
         Receipt receipt = new Receipt();
@@ -385,7 +385,7 @@ class RecoverNotNotifiedReceiptTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
