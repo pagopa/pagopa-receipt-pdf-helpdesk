@@ -1,6 +1,9 @@
 const axios = require("axios");
 
+const TOKENIZED_FISCAL_CODE = "cd07268c-73e8-4df4-8305-a35085e32eff";
+
 const helpdesk_url = process.env.HELPDESK_URL;
+const recover_failed_endpoint = process.env.RECOVER_FAILED_ENDPOINT || "/recoverFailed";
 
 axios.defaults.headers.common['Ocp-Apim-Subscription-Key'] = process.env.SUBKEY || ""; // for all requests
 if (process.env.canary) {
@@ -9,6 +12,12 @@ if (process.env.canary) {
 
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function createEventForDatastore(id) {
+	let json_event = createEvent(id);
+	json_event.eventStatus = "TEST"
+    return json_event;
 }
 
 function createEvent(id) {
@@ -144,6 +153,34 @@ function createReceipt(id, fiscalCode, pdfName) {
 	}
 	return receipt
 }
+
+function createReceipt(id) {
+	let receipt =
+	{
+		"eventId": id,
+		"eventData": {
+			"payerFiscalCode": TOKENIZED_FISCAL_CODE,
+			"debtorFiscalCode": TOKENIZED_FISCAL_CODE,
+			"amount": "200",
+			"cart": [
+				{
+					"payeeName": "Comune di Milano",
+					"subject": "ACI"
+				}
+			]
+		},
+		"status": "INSERTED",
+		"numRetry": 0,
+		"id": id,
+		"_rid": "Z9AJAMdamqNjAAAAAAAAAA==",
+		"_self": "dbs/Z9AJAA==/colls/Z9AJAMdamqM=/docs/Z9AJAMdamqNjAAAAAAAAAA==/",
+		"_etag": "\"08007a84-0000-0d00-0000-648b1e510000\"",
+		"_attachments": "attachments/",
+		"_ts": 1686838865
+	}
+	return receipt
+}
+
 async function recoverFailedEvent(eventId) {
 
     var data = {}
@@ -151,7 +188,24 @@ async function recoverFailedEvent(eventId) {
         data = JSON.stringify({ "eventId": eventId });
     }
 
-  	return await axios.put(helpdesk_url, data, {})
+  	return await axios.put(helpdesk_url+recover_failed_endpoint, data, {})
+  		.then(res => {
+  			return res;
+  		})
+  		.catch(error => {
+  			return error.response;
+  		});
+
+}
+
+async function regeneratePdf(eventId) {
+
+    var data = {}
+    if (eventId != null) {
+        data = JSON.stringify({ "eventId": eventId });
+    }
+
+  	return await axios.put(datastore_url, data, {})
   		.then(res => {
   			return res;
   		})
@@ -162,5 +216,5 @@ async function recoverFailedEvent(eventId) {
 }
 
 module.exports = {
-	createEvent, sleep, recoverFailedEvent
+	createEvent, sleep, recoverFailedEvent, regeneratePdf
 }
