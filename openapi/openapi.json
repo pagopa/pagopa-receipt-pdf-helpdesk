@@ -8,8 +8,16 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8080",
-      "description": "Generated server url"
+      "url": "https://api.dev.platform.pagopa.it/receipts/helpdesk/v1/",
+      "description": "DEV url"
+    },
+    {
+      "url": "https://api.uat.platform.pagopa.it/receipts/helpdesk/v1/",
+      "description": "UAT url"
+    },
+    {
+      "url": "https://api.platform.pagopa.it/receipts/helpdesk/v1/",
+      "description": "PROD url"
     }
   ],
   "tags": [],
@@ -266,7 +274,8 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "Receipt with id 235392957832338457-0000-0000-0000-0131 and eventId 76abb1f1-c9f9-4ead-9e66-12fec4d51042 restored in status GENERATED with success"
                 }
               }
             }
@@ -284,7 +293,8 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "Please select at least one status to recover"
                 }
               }
             }
@@ -313,7 +323,8 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "Unable to retrieve the receipt with eventId 76abb1f1-c9f9-4ead-9e66-12fec4d51042"
                 }
               }
             }
@@ -342,7 +353,8 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "The requested receipt with eventId 76abb1f1-c9f9-4ead-9e66-12fec4d51042 is not in the expected status"
                 }
               }
             }
@@ -408,17 +420,21 @@
         "properties": {
           "eventId": {
             "type": "string",
-            "description": "Id of the event to start recovering (optional)"
+            "description": "Id of the event to start recovering, if not specified enable massive operation",
+            "example" : "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
           },
           "generatedStatus": {
             "type": "boolean",
-            "description": "True to recover the receipts in GENERATED status, false otherwise"
+            "description": "true to recover the receipts in GENERATED status, false otherwise",
+            "example" : true
           },
           "ioErrorToNotifyStatus": {
             "type": "boolean",
-            "description": "True to recover the receipts in IO_ERROR_TO_NOTIFY status, false otherwise"
+            "description": "true to recover the receipts in IO_ERROR_TO_NOTIFY status, false otherwise",
+            "example" : true
           }
-        }
+        },
+        "required": ["generatedStatus", "ioErrorToNotifyStatus"]
       },
       "ProblemJson": {
         "type": "object",

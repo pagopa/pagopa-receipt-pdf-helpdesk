@@ -102,7 +102,7 @@ public class RecoverNotNotifiedReceipt {
             Receipt restoredReceipt = restoreReceipt(receipt);
 
             documentReceipts.setValue(Collections.singletonList(restoredReceipt));
-            String responseMsg = String.format("Receipt with id %s and eventId %s restored int status %s with success",
+            String responseMsg = String.format("Receipt with id %s and eventId %s restored in status %s with success",
                     receipt.getId(), receipt.getEventId(), ReceiptStatusType.GENERATED);
             return request.createResponseBuilder(HttpStatus.OK).body(responseMsg).build();
         }
