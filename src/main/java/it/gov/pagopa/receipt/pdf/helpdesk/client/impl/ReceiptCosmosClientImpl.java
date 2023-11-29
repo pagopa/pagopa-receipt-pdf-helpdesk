@@ -90,8 +90,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = "SELECT * FROM c WHERE c.status = 'FAILED' or c.status = 'NOT_QUEUE_SENT' or " +
-                "( c.status= = 'INSERTED' AND ( " + OffsetDateTime.now().toInstant().toEpochMilli() +
+        String query = "SELECT * FROM c WHERE c.status = 'FAILED' or c.status = 'NOT_QUEUE_SENT' and " +
+                "(c.status = 'INSERTED' AND ( " + OffsetDateTime.now().toInstant().toEpochMilli() +
                 " - c.inserted_at) >= " + millisDiff + " )";
 
         //Query the container
@@ -189,7 +189,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     }
 
     private String buildQuery(boolean ioErrorToNotifyStatus, boolean generatedStatus) {
-        String query = "SELECT *CosmosPagedIterable<Receipt> FROM c WHERE ";
+        String query = "SELECT * FROM c WHERE ";
         String ioErrorNotifyParam = String.format("c.status = '%s'", ReceiptStatusType.IO_ERROR_TO_NOTIFY);
         String generatedParam =  String.format("(c.status= = '%s' AND ( %s - c.inserted_at) >= %s)",
                 ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);

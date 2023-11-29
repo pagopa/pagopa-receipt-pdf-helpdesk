@@ -80,7 +80,8 @@ public class RecoverFailedReceipt {
 
         try {
 
-            ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = request.getBody().get();
+            ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = request.getBody().orElse(
+                    new ReceiptFailedRecoveryRequest());
 
             if (receiptFailedRecoveryRequest.getEventId() != null) {
 
@@ -122,9 +123,11 @@ public class RecoverFailedReceipt {
                     .build();
 
         } catch (NoSuchElementException | ReceiptNotFoundException | BizEventNotFoundException exception) {
+            logger.error(exception.getMessage(), exception);
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .build();
         } catch (PDVTokenizerException | JsonProcessingException e) {
+            logger.error(e.getMessage(), e);
             return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build();
         }
