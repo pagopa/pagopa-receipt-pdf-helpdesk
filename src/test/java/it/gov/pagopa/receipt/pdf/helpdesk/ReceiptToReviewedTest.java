@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,46 +35,46 @@ class ReceiptToReviewedTest {
 
     private ReceiptToReviewed function;
 
-   @Mock
-   private ReceiptCosmosClient receiptCosmosClient;
+    @Mock
+    private ReceiptCosmosClient receiptCosmosClient;
 
     @Captor
     private ArgumentCaptor<List<ReceiptError>> receiptErrorCaptor;
 
-   @Test
-   void requestWithValidBizEventSaveReceiptErrorInReviewed() throws ReceiptNotFoundException {
-       ReceiptToReviewedRequest receiptToReviewedRequest = new ReceiptToReviewedRequest();
-       receiptToReviewedRequest.setEventId(BIZ_EVENT_ID);
-       HttpRequestMessage<Optional<ReceiptToReviewedRequest>> request = mock(HttpRequestMessage.class);
-       when(request.getBody()).thenReturn(Optional.of(receiptToReviewedRequest));
+    @Test
+    void requestWithValidBizEventSaveReceiptErrorInReviewed() throws ReceiptNotFoundException {
+        ReceiptToReviewedRequest receiptToReviewedRequest = new ReceiptToReviewedRequest();
+        receiptToReviewedRequest.setEventId(BIZ_EVENT_ID);
+        HttpRequestMessage<Optional<ReceiptToReviewedRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptToReviewedRequest));
 
-       doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-           HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-           return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-       }).when(request).createResponseBuilder(any(HttpStatus.class));
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
 
-       ReceiptError receiptError = ReceiptError.builder()
-               .bizEventId(BIZ_EVENT_ID)
-               .status(ReceiptErrorStatusType.TO_REVIEW)
-               .build();
-       when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
+        ReceiptError receiptError = ReceiptError.builder()
+                .bizEventId(BIZ_EVENT_ID)
+                .status(ReceiptErrorStatusType.TO_REVIEW)
+                .build();
+        when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
 
 
-       function = new ReceiptToReviewed(receiptCosmosClient);
+        function = new ReceiptToReviewed(receiptCosmosClient);
 
-       @SuppressWarnings("unchecked")
-       OutputBinding<List<ReceiptError>> documentdb = (OutputBinding<List<ReceiptError>>) spy(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<ReceiptError>> documentdb = (OutputBinding<List<ReceiptError>>) spy(OutputBinding.class);
 
-       // test execution
-       AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
-       assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
-       assertEquals(HttpStatus.OK , responseMessage.get().getStatus());
+        // test execution
+        AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
+        assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
+        assertEquals(HttpStatus.OK, responseMessage.get().getStatus());
 
-       verify(documentdb).setValue(receiptErrorCaptor.capture());
-       ReceiptError captured = receiptErrorCaptor.getValue().get(0);
-       assertEquals(BIZ_EVENT_ID, captured.getBizEventId());
-       assertEquals(ReceiptErrorStatusType.REVIEWED, captured.getStatus());
-   }
+        verify(documentdb).setValue(receiptErrorCaptor.capture());
+        ReceiptError captured = receiptErrorCaptor.getValue().get(0);
+        assertEquals(BIZ_EVENT_ID, captured.getBizEventId());
+        assertEquals(ReceiptErrorStatusType.REVIEWED, captured.getStatus());
+    }
 
     @Test
     void requestWithoutBizEventIdSaveMultipleReceiptErrorInReviewed() {
@@ -98,7 +99,7 @@ class ReceiptToReviewedTest {
                 .bizEventId("2")
                 .status(ReceiptErrorStatusType.TO_REVIEW)
                 .build();
-        List<ReceiptError> listReceipt = List.of(receiptError1,receiptError2);
+        List<ReceiptError> listReceipt = List.of(receiptError1, receiptError2);
         when(feedResponse.getResults()).thenReturn(listReceipt);
         Iterable<FeedResponse<ReceiptError>> feedResponseIterator = List.of(feedResponse);
 
@@ -112,7 +113,7 @@ class ReceiptToReviewedTest {
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
         assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
-        assertEquals(HttpStatus.OK , responseMessage.get().getStatus());
+        assertEquals(HttpStatus.OK, responseMessage.get().getStatus());
 
         verify(documentdb).setValue(receiptErrorCaptor.capture());
 
@@ -146,7 +147,7 @@ class ReceiptToReviewedTest {
                 .bizEventId("2")
                 .status(ReceiptErrorStatusType.TO_REVIEW)
                 .build();
-        List<ReceiptError> listReceipt = List.of(receiptError1,receiptError2);
+        List<ReceiptError> listReceipt = List.of(receiptError1, receiptError2);
         when(feedResponse.getResults()).thenReturn(listReceipt);
         Iterable<FeedResponse<ReceiptError>> feedResponseIterator = List.of(feedResponse);
 
@@ -160,7 +161,7 @@ class ReceiptToReviewedTest {
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
         assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
-        assertEquals(HttpStatus.OK , responseMessage.get().getStatus());
+        assertEquals(HttpStatus.OK, responseMessage.get().getStatus());
 
         verify(documentdb).setValue(receiptErrorCaptor.capture());
 
@@ -195,7 +196,37 @@ class ReceiptToReviewedTest {
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
         assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
-        assertEquals(HttpStatus.BAD_REQUEST , responseMessage.get().getStatus());
+        assertEquals(HttpStatus.NOT_FOUND, responseMessage.get().getStatus());
+
+        verifyNoInteractions(documentdb);
+    }
+
+    @Test
+    void requestWithValidBizEventIdButReceiptWrongStatus() throws ReceiptNotFoundException {
+        ReceiptToReviewedRequest receiptToReviewedRequest = new ReceiptToReviewedRequest();
+        receiptToReviewedRequest.setEventId(BIZ_EVENT_ID);
+        HttpRequestMessage<Optional<ReceiptToReviewedRequest>> request = mock(HttpRequestMessage.class);
+        when(request.getBody()).thenReturn(Optional.of(receiptToReviewedRequest));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenReturn(ReceiptError.builder()
+                .bizEventId(BIZ_EVENT_ID)
+                .status(ReceiptErrorStatusType.REQUEUED)
+                .build());
+
+        function = new ReceiptToReviewed(receiptCosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<ReceiptError>> documentdb = (OutputBinding<List<ReceiptError>>) spy(OutputBinding.class);
+
+        // test execution
+        AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
+        assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
+        assertEquals(HttpStatus.BAD_REQUEST, responseMessage.get().getStatus());
 
         verifyNoInteractions(documentdb);
     }
@@ -227,7 +258,7 @@ class ReceiptToReviewedTest {
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
         assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
-        assertEquals(HttpStatus.OK , responseMessage.get().getStatus());
+        assertEquals(HttpStatus.OK, responseMessage.get().getStatus());
 
         verifyNoInteractions(documentdb);
     }
