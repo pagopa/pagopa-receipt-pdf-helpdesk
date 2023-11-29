@@ -761,9 +761,9 @@ class GenerateReceiptPdfServiceImplTest {
                 .mdAttach(buildMetadata(debtorAlreadyCreated))
                 .mdAttachPayer(buildMetadata(payerAlreadyCreated))
                 .numRetry(0)
-                .generated_at(1L)
-                .inserted_at(1L)
-                .notified_at(1L)
+                .generatedAt(1L)
+                .insertedAt(1L)
+                .notifiedAt(1L)
                 .build();
     }
 
@@ -861,9 +861,9 @@ class GenerateReceiptPdfServiceImplTest {
                 .mdAttachPayer(metadataP)
                 .status(ReceiptStatusType.INSERTED)
                 .numRetry(0)
-                .generated_at(1L)
-                .inserted_at(1L)
-                .notified_at(1L)
+                .generatedAt(1L)
+                .insertedAt(1L)
+                .notifiedAt(1L)
                 .build();
     }
 
