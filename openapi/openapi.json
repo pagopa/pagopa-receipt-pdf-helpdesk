@@ -164,6 +164,25 @@
                   "type": "string"
                 }
               }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "OK"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Receipt or BizEvent not found.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
             }
           },
           "401": {
@@ -173,24 +192,6 @@
                 "description": "This header identifies the call",
                 "schema": {
                   "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unable to process the request.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
                 }
               }
             }
@@ -207,7 +208,7 @@
             }
           },
           "500": {
-            "description": "Service unavailable.",
+            "description": "Error processing the request",
             "headers": {
               "X-Request-Id": {
                 "description": "This header identifies the call",
@@ -215,11 +216,15 @@
                   "type": "string"
                 }
               }
-            },
-            "content": {
-              "application/json": {
+            }
+          },
+          "default": {
+            "description": "Unexpected error.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
+                  "type": "string"
                 }
               }
             }
@@ -407,10 +412,12 @@
       },
       "ReceiptFailedRecoveryRequest": {
         "type": "object",
+        "description": "The request body for recoverFailed API. The field eventId when not provided enable the massive operation",
         "properties": {
           "eventId": {
             "type": "string",
-            "description": "Id of the event to start recovering (optional)"
+            "description": "Id of the event to start recovering, if not specified enable massive operation",
+            "example" : "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
           }
         }
       },
