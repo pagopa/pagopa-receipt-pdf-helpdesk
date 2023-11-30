@@ -20,15 +20,20 @@ public interface ReceiptCosmosClient {
     Iterable<FeedResponse<ReceiptError>> getToReviewReceiptsError(String continuationToken, Integer pageSize);
 
     /**
-     * Retrieve the receipt documents with the provided status from Cosmos database
+     * Retrieve the receipt documents with {@link ReceiptStatusType#GENERATED}
      *
      * @param continuationToken Paged query continuation token
      * @param pageSize the page size
-     * @param statusType the status of the receipts
      * @return receipt documents
      */
-    Iterable<FeedResponse<Receipt>> getNotNotifiedReceiptDocuments(
-            String continuationToken,
-            Integer pageSize,
-            ReceiptStatusType statusType);
+    Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize);
+
+    /**
+     * Retrieve the receipt documents with {@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}
+     *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize the page size
+     * @return receipt documents
+     */
+    Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(String continuationToken, Integer pageSize);
 }

@@ -11,11 +11,11 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +31,14 @@ public class RecoverNotNotifiedReceiptMassive {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptMassive.class);
 
-    private final ReceiptCosmosClient receiptCosmosClient;
+    private final ReceiptCosmosService receiptCosmosService;
 
     public RecoverNotNotifiedReceiptMassive() {
-        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
     }
 
-    RecoverNotNotifiedReceiptMassive(ReceiptCosmosClient receiptCosmosClient) {
-        this.receiptCosmosClient = receiptCosmosClient;
+    RecoverNotNotifiedReceiptMassive(ReceiptCosmosService receiptCosmosService) {
+        this.receiptCosmosService = receiptCosmosService;
     }
 
     /**
@@ -123,7 +123,7 @@ public class RecoverNotNotifiedReceiptMassive {
         String continuationToken = null;
         do {
             Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                    receiptCosmosClient.getNotNotifiedReceiptDocuments(continuationToken, 100, statusType);
+                    this.receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
 
             for (FeedResponse<Receipt> page : feedResponseIterator) {
                 for (Receipt receipt : page.getResults()) {

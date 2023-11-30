@@ -6,11 +6,11 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.helpdesk.util.HttpResponseMessageMock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +48,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
     private final ExecutionContext executionContextMock = mock(ExecutionContext.class);
 
     @Mock
-    private ReceiptCosmosClient receiptCosmosClientMock;
+    private ReceiptCosmosService receiptCosmosServiceMock;
 
     @Mock
     private HttpRequestMessage<Optional<String>> requestMock;
@@ -66,7 +66,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
     @BeforeEach
     public void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
-        sut = spy(new RecoverNotNotifiedReceiptMassive(receiptCosmosClientMock));
+        sut = spy(new RecoverNotNotifiedReceiptMassive(receiptCosmosServiceMock));
     }
 
     @AfterEach
@@ -82,7 +82,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         List<Receipt> receiptList = getReceiptList(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
         when(feedResponseMock.getResults()).thenReturn(receiptList);
-        when(receiptCosmosClientMock.getNotNotifiedReceiptDocuments(any(), any(), any()))
+        when(receiptCosmosServiceMock.getNotNotifiedReceiptByStatus(any(), any(), any()))
                 .thenReturn(Collections.singletonList(feedResponseMock));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -123,7 +123,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         List<Receipt> receiptList = getReceiptList(ReceiptStatusType.GENERATED);
         when(feedResponseMock.getResults()).thenReturn(receiptList);
-        when(receiptCosmosClientMock.getNotNotifiedReceiptDocuments(any(), any(), any()))
+        when(receiptCosmosServiceMock.getNotNotifiedReceiptByStatus(any(), any(), any()))
                 .thenReturn(Collections.singletonList(feedResponseMock));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -163,7 +163,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
 
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         when(feedResponseMock.getResults()).thenReturn(Collections.emptyList());
-        when(receiptCosmosClientMock.getNotNotifiedReceiptDocuments(any(), any(), any()))
+        when(receiptCosmosServiceMock.getNotNotifiedReceiptByStatus(any(), any(), any()))
                 .thenReturn(Collections.singletonList(feedResponseMock));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
