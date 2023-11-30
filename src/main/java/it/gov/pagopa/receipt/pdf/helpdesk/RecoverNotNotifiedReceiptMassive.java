@@ -76,7 +76,8 @@ public class RecoverNotNotifiedReceiptMassive {
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a status to recover")
-                            .status(HttpStatus.BAD_REQUEST.value()))
+                            .status(HttpStatus.BAD_REQUEST.value())
+                            .build())
                     .build();
         }
 
@@ -88,7 +89,8 @@ public class RecoverNotNotifiedReceiptMassive {
                     .body(ProblemJson.builder()
                             .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
                             .detail(responseMsg)
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value()))
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build())
                     .build();
         }
 
