@@ -4,7 +4,7 @@
     "title": "Receipts Helpdesk",
     "description": "Microservice for exposing REST APIs about receipts helpdesk.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "0.3.0"
+    "version": "0.3.1"
   },
   "servers": [
     {
@@ -484,7 +484,7 @@
           "eventId": {
             "type": "string",
             "description": "Id of the event to start recovering, if not specified enable massive operation",
-            "example" : "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
+            "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
           }
         }
       },
@@ -495,7 +495,7 @@
           "eventId": {
             "type": "string",
             "description": "Id of the event to start recovering, if not specified enable massive operation",
-            "example" : "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
+            "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
           }
         }
       },
@@ -506,20 +506,23 @@
           "eventId": {
             "type": "string",
             "description": "Id of the event to start recovering, if not specified enable massive operation",
-            "example" : "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
+            "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
           },
           "generatedStatus": {
             "type": "boolean",
             "description": "true to recover the receipts in GENERATED status, false otherwise",
-            "example" : true
+            "example": true
           },
           "ioErrorToNotifyStatus": {
             "type": "boolean",
             "description": "true to recover the receipts in IO_ERROR_TO_NOTIFY status, false otherwise",
-            "example" : true
+            "example": true
           }
         },
-        "required": ["generatedStatus", "ioErrorToNotifyStatus"]
+        "required": [
+          "generatedStatus",
+          "ioErrorToNotifyStatus"
+        ]
       }
     },
     "securitySchemes": {
