@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
+import com.azure.cosmos.models.FeedResponse;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
@@ -7,13 +8,11 @@ import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
-import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.ReceiptCosmosServiceImpl;
@@ -21,31 +20,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Azure Functions with HTTP Trigger.
  */
-public class RecoverNotNotifiedReceipt {
+public class RecoverNotNotifiedReceiptMassive {
 
-    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceipt.class);
+    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptMassive.class);
 
     private final ReceiptCosmosService receiptCosmosService;
 
-    public RecoverNotNotifiedReceipt() {
+    public RecoverNotNotifiedReceiptMassive() {
         this.receiptCosmosService = new ReceiptCosmosServiceImpl();
     }
 
-    RecoverNotNotifiedReceipt(ReceiptCosmosService receiptCosmosService) {
+    RecoverNotNotifiedReceiptMassive(ReceiptCosmosService receiptCosmosService) {
         this.receiptCosmosService = receiptCosmosService;
     }
 
     /**
      * This function will be invoked when a Http Trigger occurs.
      * <p>
-     * It recovers the receipt with the specified biz event id
+     * It recovers all receipt with the provided status.
      * <p>
      * It recovers the receipt with failed notification ({@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}) or notification
      * not triggered ({@link ReceiptStatusType#GENERATED} by clearing the errors and update the status to the
@@ -53,14 +52,13 @@ public class RecoverNotNotifiedReceipt {
      *
      * @return response with {@link HttpStatus#OK} if the notification succeeded
      */
-    @FunctionName("RecoverNotNotifiedReceipt")
+    @FunctionName("RecoverNotNotifiedReceiptMassive")
     public HttpResponseMessage run(
-            @HttpTrigger(name = "RecoverNotNotifiedTrigger",
+            @HttpTrigger(name = "RecoverNotNotifiedMassiveTrigger",
                     methods = {HttpMethod.POST},
-                    route = "/receipts/{event-id}/recover-not-notified",
+                    route = "/receipts/recover-not-notified",
                     authLevel = AuthorizationLevel.FUNCTION)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("event-id") String eventId,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
@@ -70,29 +68,36 @@ public class RecoverNotNotifiedReceipt {
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        if (eventId == null || eventId.isBlank()) {
+        // Get named parameter
+        String status = request.getQueryParameters().get("status");
+        if (status == null) {
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Please pass a valid biz-event id")
+                            .detail("Please pass a status to recover")
                             .status(HttpStatus.BAD_REQUEST.value())
                             .build())
                     .build();
         }
 
-        Receipt receipt;
+        ReceiptStatusType statusType;
         try {
-            receipt = this.receiptCosmosService.getReceipt(eventId);
-        } catch (ReceiptNotFoundException e) {
-            String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
-            logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
-            return request.createResponseBuilder(HttpStatus.NOT_FOUND).body(responseMsg).build();
+            statusType = ReceiptStatusType.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.BAD_REQUEST.name())
+                            .detail("Please pass a valid status to recover")
+                            .status(HttpStatus.BAD_REQUEST.value())
+                            .build())
+                    .build();
         }
 
-        if (!receipt.getStatus().equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY) && !receipt.getStatus().equals(ReceiptStatusType.GENERATED)) {
-            String responseMsg = String.format("The requested receipt with eventId %s is not in the expected status",
-                    receipt.getEventId());
+        if (!statusType.equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY) && !statusType.equals(ReceiptStatusType.GENERATED)) {
+            String responseMsg = String.format("The requested status to recover %s is not one of the expected status",
+                    statusType);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -103,12 +108,32 @@ public class RecoverNotNotifiedReceipt {
                     .build();
         }
 
-        Receipt restoredReceipt = restoreReceipt(receipt);
+        List<Receipt> receiptList = receiptMassiveRestore(statusType);
+        if (receiptList.isEmpty()) {
+            return request.createResponseBuilder(HttpStatus.OK).body("No receipts restored").build();
+        }
 
-        documentReceipts.setValue(Collections.singletonList(restoredReceipt));
-        String responseMsg = String.format("Receipt with id %s and eventId %s restored in status %s with success",
-                receipt.getId(), receipt.getEventId(), ReceiptStatusType.GENERATED);
-        return request.createResponseBuilder(HttpStatus.OK).body(responseMsg).build();
+        documentReceipts.setValue(receiptList);
+        String msg = String.format("Restored %s receipt with success", receiptList.size());
+        return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
+    }
+
+    private List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType) {
+        List<Receipt> receiptList = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<Receipt>> feedResponseIterator =
+                    this.receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
+
+            for (FeedResponse<Receipt> page : feedResponseIterator) {
+                for (Receipt receipt : page.getResults()) {
+                    Receipt restoredReceipt = restoreReceipt(receipt);
+                    receiptList.add(restoredReceipt);
+                }
+                continuationToken = page.getContinuationToken();
+            }
+        } while (continuationToken != null);
+        return receiptList;
     }
 
     private Receipt restoreReceipt(Receipt receipt) {

@@ -1,17 +1,16 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
-import com.azure.cosmos.models.FeedResponse;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.helpdesk.model.NotNotifiedRecoveryRequest;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.helpdesk.util.HttpResponseMessageMock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,8 +24,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -50,10 +46,13 @@ class RecoverNotNotifiedReceiptTest {
     private final ExecutionContext executionContextMock = mock(ExecutionContext.class);
 
     @Mock
-    private ReceiptCosmosClient receiptCosmosClientMock;
+    private ReceiptCosmosService receiptCosmosServiceMock;
+
+    @Mock
+    private HttpRequestMessage<Optional<String>> requestMock;
 
     @Spy
-    OutputBinding<List<Receipt>> documentReceipts;
+    private OutputBinding<List<Receipt>> documentReceipts;
 
     @Captor
     private ArgumentCaptor<List<Receipt>> receiptCaptor;
@@ -65,7 +64,7 @@ class RecoverNotNotifiedReceiptTest {
     @BeforeEach
     public void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
-        sut = spy(new RecoverNotNotifiedReceipt(receiptCosmosClientMock));
+        sut = spy(new RecoverNotNotifiedReceipt(receiptCosmosServiceMock));
     }
 
     @AfterEach
@@ -74,23 +73,17 @@ class RecoverNotNotifiedReceiptTest {
     }
 
     @Test
-    void recoverNotNotifiedReceiptWithEventIdSuccess() throws ReceiptNotFoundException {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
+    void recoverNotNotifiedReceiptSuccess() throws ReceiptNotFoundException {
         Receipt receipt = buildReceipt();
-        when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenReturn(receipt);
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
@@ -109,227 +102,43 @@ class RecoverNotNotifiedReceiptTest {
     }
 
     @Test
-    void recoverNotNotifiedReceiptWithoutEventIdSuccess() {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(null, false, true);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
-        FeedResponse feedResponseMock = mock(FeedResponse.class);
-        List<Receipt> receiptList = getReceiptList();
-        when(feedResponseMock.getResults()).thenReturn(receiptList);
-        when(receiptCosmosClientMock.getNotNotifiedReceiptDocuments(any(), any(), anyBoolean(), anyBoolean()))
-                .thenReturn(Collections.singletonList(feedResponseMock));
-
+    void recoverReceiptFailForMissingEventId() {
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, "", documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
 
-        verify(documentReceipts).setValue(receiptCaptor.capture());
-
-        assertEquals(receiptList.size(), receiptCaptor.getValue().size());
-        Receipt captured1 = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.GENERATED, captured1.getStatus());
-        assertEquals(EVENT_ID, captured1.getEventId());
-        assertEquals(0, captured1.getNotificationNumRetry());
-        assertNull(captured1.getReasonErr());
-        assertNull(captured1.getReasonErrPayer());
-        Receipt captured2 = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.GENERATED, captured2.getStatus());
-        assertEquals(EVENT_ID, captured2.getEventId());
-        assertEquals(0, captured2.getNotificationNumRetry());
-        assertNull(captured2.getReasonErr());
-        assertNull(captured2.getReasonErrPayer());
-    }
-
-    @Test
-    void recoverNotNotifiedReceiptWithoutEventIdSuccessWithNoReceiptUpdated() {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(null, false, true);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
-        FeedResponse feedResponseMock = mock(FeedResponse.class);
-        when(feedResponseMock.getResults()).thenReturn(Collections.emptyList());
-        when(receiptCosmosClientMock.getNotNotifiedReceiptDocuments(any(), any(), anyBoolean(), anyBoolean()))
-                .thenReturn(Collections.singletonList(feedResponseMock));
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
-    }
-
-    @Test
-    void recoverReceiptFailForEmptyBody() {
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.empty());
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
-    }
-
-    @Test
-    void recoverReceiptFailForInvalidInputParams() {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, false);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
-        assertNotNull(response.getBody());
+        ProblemJson problemJson = (ProblemJson) response.getBody();
+        assertNotNull(problemJson);
+        assertEquals(HttpStatus.BAD_REQUEST.value(), problemJson.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST.name(), problemJson.getTitle());
+        assertNotNull(problemJson.getDetail());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
     }
 
     @Test
     void recoverReceiptFailReceiptNotFound() throws ReceiptNotFoundException {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
-        when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
-    }
-
-    @Test
-    void recoverReceiptFailReceiptFoundIsNull() throws ReceiptNotFoundException {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
-        when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenReturn(null);
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
-    }
-
-    @Test
-    void recoverReceiptFailReceiptInGeneratedButOnlyIOErrorToNotify() throws ReceiptNotFoundException {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
-        Receipt receipt = new Receipt();
-        receipt.setStatus(ReceiptStatusType.GENERATED);
-        when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenReturn(receipt);
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
-    }
-
-    @Test
-    void recoverReceiptFailReceiptInIOErrorToNotifyButOnlyGenerated() throws ReceiptNotFoundException {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, true, false);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
-        Receipt receipt = new Receipt();
-        receipt.setStatus(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenReturn(receipt);
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
@@ -337,56 +146,54 @@ class RecoverNotNotifiedReceiptTest {
 
     @Test
     void recoverReceiptFailReceiptInInsertedButOnlyGenerated() throws ReceiptNotFoundException {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, true, false);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
         Receipt receipt = new Receipt();
         receipt.setStatus(ReceiptStatusType.INSERTED);
-        when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenReturn(receipt);
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
-        assertNotNull(response.getBody());
+
+        ProblemJson problemJson = (ProblemJson) response.getBody();
+        assertNotNull(problemJson);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), problemJson.getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.name(), problemJson.getTitle());
+        assertNotNull(problemJson.getDetail());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
     }
 
     @Test
     void recoverReceiptFailReceiptInInsertedButOnlyIOErrorToNotify() throws ReceiptNotFoundException {
-        NotNotifiedRecoveryRequest recoveryRequest = new NotNotifiedRecoveryRequest(EVENT_ID, false, true);
-
-        @SuppressWarnings("unchecked")
-        HttpRequestMessage<Optional<NotNotifiedRecoveryRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(recoveryRequest));
-
         Receipt receipt = new Receipt();
         receipt.setStatus(ReceiptStatusType.INSERTED);
-        when(receiptCosmosClientMock.getReceiptDocument(EVENT_ID)).thenReturn(receipt);
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(request, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
-        assertNotNull(response.getBody());
+
+        ProblemJson problemJson = (ProblemJson) response.getBody();
+        assertNotNull(problemJson);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), problemJson.getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.name(), problemJson.getTitle());
+        assertNotNull(problemJson.getDetail());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
     }
@@ -409,14 +216,5 @@ class RecoverNotNotifiedReceiptTest {
                 .generatedAt(0)
                 .notifiedAt(0)
                 .build();
-    }
-
-    private List<Receipt> getReceiptList() {
-        List<Receipt> receiptList = new ArrayList<>();
-        Receipt receipt1 = buildReceipt();
-        Receipt receipt2 = buildReceipt();
-        receiptList.add(receipt1);
-        receiptList.add(receipt2);
-        return receiptList;
     }
 }

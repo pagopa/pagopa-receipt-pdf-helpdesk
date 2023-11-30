@@ -166,21 +166,13 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * {@inheritDoc}
      */
     @Override
-    public Iterable<FeedResponse<Receipt>> getNotNotifiedReceiptDocuments(
-            String continuationToken,
-            Integer pageSize,
-            boolean ioErrorToNotifyStatus,
-            boolean generatedStatus
-    )  {
+    public Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize)  {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        if (!ioErrorToNotifyStatus && !generatedStatus) {
-            throw new IllegalArgumentException("at least one param must be true");
-        }
-
         //Build query
-        String query = buildQuery(ioErrorToNotifyStatus, generatedStatus);
+        String query =  String.format("SELECT * FROM c WHERE (c.status= = '%s' AND ( %s - c.generated_at) >= %s)",
+                ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
 
         //Query the container
         return cosmosContainer
@@ -188,18 +180,20 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 .iterableByPage(continuationToken,pageSize);
     }
 
-    private String buildQuery(boolean ioErrorToNotifyStatus, boolean generatedStatus) {
-        String query = "SELECT * FROM c WHERE ";
-        String ioErrorNotifyParam = String.format("c.status = '%s'", ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        String generatedParam =  String.format("(c.status= = '%s' AND ( %s - c.inserted_at) >= %s)",
-                ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(String continuationToken, Integer pageSize)  {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        if (ioErrorToNotifyStatus && generatedStatus) {
-           return query.concat(ioErrorNotifyParam).concat(" AND ").concat(generatedParam);
-        }
-        if (ioErrorToNotifyStatus) {
-            return query.concat(ioErrorNotifyParam);
-        }
-        return query.concat(generatedParam);
+        //Build query
+        String query = String.format("SELECT * FROM c WHERE c.status = '%s'", ReceiptStatusType.IO_ERROR_TO_NOTIFY);
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class)
+                .iterableByPage(continuationToken,pageSize);
     }
 }

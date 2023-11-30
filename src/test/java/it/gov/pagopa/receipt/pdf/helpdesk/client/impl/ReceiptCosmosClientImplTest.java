@@ -120,7 +120,7 @@ class ReceiptCosmosClientImplTest {
     }
 
     @Test
-    void getNotNotifiedReceiptDocumentsSuccess() {
+    void getGeneratedReceiptDocumentsSuccess() {
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
@@ -139,26 +139,10 @@ class ReceiptCosmosClientImplTest {
 
         when(mockIterator.next()).thenReturn(receipt);
 
-        assertDoesNotThrow(() -> client.getNotNotifiedReceiptDocuments(
-                null,
-                100,
-                true,
-                true));
-        assertDoesNotThrow(() -> client.getNotNotifiedReceiptDocuments(
-                null,
-                100,
-                false,
-                true));
-        assertDoesNotThrow(() -> client.getNotNotifiedReceiptDocuments(
-                null,
-                100,
-                true,
-                false));
+        assertDoesNotThrow(() -> client.getGeneratedReceiptDocuments(null, 100));
     }
-
-
     @Test
-    void getNotNotifiedReceiptDocumentsFailThrowsIllegalArgumentException() {
+    void getIOErrorToNotifyReceiptDocumentsSuccess() {
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
@@ -177,12 +161,6 @@ class ReceiptCosmosClientImplTest {
 
         when(mockIterator.next()).thenReturn(receipt);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> client.getNotNotifiedReceiptDocuments(
-                        null,
-                        100,
-                        false,
-                        false));
+        assertDoesNotThrow(() -> client.getIOErrorToNotifyReceiptDocuments(null, 100));
     }
 }
