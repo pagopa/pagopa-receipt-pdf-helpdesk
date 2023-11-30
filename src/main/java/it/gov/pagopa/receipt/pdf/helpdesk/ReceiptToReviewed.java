@@ -59,9 +59,13 @@ public class ReceiptToReviewed {
             ReceiptToReviewedRequest receiptSupportRequest = request.getBody().isPresent() ? request.getBody().get() : new ReceiptToReviewedRequest();
 
             if (receiptSupportRequest.getEventId() != null) {
-
                 ReceiptError receiptError = receiptCosmosClient.getReceiptError(
                         receiptSupportRequest.getEventId());
+
+                if(!receiptError.getStatus().equals(ReceiptErrorStatusType.TO_REVIEW)){
+                    String msg = String.format("Found receiptError with invalid status %s", receiptError.getStatus());
+                    return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(msg).build();
+                }
                 receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);
                 receiptList.add(receiptError);
             } else {
@@ -85,16 +89,18 @@ public class ReceiptToReviewed {
                 } while (continuationToken != null);
             }
 
-            if(!receiptList.isEmpty()){
-                documentdb.setValue(receiptList);
+            if (receiptList.isEmpty()) {
+                return request.createResponseBuilder(HttpStatus.OK).body("No documents restored").build();
             }
 
-            return request.createResponseBuilder(HttpStatus.OK)
-                    .body("OK")
-                    .build();
+            documentdb.setValue(receiptList);
+
+            String msg = String.format("Changed status of %s documents with success", receiptList.size());
+            return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
 
         } catch (NoSuchElementException | ReceiptNotFoundException e) {
-            return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
+            return request.createResponseBuilder(HttpStatus.NOT_FOUND)
+                    .body("No receiptError has been found")
                     .build();
         }
     }
