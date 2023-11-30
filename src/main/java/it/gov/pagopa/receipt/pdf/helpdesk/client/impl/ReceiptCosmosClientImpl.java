@@ -169,18 +169,17 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     public Iterable<FeedResponse<Receipt>> getNotNotifiedReceiptDocuments(
             String continuationToken,
             Integer pageSize,
-            boolean ioErrorToNotifyStatus,
-            boolean generatedStatus
+            ReceiptStatusType statusType
     )  {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        if (!ioErrorToNotifyStatus && !generatedStatus) {
+        if (statusType == null) {
             throw new IllegalArgumentException("at least one param must be true");
         }
 
         //Build query
-        String query = buildQuery(ioErrorToNotifyStatus, generatedStatus);
+        String query = buildQuery(statusType);
 
         //Query the container
         return cosmosContainer
@@ -188,18 +187,20 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 .iterableByPage(continuationToken,pageSize);
     }
 
-    private String buildQuery(boolean ioErrorToNotifyStatus, boolean generatedStatus) {
+    private String buildQuery(ReceiptStatusType statusType) {
         String query = "SELECT * FROM c WHERE ";
         String ioErrorNotifyParam = String.format("c.status = '%s'", ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        String generatedParam =  String.format("(c.status= = '%s' AND ( %s - c.inserted_at) >= %s)",
+        String generatedParam =  String.format("(c.status= = '%s' AND ( %s - c.generated_at) >= %s)",
                 ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
 
-        if (ioErrorToNotifyStatus && generatedStatus) {
-           return query.concat(ioErrorNotifyParam).concat(" AND ").concat(generatedParam);
+        switch (statusType) {
+            case IO_ERROR_TO_NOTIFY -> {
+                return query.concat(ioErrorNotifyParam);
+            }
+            case GENERATED -> {
+                return query.concat(generatedParam);
+            }
+            default -> throw new IllegalStateException("Unexpected status for query");
         }
-        if (ioErrorToNotifyStatus) {
-            return query.concat(ioErrorNotifyParam);
-        }
-        return query.concat(generatedParam);
     }
 }
