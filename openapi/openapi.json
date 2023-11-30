@@ -4,7 +4,7 @@
     "title": "Receipts Helpdesk",
     "description": "Microservice for exposing REST APIs about receipts helpdesk.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "0.3.1"
+    "version": "0.3.2"
   },
   "servers": [
     {
@@ -555,27 +555,27 @@
         }
       }
     },
-      "ReceiptToReviewedRequest": {
-        "type": "object",
-        "description": "The request body for toReviewed API. The field eventId when not provided enable the massive operation",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "description": "Id of the event to start recovering, if not specified enable massive operation",
-            "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
-          }
+    "ReceiptToReviewedRequest": {
+      "type": "object",
+      "description": "The request body for toReviewed API. The field eventId when not provided enable the massive operation",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "description": "Id of the event to start recovering, if not specified enable massive operation",
+          "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
         }
-      },
-      "ReceiptFailedRecoveryRequest": {
-        "type": "object",
-        "description": "The request body for recoverFailed API. The field eventId when not provided enable the massive operation",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "description": "Id of the event to start recovering, if not specified enable massive operation",
-            "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
-          }
+      }
+    },
+    "ReceiptFailedRecoveryRequest": {
+      "type": "object",
+      "description": "The request body for recoverFailed API. The field eventId when not provided enable the massive operation",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "description": "Id of the event to start recovering, if not specified enable massive operation",
+          "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
         }
+      }
     },
     "securitySchemes": {
       "ApiKey": {
