@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
-const { sleep, recoverFailedEvent } = require("./common");
+const { sleep, recoverFailedEvent, regeneratePdf } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
 const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, updateReceiptToFailed } = require("./receipts_datastore_client");
 
@@ -85,6 +85,35 @@ Then('response has a {int} Http status', function (expectedStatus) {
    assert.strictEqual(this.response.status, expectedStatus);
 });
 
+Given('a receipt with id {string} stored into receipt datastore', async function (id) {
+    this.eventId = id;
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromReceiptsDatastore(this.eventId, this.eventId);
+
+    let receiptsStoreResponse = await createDocumentInReceiptsDatastore(this.eventId);
+    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
+    this.receiptId = this.eventId;
+});
+
+Given('a biz-event with id {string} stored into biz-event datastore', async function (id) {
+    this.eventId = id;
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromBizEventsDatastore(this.eventId, this.eventId);
+
+    let receiptsStoreResponse = await createDocumentInBizEventsDatastore(this.eventId);
+    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
+    this.receiptId = this.eventId;
+});
+
+When('HTTP regenerate request is called', async function () {
+    // boundary time spent by azure function to process event
+    this.response = await regeneratePdf(this.eventId);
+});
+
+
+Then('response has a {int} Http status', function (expectedStatus) {
+   assert.strictEqual(this.response.status, expectedStatus);
+});
 
 
 
