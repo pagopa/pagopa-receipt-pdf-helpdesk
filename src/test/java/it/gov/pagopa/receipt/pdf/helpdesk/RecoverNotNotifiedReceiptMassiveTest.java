@@ -76,6 +76,9 @@ class RecoverNotNotifiedReceiptMassiveTest {
 
     @Test
     void recoverNotNotifiedReceiptMassiveForIOErrorToNotifySuccess() {
+        when(requestMock.getQueryParameters())
+                .thenReturn(Collections.singletonMap("status", ReceiptStatusType.IO_ERROR_TO_NOTIFY.name()));
+
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         List<Receipt> receiptList = getReceiptList(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
         when(feedResponseMock.getResults()).thenReturn(receiptList);
@@ -88,7 +91,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, ReceiptStatusType.IO_ERROR_TO_NOTIFY, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
@@ -114,6 +117,9 @@ class RecoverNotNotifiedReceiptMassiveTest {
 
     @Test
     void recoverNotNotifiedReceiptMassiveForGeneratedSuccess() {
+        when(requestMock.getQueryParameters())
+                .thenReturn(Collections.singletonMap("status", ReceiptStatusType.GENERATED.name()));
+
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         List<Receipt> receiptList = getReceiptList(ReceiptStatusType.GENERATED);
         when(feedResponseMock.getResults()).thenReturn(receiptList);
@@ -126,7 +132,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, ReceiptStatusType.GENERATED, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
@@ -152,6 +158,9 @@ class RecoverNotNotifiedReceiptMassiveTest {
 
     @Test
     void recoverNotNotifiedReceiptMassiveSuccessWithNoReceiptUpdated() {
+        when(requestMock.getQueryParameters())
+                .thenReturn(Collections.singletonMap("status", ReceiptStatusType.IO_ERROR_TO_NOTIFY.name()));
+
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         when(feedResponseMock.getResults()).thenReturn(Collections.emptyList());
         when(receiptCosmosClientMock.getNotNotifiedReceiptDocuments(any(), any(), any()))
@@ -163,7 +172,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, ReceiptStatusType.IO_ERROR_TO_NOTIFY, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
@@ -175,13 +184,41 @@ class RecoverNotNotifiedReceiptMassiveTest {
 
     @Test
     void recoverReceiptFailMissingQueryParam() {
+        when(requestMock.getQueryParameters()).thenReturn(Collections.emptyMap());
+
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, null, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+
+        ProblemJson problemJson = (ProblemJson) response.getBody();
+        assertNotNull(problemJson);
+        assertEquals(HttpStatus.BAD_REQUEST.value(), problemJson.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST.name(), problemJson.getTitle());
+        assertNotNull(problemJson.getDetail());
+
+        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
+    }
+
+    @Test
+    void recoverReceiptFailInvalidStatusType() {
+        when(requestMock.getQueryParameters())
+                .thenReturn(Collections.singletonMap("status", "INVALID_STATUS"));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
@@ -198,13 +235,16 @@ class RecoverNotNotifiedReceiptMassiveTest {
 
     @Test
     void recoverReceiptFailInvalidRestoreStatusRequested() {
+        when(requestMock.getQueryParameters())
+                .thenReturn(Collections.singletonMap("status", ReceiptStatusType.FAILED.name()));
+
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, ReceiptStatusType.FAILED, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);

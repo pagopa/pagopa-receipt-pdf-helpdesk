@@ -8,7 +8,6 @@ import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
-import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
@@ -56,11 +55,10 @@ public class RecoverNotNotifiedReceiptMassive {
     @FunctionName("RecoverNotNotifiedReceiptMassive")
     public HttpResponseMessage run(
             @HttpTrigger(name = "RecoverNotNotifiedMassiveTrigger",
-                    methods = {HttpMethod.PUT},
-                    route = "/receipts/recover-not-notified?status{status-type}",
+                    methods = {HttpMethod.POST},
+                    route = "/receipts/recover-not-notified",
                     authLevel = AuthorizationLevel.FUNCTION)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("status-type") ReceiptStatusType statusType,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
@@ -70,12 +68,28 @@ public class RecoverNotNotifiedReceiptMassive {
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        if (statusType == null) {
+        // Get named parameter
+        String status = request.getQueryParameters().get("status");
+        if (status == null) {
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a status to recover")
+                            .status(HttpStatus.BAD_REQUEST.value())
+                            .build())
+                    .build();
+        }
+
+        ReceiptStatusType statusType;
+        try {
+            statusType = ReceiptStatusType.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.BAD_REQUEST.name())
+                            .detail("Please pass a valid status to recover")
                             .status(HttpStatus.BAD_REQUEST.value())
                             .build())
                     .build();
