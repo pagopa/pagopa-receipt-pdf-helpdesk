@@ -226,7 +226,7 @@ class ReceiptToReviewedTest {
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
         assertDoesNotThrow(() -> responseMessage.set(function.run(request, documentdb)));
-        assertEquals(HttpStatus.BAD_REQUEST, responseMessage.get().getStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseMessage.get().getStatus());
 
         verifyNoInteractions(documentdb);
     }
