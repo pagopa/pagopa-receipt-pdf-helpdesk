@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
-import com.azure.cosmos.models.FeedResponse;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
@@ -8,10 +7,11 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.helpdesk.model.ReceiptToReviewedRequest;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -20,15 +20,15 @@ import java.util.Optional;
  * Azure Functions with Azure Http trigger.
  */
 public class ReceiptToReviewed {
-
+    private final Logger logger = LoggerFactory.getLogger(ReceiptToReviewed.class);
     private final ReceiptCosmosClient receiptCosmosClient;
 
-    public ReceiptToReviewed(){
+    public ReceiptToReviewed() {
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
     }
 
     ReceiptToReviewed(
-            ReceiptCosmosClient receiptCosmosClient){
+            ReceiptCosmosClient receiptCosmosClient) {
         this.receiptCosmosClient = receiptCosmosClient;
     }
 
@@ -39,70 +39,69 @@ public class ReceiptToReviewed {
      * @return response with HttpStatus.OK
      */
     @FunctionName("ReceiptToReviewed")
-    public HttpResponseMessage run (
+    public HttpResponseMessage run(
             @HttpTrigger(name = "ReceiptToReviewedFunction",
-                    methods = {HttpMethod.PUT},
-                    route = "toReviewed",
+                    methods = {HttpMethod.POST},
+                    route = "receipts-error/{event-id}/reviewed",
                     authLevel = AuthorizationLevel.ANONYMOUS)
-            HttpRequestMessage<Optional<ReceiptToReviewedRequest>> request,
+            HttpRequestMessage<Optional<String>> request,
+            @BindingName("event-id") String eventId,
             @CosmosDBOutput(
                     name = "ReceiptErrorDatastore",
                     databaseName = "db",
                     collectionName = "receipts-message-errors",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<ReceiptError>> documentdb) {
+            OutputBinding<ReceiptError> documentdb,
+            final ExecutionContext context) {
+        logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        List<ReceiptError> receiptList = new ArrayList<>();
-
-        try {
-
-            ReceiptToReviewedRequest receiptSupportRequest = request.getBody().isPresent() ? request.getBody().get() : new ReceiptToReviewedRequest();
-
-            if (receiptSupportRequest.getEventId() != null) {
-                ReceiptError receiptError = receiptCosmosClient.getReceiptError(
-                        receiptSupportRequest.getEventId());
-
-                if(!receiptError.getStatus().equals(ReceiptErrorStatusType.TO_REVIEW)){
-                    String msg = String.format("Found receiptError with invalid status %s", receiptError.getStatus());
-                    return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR).body(msg).build();
-                }
-                receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);
-                receiptList.add(receiptError);
-            } else {
-
-                String continuationToken = null;
-
-                do {
-
-                    Iterable<FeedResponse<ReceiptError>> feedResponseIterator =
-                            receiptCosmosClient.getToReviewReceiptsError(continuationToken, 100);
-
-                    for (FeedResponse<ReceiptError> page : feedResponseIterator) {
-
-                        for (ReceiptError receiptError : page.getResults()) {
-                            receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);
-                            receiptList.add(receiptError);
-                        }
-                        continuationToken = page.getContinuationToken();
-                    }
-
-                } while (continuationToken != null);
-            }
-
-            if (receiptList.isEmpty()) {
-                return request.createResponseBuilder(HttpStatus.OK).body("No documents restored").build();
-            }
-
-            documentdb.setValue(receiptList);
-
-            String msg = String.format("Changed status of %s documents with success", receiptList.size());
-            return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
-
-        } catch (NoSuchElementException | ReceiptNotFoundException e) {
-            return request.createResponseBuilder(HttpStatus.NOT_FOUND)
-                    .body("No receiptError has been found")
+        if (eventId == null || eventId.isBlank()) {
+            return request
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.BAD_REQUEST.name())
+                            .detail("Please pass a valid biz-event id")
+                            .status(HttpStatus.BAD_REQUEST.value())
+                            .build())
                     .build();
         }
+
+        String responseMsg;
+
+        ReceiptError receiptError;
+
+        try {
+            receiptError = receiptCosmosClient.getReceiptError(eventId);
+        } catch (NoSuchElementException | ReceiptNotFoundException e) {
+            responseMsg = String.format("No receiptError has been found with bizEventId %s", eventId);
+            logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
+            return request
+                    .createResponseBuilder(HttpStatus.NOT_FOUND)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.NOT_FOUND.name())
+                            .detail(responseMsg)
+                            .status(HttpStatus.NOT_FOUND.value())
+                            .build())
+                    .build();
+        }
+
+        if (!receiptError.getStatus().equals(ReceiptErrorStatusType.TO_REVIEW)) {
+            responseMsg = String.format("Found receiptError with invalid status %s for bizEventId %s", receiptError.getStatus(), eventId);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                            .detail(responseMsg)
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build())
+                    .build();
+        }
+        receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);
+
+        documentdb.setValue(receiptError);
+
+        responseMsg = String.format("ReceiptError with id %s and bizEventId %s updated to status %s with success", receiptError.getId(), receiptError.getBizEventId(), ReceiptErrorStatusType.REVIEWED);
+        return request.createResponseBuilder(HttpStatus.OK).body(responseMsg).build();
     }
 
 }
