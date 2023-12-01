@@ -669,17 +669,6 @@
             "example": "Please pass a valid biz-event id"
           }
         }
-      },
-      "ReceiptToReviewedRequest": {
-        "type": "object",
-        "description": "The request body for toReviewed API. The field eventId when not provided enable the massive operation",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "description": "Id of the event to start recovering, if not specified enable massive operation",
-            "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
-          }
-        }
       }
     },
     "securitySchemes": {
