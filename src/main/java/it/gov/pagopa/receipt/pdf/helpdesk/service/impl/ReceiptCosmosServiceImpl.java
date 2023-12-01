@@ -20,6 +20,9 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         this.receiptCosmosClient = receiptCosmosClient;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Receipt getReceipt(String eventId) throws ReceiptNotFoundException {
         Receipt receipt;
@@ -37,6 +40,9 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         return receipt;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterable<FeedResponse<Receipt>> getNotNotifiedReceiptByStatus(
             String continuationToken,
@@ -56,6 +62,9 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         throw new IllegalStateException(errMsg);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterable<FeedResponse<Receipt>> getFailedReceiptByStatus(
             String continuationToken,
@@ -65,7 +74,7 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         if (statusType == null) {
             throw new IllegalArgumentException("at least one status must be specified");
         }
-        if (statusType.equals(ReceiptStatusType.FAILED)) {
+        if (statusType.equals(ReceiptStatusType.FAILED) || statusType.equals(ReceiptStatusType.NOT_QUEUE_SENT)) {
             return this.receiptCosmosClient.getFailedReceiptDocuments(continuationToken, pageSize);
         }
         if (statusType.equals(ReceiptStatusType.INSERTED)) {

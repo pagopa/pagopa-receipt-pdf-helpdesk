@@ -21,7 +21,8 @@ public interface ReceiptCosmosClient {
     Iterable<FeedResponse<Receipt>> getInsertedReceiptDocuments(String continuationToken, Integer pageSize);
 
     /**
-     * Retrieve the failed receipt documents with {@link ReceiptStatusType#FAILED} status
+     * Retrieve the failed receipt documents with {@link ReceiptStatusType#FAILED} or
+     * {@link ReceiptStatusType#NOT_QUEUE_SENT} status
      *
      * @param continuationToken Paged query continuation token
      * @param pageSize the page size

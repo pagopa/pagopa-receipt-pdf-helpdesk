@@ -65,7 +65,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = "SELECT * FROM c WHERE c.eventId = " + "'" + eventId + "'";
+        String query = String.format("SELECT * FROM c WHERE c.eventId = '%s'", eventId);
 
         //Query the container
         CosmosPagedIterable<Receipt> queryResponse = cosmosContainer
@@ -73,9 +73,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
-        } else {
-            throw new ReceiptNotFoundException("Document not found in the defined container");
         }
+        throw new ReceiptNotFoundException("Document not found in the defined container");
     }
 
     /**
