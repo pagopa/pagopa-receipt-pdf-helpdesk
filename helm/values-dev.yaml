@@ -115,7 +115,8 @@ microservice-chart:
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
     COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
-    RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
+    RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string",
+    RECEIPTS_STORAGE_CONN_STRING: "receipts-storage-account-connection-string",
     COSMOS_BIZ_EVENT_CONN_STRING: "cosmos-biz-event-d-connection-string"
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
     COSMOS_BIZ_EVENT_KEY: "cosmos-bizevent-pkey"
