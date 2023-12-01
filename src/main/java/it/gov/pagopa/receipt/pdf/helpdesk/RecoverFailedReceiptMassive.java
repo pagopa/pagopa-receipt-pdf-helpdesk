@@ -31,7 +31,6 @@ import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getEvent;
 
-
 /**
  * Azure Functions with Azure Http trigger.
  */

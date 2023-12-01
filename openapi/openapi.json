@@ -100,27 +100,33 @@
         }
       ]
     },
-    "/toReviewed": {
-      "put": {
+    "/receipts-error/{event-id}/reviewed": {
+      "post": {
         "tags": [
-          "Receipts REST APIs"
+          "API-toReview "
         ],
         "summary": "Recover a receipt, or group of, in TO_REVIEW status",
         "operationId": "toReviewed",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event-id",
+            "description": "Biz event id.",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
         "requestBody": {
           "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReceiptToReviewedRequest"
-              }
-            }
+            "application/json": {}
           },
-          "required": true
+          "required": false
         },
         "responses": {
           "200": {
-            "description": "Succesfull Calls.",
+            "description": "Successful Calls.",
             "headers": {
               "X-Request-Id": {
                 "description": "This header identifies the call",
@@ -133,12 +139,30 @@
               "text/plain": {
                 "schema": {
                   "type": "string",
-                  "example": "OK"
+                  "example": "ReceiptError with id 76abb1f1-c9f9-4ead-9e66-12fec4d51042 and bizEventId 09iuu1f1-c9f9-4ead-9e66-56yuc4d55671 updated to status REVIEWED with success"
                 }
               }
             }
           },
           "400": {
+            "description": "Bad request.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemJson"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Receipt not found.",
             "headers": {
               "X-Request-Id": {
@@ -147,10 +171,17 @@
                   "type": "string"
                 }
               }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemJson"
+                }
+              }
             }
           },
-          "401": {
-            "description": "Wrong or missing function key.",
+          "500": {
+            "description": "Error processing the request",
             "headers": {
               "X-Request-Id": {
                 "description": "This header identifies the call",
@@ -158,15 +189,11 @@
                   "type": "string"
                 }
               }
-            }
-          },
-          "429": {
-            "description": "Too many requests.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
+            },
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ProblemJson"
                 }
               }
             }

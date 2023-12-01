@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-
 /**
  * Azure Functions with Azure Http trigger.
  */
