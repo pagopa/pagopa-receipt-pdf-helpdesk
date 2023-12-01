@@ -9,7 +9,11 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
@@ -23,58 +27,77 @@ import java.util.Optional;
 /**
  * Azure Functions with HTTP Trigger.
  */
-public class GetReceipt {
+public class GetReceiptByOrganizationFiscalCodeAndIUV {
 
-    private final Logger logger = LoggerFactory.getLogger(GetReceipt.class);
+    private final Logger logger = LoggerFactory.getLogger(GetReceiptByOrganizationFiscalCodeAndIUV.class);
 
     private final ReceiptCosmosService receiptCosmosService;
+    private final BizEventCosmosClient bizEventCosmosClient;
 
-    public GetReceipt() {
+    public GetReceiptByOrganizationFiscalCodeAndIUV() {
         this.receiptCosmosService = new ReceiptCosmosServiceImpl();
+        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
     }
 
-    GetReceipt(ReceiptCosmosService receiptCosmosService) {
+    GetReceiptByOrganizationFiscalCodeAndIUV(ReceiptCosmosService receiptCosmosService, BizEventCosmosClient bizEventCosmosClient) {
         this.receiptCosmosService = receiptCosmosService;
+        this.bizEventCosmosClient = bizEventCosmosClient;
     }
 
     /**
      * This function will be invoked when a Http Trigger occurs.
      * <p>
-     * It retrieves the receipt with the specified biz event id
+     * It retrieves the receipt with the specified organization fiscal code and iuv
      * <p>
      *
      * @return response with {@link HttpStatus#OK} and the receipt if found
      */
-    @FunctionName("GetReceipt")
+    @FunctionName("GetReceiptByOrganizationFiscalCodeAndIUV")
     public HttpResponseMessage run(
-            @HttpTrigger(name = "GetReceiptTrigger",
+            @HttpTrigger(name = "GetReceiptByOrganizationFiscalCodeAndIUVTrigger",
                     methods = {HttpMethod.GET},
-                    route = "receipts/{event-id}",
+                    route = "receipts/organizations/{organization-fiscal-code}/iuvs/{iuv}",
                     authLevel = AuthorizationLevel.FUNCTION)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("event-id") String eventId,
+            @BindingName("organization-fiscal-code") String organizationFiscalCode,
+            @BindingName("iuv") String iuv,
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        if (eventId == null || eventId.isBlank()) {
+        if (organizationFiscalCode == null
+                || organizationFiscalCode.isBlank()
+                || iuv == null
+                || iuv.isBlank()
+        ) {
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Please pass a valid biz-event id")
+                            .detail("Please pass a valid organization fiscal code and iuv")
                             .status(HttpStatus.BAD_REQUEST.value())
                             .build())
                     .build();
         }
 
+        BizEvent bizEvent;
         try {
-            Receipt receipt = this.receiptCosmosService.getReceipt(eventId);
+            bizEvent = this.bizEventCosmosClient
+                    .getBizEventDocumentByOrganizationFiscalCodeAndIUV(organizationFiscalCode, iuv);
+        } catch (BizEventNotFoundException e) {
+            String responseMsg = String.format("Unable to retrieve the biz-event with organization fiscal code %s and iuv %s",
+                    organizationFiscalCode, iuv);
+            logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
+            return request.createResponseBuilder(HttpStatus.NOT_FOUND).body(responseMsg).build();
+        }
+
+        try {
+            Receipt receipt = this.receiptCosmosService.getReceipt(bizEvent.getId());
             return request
                     .createResponseBuilder(HttpStatus.OK)
                     .body(receipt)
                     .build();
         } catch (ReceiptNotFoundException e) {
-            String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
+            String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", bizEvent.getId());
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
             return request.createResponseBuilder(HttpStatus.NOT_FOUND).body(responseMsg).build();
         }

@@ -40,21 +40,15 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         if (instance == null) {
             instance = new BizEventCosmosClientImpl();
         }
-
         return instance;
     }
 
     /**
-     * Retrieve biz-event document from Cosmos database
-     *
-     * @param eventId Biz-event id
-     * @return biz-event document
-     * @throws BizEventNotFoundException in case no biz-event has been found with the given idEvent
+     * {@inheritDoc}
      */
     @Override
     public BizEvent getBizEventDocument(String eventId) throws BizEventNotFoundException {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
@@ -70,4 +64,23 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         throw new BizEventNotFoundException("Document not found in the defined container");
     }
 
+
+    @Override
+    public BizEvent getBizEventDocumentByOrganizationFiscalCodeAndIUV(String organizationFiscalCode, String iuv) throws BizEventNotFoundException {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        //Build query
+        String query = String.format("SELECT * FROM c WHERE c.creditor.idPA = '%s' AND c.debtorPosition.iuv = '%s'",
+                organizationFiscalCode, iuv);
+
+        //Query the container
+        CosmosPagedIterable<BizEvent> queryResponse = cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), BizEvent.class);
+
+        if (queryResponse.iterator().hasNext()) {
+            return queryResponse.iterator().next();
+        }
+        throw new BizEventNotFoundException("Document not found in the defined container");
+    }
 }
