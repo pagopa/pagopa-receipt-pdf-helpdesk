@@ -64,7 +64,7 @@ public class RegenerateReceiptPdf {
     public HttpResponseMessage run (
             @HttpTrigger(name = "RegenerateReceiptPdfTrigger",
                     methods = {HttpMethod.POST},
-                    route = "/receipts/<bizvent-id>/regenerate-receipt-pdf",
+                    route = "/receipts/{bizevent-id}/regenerate-receipt-pdf",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("bizevent-id") String eventId,
