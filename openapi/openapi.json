@@ -200,23 +200,29 @@
         }
       ]
     },
-    "/recoverFailed": {
-      "put": {
+    "/receipts/{event-id}/recover-failed": {
+      "post": {
         "tags": [
-          "Receipts REST APIs"
+          "API-recoverFailed"
         ],
-        "summary": "Recover a receipt, or group of, in FAILED or INSERTED status",
-        "operationId": "recoverFailed",
-        "parameters": [],
+        "summary": "Recover a receipt in FAILED, NOT_QUEUE_SENT or INSERTED status",
+        "operationId": "RecoverFailedReceipt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event-id",
+            "description": "Biz event id.",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
         "requestBody": {
           "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReceiptFailedRecoveryRequest"
-              }
-            }
+            "application/json": {}
           },
-          "required": true
+          "required": false
         },
         "responses": {
           "200": {
@@ -233,12 +239,12 @@
               "text/plain": {
                 "schema": {
                   "type": "string",
-                  "example": "OK"
+                  "example": "Receipt with eventId 76abb1f1-c9f9-4ead-9e66-12fec4d51042 recovered"
                 }
               }
             }
           },
-          "400": {
+          "404": {
             "description": "Receipt or BizEvent not found.",
             "headers": {
               "X-Request-Id": {
@@ -247,26 +253,12 @@
                   "type": "string"
                 }
               }
-            }
-          },
-          "401": {
-            "description": "Wrong or missing function key.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
+            },
+            "content": {
+              "text/plain": {
                 "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "Unable to retrieve the biz-event with id 76abb1f1-c9f9-4ead-9e66-12fec4d51042"
                 }
               }
             }
@@ -278,6 +270,103 @@
                 "description": "This header identifies the call",
                 "schema": {
                   "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemJson"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected error.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ]
+      },
+      "parameters": [
+        {
+          "name": "X-Request-Id",
+          "in": "header",
+          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/receipts/recover-failed": {
+      "post": {
+        "tags": [
+          "API-recoverFailed"
+        ],
+        "summary": "Recover a group of receipts in FAILED, NOT_QUEUE_SENT or INSERTED status",
+        "operationId": "RecoverFailedReceiptMassive",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Succesfull Calls.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "Recovered 10 receipts"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error processing the request",
+            "headers": {
+              "X-Request-Id": {
+                "description": "This header identifies the call",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemJson"
                 }
               }
             }
@@ -459,7 +548,7 @@
               "text/plain": {
                 "schema": {
                   "type": "string",
-                  "example": "Receipt with id 235392957832338457-0000-0000-0000-0131 and eventId 76abb1f1-c9f9-4ead-9e66-12fec4d51042 restored in status GENERATED with success"
+                  "example": "Restored 10 receipt with success"
                 }
               }
             }
@@ -553,27 +642,16 @@
             "example": "Please pass a valid biz-event id"
           }
         }
-      }
-    },
-    "ReceiptToReviewedRequest": {
-      "type": "object",
-      "description": "The request body for toReviewed API. The field eventId when not provided enable the massive operation",
-      "properties": {
-        "eventId": {
-          "type": "string",
-          "description": "Id of the event to start recovering, if not specified enable massive operation",
-          "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
-        }
-      }
-    },
-    "ReceiptFailedRecoveryRequest": {
-      "type": "object",
-      "description": "The request body for recoverFailed API. The field eventId when not provided enable the massive operation",
-      "properties": {
-        "eventId": {
-          "type": "string",
-          "description": "Id of the event to start recovering, if not specified enable massive operation",
-          "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
+      },
+      "ReceiptToReviewedRequest": {
+        "type": "object",
+        "description": "The request body for toReviewed API. The field eventId when not provided enable the massive operation",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "description": "Id of the event to start recovering, if not specified enable massive operation",
+            "example": "76abb1f1-c9f9-4ead-9e66-12fec4d51042"
+          }
         }
       }
     },

@@ -65,7 +65,7 @@ public class RecoverFailedReceiptMassive {
     @FunctionName("RecoverFailedReceiptMassive")
     public HttpResponseMessage run (
             @HttpTrigger(name = "RecoverFailedReceiptMassiveTrigger",
-                    methods = {HttpMethod.PUT},
+                    methods = {HttpMethod.POST},
                     route = "receipts/recover-failed",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
@@ -141,7 +141,7 @@ public class RecoverFailedReceiptMassive {
         
         documentdb.setValue(receiptList);
         if (errorCounter > 0) {
-            String msg = String.format("Recovered %s receipt but %s encountered an error.", receiptList.size(), errorCounter);
+            String msg = String.format("Recovered %s receipts but %s encountered an error.", receiptList.size(), errorCounter);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -151,7 +151,7 @@ public class RecoverFailedReceiptMassive {
                             .build())
                     .build();
         }
-        String responseMsg = String.format("Recovered %s receipt", receiptList.size());
+        String responseMsg = String.format("Recovered %s receipts", receiptList.size());
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();
