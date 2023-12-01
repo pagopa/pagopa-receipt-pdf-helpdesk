@@ -44,7 +44,7 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
             ReceiptStatusType statusType
     ) {
         if (statusType == null) {
-            throw new IllegalArgumentException("at least one param must be true");
+            throw new IllegalArgumentException("at least one status must be specified");
         }
         if (statusType.equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY)) {
             return this.receiptCosmosClient.getIOErrorToNotifyReceiptDocuments(continuationToken, pageSize);
@@ -52,7 +52,26 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         if (statusType.equals(ReceiptStatusType.GENERATED)) {
             return this.receiptCosmosClient.getGeneratedReceiptDocuments(continuationToken, pageSize);
         }
-        String errMsg = String.format("Unexpected status for not notified query: %s", statusType);
+        String errMsg = String.format("Unexpected status for retrieving not notified receipt: %s", statusType);
+        throw new IllegalStateException(errMsg);
+    }
+
+    @Override
+    public Iterable<FeedResponse<Receipt>> getFailedReceiptByStatus(
+            String continuationToken,
+            Integer pageSize,
+            ReceiptStatusType statusType
+    ) {
+        if (statusType == null) {
+            throw new IllegalArgumentException("at least one status must be specified");
+        }
+        if (statusType.equals(ReceiptStatusType.FAILED)) {
+            return this.receiptCosmosClient.getFailedReceiptDocuments(continuationToken, pageSize);
+        }
+        if (statusType.equals(ReceiptStatusType.INSERTED)) {
+            return this.receiptCosmosClient.getInsertedReceiptDocuments(continuationToken, pageSize);
+        }
+        String errMsg = String.format("Unexpected status for retrieving failed receipt: %s", statusType);
         throw new IllegalStateException(errMsg);
     }
 }

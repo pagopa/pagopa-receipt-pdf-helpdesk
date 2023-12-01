@@ -11,6 +11,22 @@ public interface ReceiptCosmosClient {
 
     Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException;
 
+    /**
+     * Retrieve the failed receipt documents with {@link ReceiptStatusType#INSERTED} status
+     *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize the page size
+     * @return receipt documents
+     */
+    Iterable<FeedResponse<Receipt>> getInsertedReceiptDocuments(String continuationToken, Integer pageSize);
+
+    /**
+     * Retrieve the failed receipt documents with {@link ReceiptStatusType#FAILED} status
+     *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize the page size
+     * @return receipt documents
+     */
     Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize);
 
     CosmosItemResponse<Receipt> saveReceipts(Receipt receipt);
@@ -20,7 +36,7 @@ public interface ReceiptCosmosClient {
     Iterable<FeedResponse<ReceiptError>> getToReviewReceiptsError(String continuationToken, Integer pageSize);
 
     /**
-     * Retrieve the receipt documents with {@link ReceiptStatusType#GENERATED}
+     * Retrieve the not notified receipt documents with {@link ReceiptStatusType#GENERATED}
      *
      * @param continuationToken Paged query continuation token
      * @param pageSize the page size
@@ -29,7 +45,7 @@ public interface ReceiptCosmosClient {
     Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize);
 
     /**
-     * Retrieve the receipt documents with {@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}
+     * Retrieve the receipt not notified documents with {@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}
      *
      * @param continuationToken Paged query continuation token
      * @param pageSize the page size

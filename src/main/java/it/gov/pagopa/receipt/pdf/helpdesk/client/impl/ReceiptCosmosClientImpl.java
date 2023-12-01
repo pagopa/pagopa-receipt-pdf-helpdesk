@@ -79,10 +79,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     }
 
     /**
-     * Retrieve failed receipt documents from CosmosDB database
-     *
-     * @param continuationToken Paged query continuation token
-     * @return receipt documents
+     * {@inheritDoc}
      */
     @Override
     public Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize)  {
@@ -90,9 +87,26 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = "SELECT * FROM c WHERE c.status = 'FAILED' or c.status = 'NOT_QUEUE_SENT' and " +
-                "(c.status = 'INSERTED' AND ( " + OffsetDateTime.now().toInstant().toEpochMilli() +
-                " - c.inserted_at) >= " + millisDiff + " )";
+        String query = String.format("SELECT * FROM c WHERE c.status = '%s' or c.status = '%s'",
+                ReceiptStatusType.FAILED, ReceiptStatusType.NOT_QUEUE_SENT);
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class)
+                .iterableByPage(continuationToken,pageSize);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<Receipt>> getInsertedReceiptDocuments(String continuationToken, Integer pageSize) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        //Build query
+        String query =  String.format("SELECT * FROM c WHERE (c.status= = '%s' AND ( %s - c.inserted_at) >= %s)",
+                ReceiptStatusType.INSERTED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
 
         //Query the container
         return cosmosContainer
