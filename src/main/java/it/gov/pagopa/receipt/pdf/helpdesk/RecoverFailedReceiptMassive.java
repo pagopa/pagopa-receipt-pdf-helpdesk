@@ -66,7 +66,7 @@ public class RecoverFailedReceiptMassive {
     public HttpResponseMessage run (
             @HttpTrigger(name = "RecoverFailedReceiptMassiveTrigger",
                     methods = {HttpMethod.PUT},
-                    route = "/receipts/recover-failed",
+                    route = "receipts/recover-failed",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @CosmosDBOutput(

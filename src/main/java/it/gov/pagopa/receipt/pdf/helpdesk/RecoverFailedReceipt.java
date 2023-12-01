@@ -64,7 +64,7 @@ public class RecoverFailedReceipt {
     public HttpResponseMessage run (
             @HttpTrigger(name = "RecoverFailedReceiptTrigger",
                     methods = {HttpMethod.PUT},
-                    route = "/receipts/{event-id}/recover-failed",
+                    route = "receipts/{event-id}/recover-failed",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("event-id") String eventId,
