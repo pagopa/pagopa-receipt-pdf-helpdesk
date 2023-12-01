@@ -9,6 +9,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
@@ -71,8 +72,6 @@ class RegenerateReceiptPdfTest {
         doReturn(receipt).when(receiptCosmosClientMock).getReceiptDocument(anyString());
         doReturn(new PdfGeneration()).when(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
         doReturn(true).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
-
-        RegenerateReceiptRequest regenerateReceiptRequest = new RegenerateReceiptRequest();
 
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
@@ -192,6 +191,8 @@ class RegenerateReceiptPdfTest {
                         .debtorFiscalCode("cd debtor")
                         .payerFiscalCode("cf payer")
                         .build())
+                .mdAttach(ReceiptMetadata.builder().name("DEBTOR_NAME").url("DEBTOR_URL").build())
+                .mdAttachPayer(ReceiptMetadata.builder().name("PAYER_NAME").url("PAYER_URL").build())
                 .eventId("biz-event-id")
                 .status(receiptStatusType)
                 .numRetry(numRetry)

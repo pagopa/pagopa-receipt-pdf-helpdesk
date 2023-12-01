@@ -79,8 +79,9 @@ public class RegenerateReceiptPdf {
                 //Retrieve receipt's data from CosmosDB
                 Receipt receipt = getReceipt(context, bizEvent, receiptCosmosClient, logger);
 
+
                 //Verify receipt status
-                if (receipt.getEventData() != null) {
+                if (receipt.getEventData() != null && isHasAllAttachments(receipt)) {
 
                     logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
                             context.getFunctionName(),
@@ -159,6 +160,21 @@ public class RegenerateReceiptPdf {
                             .build())
                     .build();
         }
+    }
+
+    private static boolean isHasAllAttachments(Receipt receipt) {
+        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+        String payerCF = receipt.getEventData().getPayerFiscalCode();
+        boolean hasAllAttachments;
+        if (payerCF == null) {
+          hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+        } else if (debtorCF.equals(payerCF)) {
+            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+        } else {
+            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null &&
+                    receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
+        }
+        return hasAllAttachments;
     }
 
 }
