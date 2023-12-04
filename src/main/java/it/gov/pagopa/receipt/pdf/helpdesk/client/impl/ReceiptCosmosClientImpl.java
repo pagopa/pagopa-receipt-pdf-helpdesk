@@ -26,6 +26,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final String databaseId = System.getenv().getOrDefault("COSMOS_RECEIPT_DB_NAME", "db");
     private final String containerId = System.getenv().getOrDefault("COSMOS_RECEIPT_CONTAINER_NAME", "receipt");
+
     private final String containerReceiptErrorId = System.getenv().getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
 
     private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
