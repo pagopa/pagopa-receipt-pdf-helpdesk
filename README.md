@@ -3,9 +3,14 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-receipt-pdf-helpdesk&metric=alert_status)](https://sonarcloud.io/dashboard?id=pagopa_pagopa-receipt-pdf-helpdesk)
 
 Java Azure Functions that exposed the following recover APIs:
+- GetReceipt
+- GetReceiptByOrganizationFiscalCodeAndIUV
 - ReceiptToReviewed
 - RecoverFailedReceipt
+- RecoverFailedReceiptMassive
 - RecoverNotNotifiedReceipt
+- RecoverNotNotifiedReceiptMassive
+- RegenerateReceiptPdf
 
 ---
 
