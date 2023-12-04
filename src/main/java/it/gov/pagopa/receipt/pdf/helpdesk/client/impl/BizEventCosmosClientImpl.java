@@ -9,7 +9,6 @@ import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
 /**
  * Client for the CosmosDB database
@@ -46,11 +45,11 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     }
 
     /**
-     * Retrieve receipt document from CosmosDB database
+     * Retrieve biz-event document from Cosmos database
      *
      * @param eventId Biz-event id
      * @return biz-event document
-     * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
+     * @throws BizEventNotFoundException in case no biz-event has been found with the given idEvent
      */
     @Override
     public BizEvent getBizEventDocument(String eventId) throws BizEventNotFoundException {
@@ -59,7 +58,7 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = "SELECT * FROM c WHERE c.id = " + "'" + eventId + "'";
+        String query = String.format("SELECT * FROM c WHERE c.id = '%s'", eventId);
 
         //Query the container
         CosmosPagedIterable<BizEvent> queryResponse = cosmosContainer
@@ -67,10 +66,8 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
 
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
-        } else {
-            throw new BizEventNotFoundException("Document not found in the defined container");
         }
-
+        throw new BizEventNotFoundException("Document not found in the defined container");
     }
 
 }

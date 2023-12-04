@@ -21,7 +21,7 @@ public interface ReceiptCosmosService {
     Receipt getReceipt(String eventId) throws ReceiptNotFoundException;
 
     /**
-     * Retrieve the receipt with the provided status
+     * Retrieve the not notified receipt with the provided {@link ReceiptStatusType} status
      *
      * @param continuationToken Paged query continuation token
      * @param pageSize the page size
@@ -29,6 +29,20 @@ public interface ReceiptCosmosService {
      * @return receipt documents
      */
     Iterable<FeedResponse<Receipt>> getNotNotifiedReceiptByStatus(
+            String continuationToken,
+            Integer pageSize,
+            ReceiptStatusType statusType
+    );
+
+    /**
+     * Retrieve the failed receipt with the provided {@link ReceiptStatusType} status
+     *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize the page size
+     * @param statusType the status of the receipts
+     * @return receipt documents
+     */
+    Iterable<FeedResponse<Receipt>> getFailedReceiptByStatus(
             String continuationToken,
             Integer pageSize,
             ReceiptStatusType statusType

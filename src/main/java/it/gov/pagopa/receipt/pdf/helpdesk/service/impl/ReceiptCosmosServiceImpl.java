@@ -20,6 +20,9 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         this.receiptCosmosClient = receiptCosmosClient;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Receipt getReceipt(String eventId) throws ReceiptNotFoundException {
         Receipt receipt;
@@ -37,6 +40,9 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         return receipt;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Iterable<FeedResponse<Receipt>> getNotNotifiedReceiptByStatus(
             String continuationToken,
@@ -44,7 +50,7 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
             ReceiptStatusType statusType
     ) {
         if (statusType == null) {
-            throw new IllegalArgumentException("at least one param must be true");
+            throw new IllegalArgumentException("at least one status must be specified");
         }
         if (statusType.equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY)) {
             return this.receiptCosmosClient.getIOErrorToNotifyReceiptDocuments(continuationToken, pageSize);
@@ -52,7 +58,29 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         if (statusType.equals(ReceiptStatusType.GENERATED)) {
             return this.receiptCosmosClient.getGeneratedReceiptDocuments(continuationToken, pageSize);
         }
-        String errMsg = String.format("Unexpected status for not notified query: %s", statusType);
+        String errMsg = String.format("Unexpected status for retrieving not notified receipt: %s", statusType);
+        throw new IllegalStateException(errMsg);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<Receipt>> getFailedReceiptByStatus(
+            String continuationToken,
+            Integer pageSize,
+            ReceiptStatusType statusType
+    ) {
+        if (statusType == null) {
+            throw new IllegalArgumentException("at least one status must be specified");
+        }
+        if (statusType.equals(ReceiptStatusType.FAILED) || statusType.equals(ReceiptStatusType.NOT_QUEUE_SENT)) {
+            return this.receiptCosmosClient.getFailedReceiptDocuments(continuationToken, pageSize);
+        }
+        if (statusType.equals(ReceiptStatusType.INSERTED)) {
+            return this.receiptCosmosClient.getInsertedReceiptDocuments(continuationToken, pageSize);
+        }
+        String errMsg = String.format("Unexpected status for retrieving failed receipt: %s", statusType);
         throw new IllegalStateException(errMsg);
     }
 }

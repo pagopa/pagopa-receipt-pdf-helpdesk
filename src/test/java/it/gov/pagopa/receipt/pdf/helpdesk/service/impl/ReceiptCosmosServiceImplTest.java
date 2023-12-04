@@ -107,4 +107,70 @@ class ReceiptCosmosServiceImplTest {
         verify(receiptCosmosClientMock, never()).getIOErrorToNotifyReceiptDocuments(anyString(), anyInt());
         verify(receiptCosmosClientMock, never()).getGeneratedReceiptDocuments(anyString(), anyInt());
     }
+
+    @Test
+    void getFailedReceiptByStatusSuccessWithStatusFailed() {
+        FeedResponse feedResponseMock = mock(FeedResponse.class);
+        when(receiptCosmosClientMock.getFailedReceiptDocuments(anyString(), anyInt()))
+                .thenReturn(Collections.singletonList(feedResponseMock));
+
+        Iterable<FeedResponse<Receipt>> response =
+                assertDoesNotThrow(() ->
+                        sut.getFailedReceiptByStatus("continuation_token", 100, ReceiptStatusType.FAILED));
+
+        assertNotNull(response);
+
+        verify(receiptCosmosClientMock).getFailedReceiptDocuments(anyString(), anyInt());
+        verify(receiptCosmosClientMock, never()).getInsertedReceiptDocuments(anyString(), anyInt());
+    }
+
+    @Test
+    void getFailedReceiptByStatusSuccessWithStatusNotQueueSent() {
+        FeedResponse feedResponseMock = mock(FeedResponse.class);
+        when(receiptCosmosClientMock.getFailedReceiptDocuments(anyString(), anyInt()))
+                .thenReturn(Collections.singletonList(feedResponseMock));
+
+        Iterable<FeedResponse<Receipt>> response =
+                assertDoesNotThrow(() ->
+                        sut.getFailedReceiptByStatus("continuation_token", 100, ReceiptStatusType.NOT_QUEUE_SENT));
+
+        assertNotNull(response);
+
+        verify(receiptCosmosClientMock).getFailedReceiptDocuments(anyString(), anyInt());
+        verify(receiptCosmosClientMock, never()).getInsertedReceiptDocuments(anyString(), anyInt());
+    }
+
+    @Test
+    void getFailedReceiptByStatusSuccessWithStatusInserted() {
+        FeedResponse feedResponseMock = mock(FeedResponse.class);
+        when(receiptCosmosClientMock.getInsertedReceiptDocuments(anyString(), anyInt()))
+                .thenReturn(Collections.singletonList(feedResponseMock));
+
+        Iterable<FeedResponse<Receipt>> response =
+                assertDoesNotThrow(() ->
+                        sut.getFailedReceiptByStatus("continuation_token", 100, ReceiptStatusType.INSERTED));
+
+        assertNotNull(response);
+
+        verify(receiptCosmosClientMock, never()).getFailedReceiptDocuments(anyString(), anyInt());
+        verify(receiptCosmosClientMock).getInsertedReceiptDocuments(anyString(), anyInt());
+    }
+
+    @Test
+    void getFailedReceiptByStatusFailNullStatus() {
+                assertThrows(IllegalArgumentException.class, () ->
+                        sut.getFailedReceiptByStatus("continuation_token", 100, null));
+
+        verify(receiptCosmosClientMock, never()).getFailedReceiptDocuments(anyString(), anyInt());
+        verify(receiptCosmosClientMock, never()).getInsertedReceiptDocuments(anyString(), anyInt());
+    }
+
+    @Test
+    void getFailedReceiptByStatusFailUnexpectedStatus() {
+                assertThrows(IllegalStateException.class, () ->
+                        sut.getFailedReceiptByStatus("continuation_token", 100, ReceiptStatusType.IO_ERROR_TO_NOTIFY));
+
+        verify(receiptCosmosClientMock, never()).getFailedReceiptDocuments(anyString(), anyInt());
+        verify(receiptCosmosClientMock, never()).getInsertedReceiptDocuments(anyString(), anyInt());
+    }
 }

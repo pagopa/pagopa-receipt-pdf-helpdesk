@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceiptUtils.restoreReceipt;
+
 /**
  * Azure Functions with HTTP Trigger.
  */
@@ -56,7 +58,7 @@ public class RecoverNotNotifiedReceiptMassive {
     public HttpResponseMessage run(
             @HttpTrigger(name = "RecoverNotNotifiedMassiveTrigger",
                     methods = {HttpMethod.POST},
-                    route = "/receipts/recover-not-notified",
+                    route = "receipts/recover-not-notified",
                     authLevel = AuthorizationLevel.FUNCTION)
             HttpRequestMessage<Optional<String>> request,
             @CosmosDBOutput(
@@ -134,19 +136,5 @@ public class RecoverNotNotifiedReceiptMassive {
             }
         } while (continuationToken != null);
         return receiptList;
-    }
-
-    private Receipt restoreReceipt(Receipt receipt) {
-        receipt.setStatus(ReceiptStatusType.GENERATED);
-        receipt.setNotificationNumRetry(0);
-        receipt.setNotifiedAt(0);
-
-        if (receipt.getReasonErr() != null) {
-            receipt.setReasonErr(null);
-        }
-        if (receipt.getReasonErrPayer() != null) {
-            receipt.setReasonErrPayer(null);
-        }
-        return receipt;
     }
 }
