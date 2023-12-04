@@ -185,7 +185,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query =  String.format("SELECT * FROM c WHERE (c.status= = '%s' AND ( %s - c.generated_at) >= %s)",
+        String query =  String.format("SELECT * FROM c WHERE (c.status = '%s' AND ( %s - c.generated_at) >= %s)",
                 ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
 
         //Query the container

@@ -7,10 +7,7 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.AuthorizationLevel;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
-import com.microsoft.azure.functions.annotation.FunctionName;
-import com.microsoft.azure.functions.annotation.HttpTrigger;
+import com.microsoft.azure.functions.annotation.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
@@ -118,6 +115,36 @@ public class RecoverNotNotifiedReceiptMassive {
         documentReceipts.setValue(receiptList);
         String msg = String.format("Restored %s receipt with success", receiptList.size());
         return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
+    }
+
+    @FunctionName("RecoverNotNotifiedTimerTriggerProcessor")
+    public void processRecoverNotNotifiedScheduledTrigger(
+            @TimerTrigger(
+                    name = "timerInfo",
+                    schedule = "%TRIGGER_GEN_SCHEDULE%"
+            )
+            String timerInfo,
+            @CosmosDBOutput(
+                    name = "ReceiptDatastore",
+                    databaseName = "db",
+                    collectionName = "receipts",
+                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+            OutputBinding<List<Receipt>> documentReceipts,
+            final ExecutionContext context) {
+
+        logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
+
+        List<Receipt> receiptList = receiptMassiveRestore(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
+        logger.info(String.valueOf(receiptList.size()));
+        receiptList.addAll(receiptMassiveRestore(ReceiptStatusType.GENERATED));
+        logger.info(String.valueOf(receiptList.size()));
+
+        if (receiptList.isEmpty()) {
+            logger.info("[{}] No Receipt to notify", context.getFunctionName());
+        }
+
+        documentReceipts.setValue(receiptList);
+
     }
 
     private List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType) {
