@@ -9,6 +9,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
@@ -72,11 +73,7 @@ class RegenerateReceiptPdfTest {
         doReturn(new PdfGeneration()).when(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
         doReturn(true).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
 
-        RegenerateReceiptRequest regenerateReceiptRequest = new RegenerateReceiptRequest();
-        regenerateReceiptRequest.setEventId("1");
-
-        HttpRequestMessage<Optional<RegenerateReceiptRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(regenerateReceiptRequest));
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
@@ -84,7 +81,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(200,assertDoesNotThrow(() -> sut.run(request, executionContextMock)).getStatusCode());
+        assertEquals(200,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
         verify(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
@@ -97,8 +94,7 @@ class RegenerateReceiptPdfTest {
 
         RegenerateReceiptRequest regenerateReceiptRequest = new RegenerateReceiptRequest();
 
-        HttpRequestMessage<Optional<RegenerateReceiptRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(regenerateReceiptRequest));
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
@@ -106,7 +102,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(400,assertDoesNotThrow(() -> sut.run(request, executionContextMock)).getStatusCode());
+        assertEquals(500,assertDoesNotThrow(() -> sut.run(request, null, executionContextMock)).getStatusCode());
 
         verifyNoInteractions(receiptCosmosClientMock);
         verifyNoInteractions(generateReceiptPdfServiceMock);
@@ -125,8 +121,7 @@ class RegenerateReceiptPdfTest {
         RegenerateReceiptRequest regenerateReceiptRequest = new RegenerateReceiptRequest();
         regenerateReceiptRequest.setEventId("1");
 
-        HttpRequestMessage<Optional<RegenerateReceiptRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(regenerateReceiptRequest));
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
@@ -134,7 +129,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(400,assertDoesNotThrow(() -> sut.run(request, executionContextMock)).getStatusCode());
+        assertEquals(500,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
     }
@@ -146,11 +141,8 @@ class RegenerateReceiptPdfTest {
         doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
         doThrow(new ReceiptNotFoundException("KO")).when(receiptCosmosClientMock).getReceiptDocument(anyString());
 
-        RegenerateReceiptRequest regenerateReceiptRequest = new RegenerateReceiptRequest();
-        regenerateReceiptRequest.setEventId("1");
 
-        HttpRequestMessage<Optional<RegenerateReceiptRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(regenerateReceiptRequest));
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
@@ -158,7 +150,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(400,assertDoesNotThrow(() -> sut.run(request, executionContextMock)).getStatusCode());
+        assertEquals(500,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
 
@@ -176,11 +168,8 @@ class RegenerateReceiptPdfTest {
             throw new Exception();
         });
 
-        RegenerateReceiptRequest regenerateReceiptRequest = new RegenerateReceiptRequest();
-        regenerateReceiptRequest.setEventId("1");
 
-        HttpRequestMessage<Optional<RegenerateReceiptRequest>> request = mock(HttpRequestMessage.class);
-        when(request.getBody()).thenReturn(Optional.of(regenerateReceiptRequest));
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
@@ -188,7 +177,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(500,assertDoesNotThrow(() -> sut.run(request, executionContextMock)).getStatusCode());
+        assertEquals(500,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
         verify(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
@@ -202,6 +191,8 @@ class RegenerateReceiptPdfTest {
                         .debtorFiscalCode("cd debtor")
                         .payerFiscalCode("cf payer")
                         .build())
+                .mdAttach(ReceiptMetadata.builder().name("DEBTOR_NAME").url("DEBTOR_URL").build())
+                .mdAttachPayer(ReceiptMetadata.builder().name("PAYER_NAME").url("PAYER_URL").build())
                 .eventId("biz-event-id")
                 .status(receiptStatusType)
                 .numRetry(numRetry)
