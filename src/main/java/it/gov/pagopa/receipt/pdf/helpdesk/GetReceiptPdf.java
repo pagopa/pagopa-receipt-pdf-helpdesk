@@ -58,7 +58,7 @@ public class GetReceiptPdf {
 
         if (fileName == null || fileName.isBlank()) {
             return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a valid file name")
@@ -79,7 +79,12 @@ public class GetReceiptPdf {
         } catch (BlobStorageClientException | IOException e) {
             String responseMsg = String.format("Unable to retrieve the receipt pdf with file name %s", fileName);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
-            return request.createResponseBuilder(HttpStatus.NOT_FOUND).body(responseMsg).build();
+            return request.createResponseBuilder(HttpStatus.NOT_FOUND)
+                    .body(ProblemJson.builder()
+                    .title(HttpStatus.NOT_FOUND.name())
+                    .detail(responseMsg)
+                    .status(HttpStatus.NOT_FOUND.value())
+                    .build()).build();
         }
     }
 }
