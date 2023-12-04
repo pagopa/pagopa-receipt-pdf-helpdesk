@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-
 /**
  * Azure Functions with Azure Http trigger.
  */
@@ -31,7 +30,6 @@ public class ReceiptToReviewed {
             ReceiptCosmosClient receiptCosmosClient) {
         this.receiptCosmosClient = receiptCosmosClient;
     }
-
 
     /**
      * This function will be invoked when a Http Trigger occurs
@@ -67,7 +65,6 @@ public class ReceiptToReviewed {
         }
 
         String responseMsg;
-
         ReceiptError receiptError;
 
         try {

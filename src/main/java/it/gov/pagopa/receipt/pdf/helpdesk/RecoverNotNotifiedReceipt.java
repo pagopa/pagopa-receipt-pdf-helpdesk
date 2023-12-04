@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceiptUtils.restoreReceipt;
+
 /**
  * Azure Functions with HTTP Trigger.
  */
@@ -57,7 +59,7 @@ public class RecoverNotNotifiedReceipt {
     public HttpResponseMessage run(
             @HttpTrigger(name = "RecoverNotNotifiedTrigger",
                     methods = {HttpMethod.POST},
-                    route = "/receipts/{event-id}/recover-not-notified",
+                    route = "receipts/{event-id}/recover-not-notified",
                     authLevel = AuthorizationLevel.FUNCTION)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("event-id") String eventId,
@@ -109,19 +111,5 @@ public class RecoverNotNotifiedReceipt {
         String responseMsg = String.format("Receipt with id %s and eventId %s restored in status %s with success",
                 receipt.getId(), receipt.getEventId(), ReceiptStatusType.GENERATED);
         return request.createResponseBuilder(HttpStatus.OK).body(responseMsg).build();
-    }
-
-    private Receipt restoreReceipt(Receipt receipt) {
-        receipt.setStatus(ReceiptStatusType.GENERATED);
-        receipt.setNotificationNumRetry(0);
-        receipt.setNotifiedAt(0);
-
-        if (receipt.getReasonErr() != null) {
-            receipt.setReasonErr(null);
-        }
-        if (receipt.getReasonErrPayer() != null) {
-            receipt.setReasonErrPayer(null);
-        }
-        return receipt;
     }
 }

@@ -2,6 +2,7 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
@@ -9,8 +10,11 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import org.slf4j.Logger;
 
 import java.util.Collections;
@@ -22,6 +26,50 @@ import java.util.regex.Pattern;
 public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
+
+    public static Receipt getEvent(
+            String eventId,
+            ExecutionContext context,
+            BizEventToReceiptService bizEventToReceiptService,
+            BizEventCosmosClient bizEventCosmosClient,
+            ReceiptCosmosService receiptCosmosService,
+            Receipt receipt,
+            Logger logger
+    ) throws BizEventNotFoundException, PDVTokenizerException, JsonProcessingException {
+        BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
+
+        if (isBizEventInvalid(bizEvent, context, logger)) {
+            return null;
+        }
+        if (receipt == null) {
+            try {
+                receipt = receiptCosmosService.getReceipt(eventId);
+            } catch (ReceiptNotFoundException e) {
+                receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
+                        bizEventToReceiptService, logger);
+                receipt.setStatus(ReceiptStatusType.FAILED);
+            }
+        }
+
+        if (receipt != null && (
+                receipt.getStatus().equals(ReceiptStatusType.FAILED) ||
+                        receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
+                        receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
+        )) {
+            if (receipt.getEventData() == null || receipt.getEventData().getDebtorFiscalCode() == null) {
+                tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
+            }
+            bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
+            if(receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT){
+                receipt.setStatus(ReceiptStatusType.INSERTED);
+                receipt.setInsertedAt(System.currentTimeMillis());
+                receipt.setReasonErr(null);
+                receipt.setReasonErrPayer(null);
+            }
+            return receipt;
+        }
+        return null;
+    }
 
     /**
      * Creates a new instance of Receipt, using the tokenizer service to mask the PII, based on
@@ -181,4 +229,6 @@ public class BizEventToReceiptUtils {
         }
         return remittanceInformation;
     }
+
+    private BizEventToReceiptUtils() {}
 }
