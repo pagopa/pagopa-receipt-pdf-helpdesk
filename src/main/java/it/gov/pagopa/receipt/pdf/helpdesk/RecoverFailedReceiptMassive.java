@@ -42,7 +42,7 @@ public class RecoverFailedReceiptMassive {
     private final BizEventCosmosClient bizEventCosmosClient;
     private final ReceiptCosmosService receiptCosmosService;
 
-    public RecoverFailedReceiptMassive(){
+    public RecoverFailedReceiptMassive() {
         this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
         this.receiptCosmosService = new ReceiptCosmosServiceImpl();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
@@ -50,7 +50,7 @@ public class RecoverFailedReceiptMassive {
 
     RecoverFailedReceiptMassive(BizEventToReceiptService bizEventToReceiptService,
                                 BizEventCosmosClient bizEventCosmosClient,
-                                ReceiptCosmosService receiptCosmosService){
+                                ReceiptCosmosService receiptCosmosService) {
         this.bizEventToReceiptService = bizEventToReceiptService;
         this.bizEventCosmosClient = bizEventCosmosClient;
         this.receiptCosmosService = receiptCosmosService;
@@ -62,7 +62,7 @@ public class RecoverFailedReceiptMassive {
      * @return response with HttpStatus.OK
      */
     @FunctionName("RecoverFailedReceiptMassive")
-    public HttpResponseMessage run (
+    public HttpResponseMessage run(
             @HttpTrigger(name = "RecoverFailedReceiptMassiveTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/recover-failed",
@@ -127,7 +127,7 @@ public class RecoverFailedReceiptMassive {
                 }
             } while (continuationToken != null);
         } catch (NoSuchElementException e) {
-            logger.error(e.getMessage(), e);
+            logger.error("[{}] Unexpected error during recover of failed receipt", context.getFunctionName(), e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -137,7 +137,7 @@ public class RecoverFailedReceiptMassive {
                             .build())
                     .build();
         }
-        
+
         documentdb.setValue(receiptList);
         if (errorCounter > 0) {
             String msg = String.format("Recovered %s receipts but %s encountered an error.", receiptList.size(), errorCounter);
