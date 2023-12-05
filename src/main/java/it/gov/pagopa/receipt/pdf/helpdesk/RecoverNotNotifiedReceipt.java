@@ -53,7 +53,7 @@ public class RecoverNotNotifiedReceipt {
      * not triggered ({@link ReceiptStatusType#GENERATED} by clearing the errors and update the status to the
      * previous step ({@link ReceiptStatusType#GENERATED}).
      *
-     * @return response with {@link HttpStatus#OK} if the notification succeeded
+     * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
     @FunctionName("RecoverNotNotifiedReceipt")
     public HttpResponseMessage run(

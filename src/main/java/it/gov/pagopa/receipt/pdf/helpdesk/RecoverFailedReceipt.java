@@ -15,6 +15,7 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
@@ -55,9 +56,16 @@ public class RecoverFailedReceipt {
     }
 
     /**
-     * This function will be invoked when a Http Trigger occurs
+     * This function will be invoked when a Http Trigger occurs.
+     * <p>
+     * It recovers the receipt with the specified biz event id that has the following status:
+     * - ({@link ReceiptStatusType#INSERTED})
+     * - ({@link ReceiptStatusType#FAILED})
+     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * <p>
+     * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      *
-     * @return response with HttpStatus.OK
+     * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
     @FunctionName("RecoverFailedReceipt")
     public HttpResponseMessage run (

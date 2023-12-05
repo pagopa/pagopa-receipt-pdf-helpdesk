@@ -57,9 +57,16 @@ public class RecoverFailedReceiptMassive {
     }
 
     /**
-     * This function will be invoked when a Http Trigger occurs
+     * This function will be invoked when a Http Trigger occurs.
+     * <p>
+     * It recovers all the receipts with the specified status that has to be one of:
+     * - ({@link ReceiptStatusType#INSERTED})
+     * - ({@link ReceiptStatusType#FAILED})
+     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * <p>
+     * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      *
-     * @return response with HttpStatus.OK
+     * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
     @FunctionName("RecoverFailedReceiptMassive")
     public HttpResponseMessage run(

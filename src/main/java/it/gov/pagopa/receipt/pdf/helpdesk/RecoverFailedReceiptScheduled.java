@@ -49,6 +49,13 @@ public class RecoverFailedReceiptScheduled {
 
     /**
      * This function will be invoked periodically according to the specified schedule.
+     * <p>
+     * It recovers all the receipts with the following status:
+     * - ({@link ReceiptStatusType#INSERTED})
+     * - ({@link ReceiptStatusType#FAILED})
+     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * <p>
+     * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      */
     @FunctionName("RecoverFailedReceiptScheduled")
     public void run(
@@ -104,7 +111,7 @@ public class RecoverFailedReceiptScheduled {
             }
         } while (continuationToken != null);
         if (errorCounter > 0) {
-            logger.error("[{}] Error recovering {} failed receipt for status {}",
+            logger.error("[{}] Error recovering {} failed receipts for status {}",
                     context.getFunctionName(), errorCounter, statusType);
         }
         return receiptList;
