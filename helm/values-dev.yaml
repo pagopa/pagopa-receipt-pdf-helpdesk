@@ -58,7 +58,7 @@ microservice-chart:
       cpu: "300m"
     limits:
       memory: "768Mi"
-      cpu: "300m"
+      cpu: "400m"
   autoscaling:
     enable: true
     minReplica: 1
@@ -117,7 +117,7 @@ microservice-chart:
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
     COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
-    RECEIPTS_STORAGE_CONN_STRING: "receipts-storage-account-connection-string",
+    RECEIPTS_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
     COSMOS_BIZ_EVENT_CONN_STRING: "cosmos-biz-event-d-connection-string"
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
     COSMOS_BIZ_EVENT_KEY: "cosmos-bizevent-pkey"
