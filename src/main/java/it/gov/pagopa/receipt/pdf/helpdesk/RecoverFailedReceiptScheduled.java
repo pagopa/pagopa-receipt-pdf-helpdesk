@@ -1,18 +1,15 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
-import java.time.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-
-import com.azure.cosmos.models.FeedResponse;
-import com.microsoft.azure.functions.annotation.*;
-import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.TimerTrigger;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl;
@@ -20,7 +17,13 @@ import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getEvent;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.NoSuchElementException;
+
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.massiveRecoverByStatus;
 
 /**
  * Azure Functions with Timer trigger.
@@ -71,49 +74,26 @@ public class RecoverFailedReceiptScheduled {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
         List<Receipt> receiptList = new ArrayList<>();
 
-        receiptList.addAll(recoverFailed(context, ReceiptStatusType.INSERTED));
-        receiptList.addAll(recoverFailed(context, ReceiptStatusType.FAILED));
-        receiptList.addAll(recoverFailed(context, ReceiptStatusType.NOT_QUEUE_SENT));
+        receiptList.addAll(recover(context, ReceiptStatusType.INSERTED));
+        receiptList.addAll(recover(context, ReceiptStatusType.FAILED));
+        receiptList.addAll(recover(context, ReceiptStatusType.NOT_QUEUE_SENT));
 
         documentdb.setValue(receiptList);
     }
 
-    private List<Receipt> recoverFailed(ExecutionContext context, ReceiptStatusType statusType) {
+    private List<Receipt> recover(ExecutionContext context, ReceiptStatusType statusType) {
         try {
-            return recover(context, statusType);
+            MassiveRecoverResult recoverResult = massiveRecoverByStatus(
+                    context, bizEventToReceiptService, bizEventCosmosClient, receiptCosmosService, logger, statusType);
+            if (recoverResult.getErrorCounter() > 0) {
+                logger.error("[{}] Error recovering {} failed receipts for status {}",
+                        context.getFunctionName(), recoverResult.getErrorCounter(), statusType);
+            }
+            return recoverResult.getReceiptList();
         } catch (NoSuchElementException e) {
             logger.error("[{}] Unexpected error during recover of failed receipt for status {}",
                     context.getFunctionName(), statusType, e);
             return Collections.emptyList();
         }
-    }
-
-    private List<Receipt> recover(ExecutionContext context, ReceiptStatusType statusType) {
-        int errorCounter = 0;
-        List<Receipt> receiptList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                    this.receiptCosmosService.getFailedReceiptByStatus(continuationToken, 100, statusType);
-
-            for (FeedResponse<Receipt> page : feedResponseIterator) {
-                for (Receipt receipt : page.getResults()) {
-                    try {
-                        Receipt restored = getEvent(receipt.getEventId(), context, this.bizEventToReceiptService,
-                                this.bizEventCosmosClient, this.receiptCosmosService, receipt, logger);
-                        receiptList.add(restored);
-                    } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
-                        errorCounter++;
-                    }
-                }
-                continuationToken = page.getContinuationToken();
-            }
-        } while (continuationToken != null);
-        if (errorCounter > 0) {
-            logger.error("[{}] Error recovering {} failed receipts for status {}",
-                    context.getFunctionName(), errorCounter, statusType);
-        }
-        return receiptList;
     }
 }
