@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
@@ -33,6 +34,16 @@ public class RecoverNotNotifiedReceiptScheduled {
         this.receiptCosmosService = receiptCosmosService;
     }
 
+    /**
+     * This function will be invoked on a scheduled basis.
+     * <p>
+     * It recovers all receipt with the provided status.
+     * <p>
+     * It recovers the receipt with failed notification ({@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}) or notification
+     * not triggered ({@link ReceiptStatusType#GENERATED} by clearing the errors and update the status to the
+     * previous step ({@link ReceiptStatusType#GENERATED}).
+     *
+     */
     @FunctionName("RecoverNotNotifiedTimerTriggerProcessor")
     public void processRecoverNotNotifiedScheduledTrigger(
             @TimerTrigger(
