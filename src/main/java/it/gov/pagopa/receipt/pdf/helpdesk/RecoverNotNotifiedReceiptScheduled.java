@@ -63,9 +63,7 @@ public class RecoverNotNotifiedReceiptScheduled {
             logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
             List<Receipt> receiptList = receiptMassiveRestore(ReceiptStatusType.IO_ERROR_TO_NOTIFY, receiptCosmosService);
-            logger.info(String.valueOf(receiptList.size()));
             receiptList.addAll(receiptMassiveRestore(ReceiptStatusType.GENERATED, receiptCosmosService));
-            logger.info(String.valueOf(receiptList.size()));
 
             if (receiptList.isEmpty()) {
                 logger.info("[{}] No Receipt to notify", context.getFunctionName());
