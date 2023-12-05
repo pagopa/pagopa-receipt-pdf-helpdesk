@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceiptUtils.receiptMassiveRestore;
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceiptUtils.restoreReceipt;
 
 /**
@@ -107,7 +108,7 @@ public class RecoverNotNotifiedReceiptMassive {
                     .build();
         }
 
-        List<Receipt> receiptList = receiptMassiveRestore(statusType);
+        List<Receipt> receiptList = receiptMassiveRestore(statusType, receiptCosmosService);
         if (receiptList.isEmpty()) {
             return request.createResponseBuilder(HttpStatus.OK).body("No receipts restored").build();
         }
@@ -117,51 +118,4 @@ public class RecoverNotNotifiedReceiptMassive {
         return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
     }
 
-    @FunctionName("RecoverNotNotifiedTimerTriggerProcessor")
-    public void processRecoverNotNotifiedScheduledTrigger(
-            @TimerTrigger(
-                    name = "timerInfo",
-                    schedule = "%TRIGGER_GEN_SCHEDULE%"
-            )
-            String timerInfo,
-            @CosmosDBOutput(
-                    name = "ReceiptDatastore",
-                    databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<Receipt>> documentReceipts,
-            final ExecutionContext context) {
-
-        logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
-
-        List<Receipt> receiptList = receiptMassiveRestore(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        logger.info(String.valueOf(receiptList.size()));
-        receiptList.addAll(receiptMassiveRestore(ReceiptStatusType.GENERATED));
-        logger.info(String.valueOf(receiptList.size()));
-
-        if (receiptList.isEmpty()) {
-            logger.info("[{}] No Receipt to notify", context.getFunctionName());
-        }
-
-        documentReceipts.setValue(receiptList);
-
-    }
-
-    private List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType) {
-        List<Receipt> receiptList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                    this.receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
-
-            for (FeedResponse<Receipt> page : feedResponseIterator) {
-                for (Receipt receipt : page.getResults()) {
-                    Receipt restoredReceipt = restoreReceipt(receipt);
-                    receiptList.add(restoredReceipt);
-                }
-                continuationToken = page.getContinuationToken();
-            }
-        } while (continuationToken != null);
-        return receiptList;
-    }
 }
