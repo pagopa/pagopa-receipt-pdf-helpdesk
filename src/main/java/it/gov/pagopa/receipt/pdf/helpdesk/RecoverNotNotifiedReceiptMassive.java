@@ -7,10 +7,7 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.AuthorizationLevel;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
-import com.microsoft.azure.functions.annotation.FunctionName;
-import com.microsoft.azure.functions.annotation.HttpTrigger;
+import com.microsoft.azure.functions.annotation.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
@@ -24,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceiptUtils.receiptMassiveRestore;
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceiptUtils.restoreReceipt;
 
 /**
@@ -110,7 +108,7 @@ public class RecoverNotNotifiedReceiptMassive {
                     .build();
         }
 
-        List<Receipt> receiptList = receiptMassiveRestore(statusType);
+        List<Receipt> receiptList = receiptMassiveRestore(statusType, receiptCosmosService);
         if (receiptList.isEmpty()) {
             return request.createResponseBuilder(HttpStatus.OK).body("No receipts restored").build();
         }
@@ -120,21 +118,4 @@ public class RecoverNotNotifiedReceiptMassive {
         return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
     }
 
-    private List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType) {
-        List<Receipt> receiptList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                    this.receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
-
-            for (FeedResponse<Receipt> page : feedResponseIterator) {
-                for (Receipt receipt : page.getResults()) {
-                    Receipt restoredReceipt = restoreReceipt(receipt);
-                    receiptList.add(restoredReceipt);
-                }
-                continuationToken = page.getContinuationToken();
-            }
-        } while (continuationToken != null);
-        return receiptList;
-    }
 }

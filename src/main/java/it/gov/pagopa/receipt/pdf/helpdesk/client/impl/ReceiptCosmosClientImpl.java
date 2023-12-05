@@ -30,6 +30,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     private final String containerReceiptErrorId = System.getenv().getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
 
     private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
+    private final String millisNotifyDif = System.getenv("MAX_DATE_DIFF_NOTIFY_MILLIS");
 
     private final CosmosClient cosmosClient;
 
@@ -185,8 +186,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query =  String.format("SELECT * FROM c WHERE (c.status= = '%s' AND ( %s - c.generated_at) >= %s)",
-                ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
+        String query =  String.format("SELECT * FROM c WHERE (c.status = '%s' AND ( %s - c.generated_at) >= %s)",
+                ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisNotifyDif);
 
         //Query the container
         return cosmosContainer
