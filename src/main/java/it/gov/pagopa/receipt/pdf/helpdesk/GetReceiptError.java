@@ -7,7 +7,6 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
@@ -58,7 +57,8 @@ public class GetReceiptError {
                         .body(receiptError)
                         .build();
             } catch (ReceiptNotFoundException e) {
-                return request.createResponseBuilder(HttpStatus.OK)
+                return request
+                        .createResponseBuilder(HttpStatus.OK)
                         .body(ProblemJson.builder()
                                 .title(HttpStatus.NOT_FOUND.name())
                                 .detail("No Receipt Error to process on bizEvent with id " + eventId)
@@ -76,7 +76,7 @@ public class GetReceiptError {
             }
         }
 
-        return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+        return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
                 .body(ProblemJson.builder()
                         .title(HttpStatus.BAD_REQUEST.name())
                         .detail("Missing valid search parameter")

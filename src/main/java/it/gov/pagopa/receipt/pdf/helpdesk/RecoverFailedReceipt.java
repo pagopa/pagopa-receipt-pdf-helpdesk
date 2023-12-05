@@ -78,7 +78,7 @@ public class RecoverFailedReceipt {
 
         if (eventId == null || eventId.isBlank()) {
             return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a valid biz-event id")
@@ -102,7 +102,11 @@ public class RecoverFailedReceipt {
             logger.error(msg, exception);
             return request
                     .createResponseBuilder(HttpStatus.NOT_FOUND)
-                    .body(msg)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.NOT_FOUND.name())
+                            .detail(msg)
+                            .status(HttpStatus.NOT_FOUND.value())
+                            .build())
                     .build();
         } catch (PDVTokenizerException | JsonProcessingException e) {
             logger.error(e.getMessage(), e);

@@ -126,7 +126,7 @@ public class RegenerateReceiptPdf {
 
             }
 
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+            return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Missing valid eventId paramater")
@@ -143,7 +143,7 @@ public class RegenerateReceiptPdf {
                 message = "BizEvent not found with event-id " + eventId;
             }
             return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail(message)
