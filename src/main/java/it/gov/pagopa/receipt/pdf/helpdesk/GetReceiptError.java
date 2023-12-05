@@ -58,7 +58,7 @@ public class GetReceiptError {
                         .build();
             } catch (ReceiptNotFoundException e) {
                 return request
-                        .createResponseBuilder(HttpStatus.OK)
+                        .createResponseBuilder(HttpStatus.NOT_FOUND)
                         .body(ProblemJson.builder()
                                 .title(HttpStatus.NOT_FOUND.name())
                                 .detail("No Receipt Error to process on bizEvent with id " + eventId)
