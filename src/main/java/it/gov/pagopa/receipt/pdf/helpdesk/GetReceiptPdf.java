@@ -50,7 +50,7 @@ public class GetReceiptPdf {
             @HttpTrigger(name = "GetReceiptTrigger",
                     methods = {HttpMethod.GET},
                     route = "pdf-receipts/{file-name}",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("file-name") String fileName,
             final ExecutionContext context) {

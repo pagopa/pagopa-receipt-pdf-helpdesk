@@ -60,7 +60,7 @@ public class RecoverNotNotifiedReceipt {
             @HttpTrigger(name = "RecoverNotNotifiedTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/{event-id}/recover-not-notified",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("event-id") String eventId,
             @CosmosDBOutput(

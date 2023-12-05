@@ -46,7 +46,7 @@ public class GetReceipt {
             @HttpTrigger(name = "GetReceiptTrigger",
                     methods = {HttpMethod.GET},
                     route = "receipts/{event-id}",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("event-id") String eventId,
             final ExecutionContext context) {

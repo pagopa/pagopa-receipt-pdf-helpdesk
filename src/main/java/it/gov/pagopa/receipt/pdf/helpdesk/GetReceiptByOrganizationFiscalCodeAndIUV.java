@@ -57,7 +57,7 @@ public class GetReceiptByOrganizationFiscalCodeAndIUV {
             @HttpTrigger(name = "GetReceiptByOrganizationFiscalCodeAndIUVTrigger",
                     methods = {HttpMethod.GET},
                     route = "receipts/organizations/{organization-fiscal-code}/iuvs/{iuv}",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("organization-fiscal-code") String organizationFiscalCode,
             @BindingName("iuv") String iuv,

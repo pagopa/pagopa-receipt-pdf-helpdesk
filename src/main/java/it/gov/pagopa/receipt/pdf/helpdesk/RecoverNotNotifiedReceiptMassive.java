@@ -59,7 +59,7 @@ public class RecoverNotNotifiedReceiptMassive {
             @HttpTrigger(name = "RecoverNotNotifiedMassiveTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/recover-not-notified",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
