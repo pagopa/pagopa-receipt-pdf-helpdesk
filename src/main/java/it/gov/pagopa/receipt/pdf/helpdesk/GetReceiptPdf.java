@@ -50,7 +50,7 @@ public class GetReceiptPdf {
             @HttpTrigger(name = "GetReceiptTrigger",
                     methods = {HttpMethod.GET},
                     route = "pdf-receipts/{file-name}",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("file-name") String fileName,
             final ExecutionContext context) {
@@ -70,21 +70,24 @@ public class GetReceiptPdf {
         try {
             File pdfFile = this.receiptBlobClient.getAttachmentFromBlobStorage(fileName);
             FileInputStream inputStream = new FileInputStream(pdfFile);
-            byte [] result = IOUtils.toByteArray(inputStream);
+            byte[] result = IOUtils.toByteArray(inputStream);
             Files.deleteIfExists(pdfFile.toPath());
             return request
                     .createResponseBuilder(HttpStatus.OK)
                     .body(result)
                     .build();
+
         } catch (BlobStorageClientException | IOException e) {
             String responseMsg = String.format("Unable to retrieve the receipt pdf with file name %s", fileName);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
-            return request.createResponseBuilder(HttpStatus.NOT_FOUND)
+            return request
+                    .createResponseBuilder(HttpStatus.NOT_FOUND)
                     .body(ProblemJson.builder()
-                    .title(HttpStatus.NOT_FOUND.name())
-                    .detail(responseMsg)
-                    .status(HttpStatus.NOT_FOUND.value())
-                    .build()).build();
+                            .title(HttpStatus.NOT_FOUND.name())
+                            .detail(responseMsg)
+                            .status(HttpStatus.NOT_FOUND.value())
+                            .build())
+                    .build();
         }
     }
 }

@@ -148,7 +148,7 @@ class RecoverFailedReceiptMassiveTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
 
         ProblemJson problemJson = (ProblemJson) response.getBody();
         assertNotNull(problemJson);
@@ -175,7 +175,7 @@ class RecoverFailedReceiptMassiveTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
 
         ProblemJson problemJson = (ProblemJson) response.getBody();
         assertNotNull(problemJson);

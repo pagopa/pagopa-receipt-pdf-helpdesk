@@ -1,10 +1,6 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
-import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpMethod;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.FunctionName;
@@ -50,7 +46,7 @@ public class GetReceipt {
             @HttpTrigger(name = "GetReceiptTrigger",
                     methods = {HttpMethod.GET},
                     route = "receipts/{event-id}",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("event-id") String eventId,
             final ExecutionContext context) {
@@ -58,7 +54,7 @@ public class GetReceipt {
 
         if (eventId == null || eventId.isBlank()) {
             return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a valid biz-event id")
@@ -76,7 +72,14 @@ public class GetReceipt {
         } catch (ReceiptNotFoundException e) {
             String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
-            return request.createResponseBuilder(HttpStatus.NOT_FOUND).body(responseMsg).build();
+            return request
+                    .createResponseBuilder(HttpStatus.NOT_FOUND)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.NOT_FOUND.name())
+                            .detail(responseMsg)
+                            .status(HttpStatus.NOT_FOUND.value())
+                            .build())
+                    .build();
         }
     }
 }

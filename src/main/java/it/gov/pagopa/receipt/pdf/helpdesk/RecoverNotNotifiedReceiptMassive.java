@@ -59,7 +59,7 @@ public class RecoverNotNotifiedReceiptMassive {
             @HttpTrigger(name = "RecoverNotNotifiedMassiveTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/recover-not-notified",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
@@ -74,7 +74,7 @@ public class RecoverNotNotifiedReceiptMassive {
         String status = request.getQueryParameters().get("status");
         if (status == null) {
             return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a status to recover")
@@ -88,7 +88,7 @@ public class RecoverNotNotifiedReceiptMassive {
             statusType = ReceiptStatusType.valueOf(status);
         } catch (IllegalArgumentException e) {
             return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a valid status to recover")

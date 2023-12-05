@@ -60,7 +60,7 @@ public class RecoverNotNotifiedReceipt {
             @HttpTrigger(name = "RecoverNotNotifiedTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/{event-id}/recover-not-notified",
-                    authLevel = AuthorizationLevel.FUNCTION)
+                    authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("event-id") String eventId,
             @CosmosDBOutput(
@@ -74,7 +74,7 @@ public class RecoverNotNotifiedReceipt {
 
         if (eventId == null || eventId.isBlank()) {
             return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
                             .detail("Please pass a valid biz-event id")
@@ -89,7 +89,14 @@ public class RecoverNotNotifiedReceipt {
         } catch (ReceiptNotFoundException e) {
             String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
-            return request.createResponseBuilder(HttpStatus.NOT_FOUND).body(responseMsg).build();
+            return request
+                    .createResponseBuilder(HttpStatus.NOT_FOUND)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.NOT_FOUND.name())
+                            .detail(responseMsg)
+                            .status(HttpStatus.NOT_FOUND.value())
+                            .build())
+                    .build();
         }
 
         if (!receipt.getStatus().equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY) && !receipt.getStatus().equals(ReceiptStatusType.GENERATED)) {
