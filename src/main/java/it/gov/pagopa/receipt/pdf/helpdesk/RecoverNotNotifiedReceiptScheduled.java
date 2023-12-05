@@ -19,6 +19,8 @@ import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceipt
 
 public class RecoverNotNotifiedReceiptScheduled {
 
+    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("NOT_NOTIFIED_AUTORECOVER_ENABLED", "true"));
+
     private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptMassive.class);
 
     private final ReceiptCosmosService receiptCosmosService;
@@ -46,18 +48,22 @@ public class RecoverNotNotifiedReceiptScheduled {
             OutputBinding<List<Receipt>> documentReceipts,
             final ExecutionContext context) {
 
-        logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
+        if (isEnabled) {
 
-        List<Receipt> receiptList = receiptMassiveRestore(ReceiptStatusType.IO_ERROR_TO_NOTIFY, receiptCosmosService);
-        logger.info(String.valueOf(receiptList.size()));
-        receiptList.addAll(receiptMassiveRestore(ReceiptStatusType.GENERATED, receiptCosmosService));
-        logger.info(String.valueOf(receiptList.size()));
+            logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        if (receiptList.isEmpty()) {
-            logger.info("[{}] No Receipt to notify", context.getFunctionName());
+            List<Receipt> receiptList = receiptMassiveRestore(ReceiptStatusType.IO_ERROR_TO_NOTIFY, receiptCosmosService);
+            logger.info(String.valueOf(receiptList.size()));
+            receiptList.addAll(receiptMassiveRestore(ReceiptStatusType.GENERATED, receiptCosmosService));
+            logger.info(String.valueOf(receiptList.size()));
+
+            if (receiptList.isEmpty()) {
+                logger.info("[{}] No Receipt to notify", context.getFunctionName());
+            }
+
+            documentReceipts.setValue(receiptList);
+
         }
-
-        documentReceipts.setValue(receiptList);
 
     }
 
