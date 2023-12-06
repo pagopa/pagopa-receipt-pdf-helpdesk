@@ -108,6 +108,7 @@ then replace env variables with correct values
 | `PDV_TOKENIZER_MAX_RETRIES`           | PDV Tokenizer max request retry                                                                                                      |                           3                            |
 | `TOKENIZER_APIM_HEADER_KEY`           | Tokenizer APIM header key                                                                                                            |                       x-api-key                        |
 | `MAX_DATE_DIFF_MILLIS`                | Difference in millis between the current time and the date from witch the<br/> receipts will be fetched in massive recover operation |                         360000                         |
+| `RECOVER_FAILED_CRON`                 | CRON expression for timer trigger function that recover failed receipt                                                               |                                                        |
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)

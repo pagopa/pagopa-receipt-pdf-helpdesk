@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
-import com.azure.cosmos.models.FeedResponse;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
@@ -15,6 +14,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
@@ -24,12 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getEvent;
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.massiveRecoverByStatus;
 
 /**
  * Azure Functions with Azure Http trigger.
@@ -42,7 +41,7 @@ public class RecoverFailedReceiptMassive {
     private final BizEventCosmosClient bizEventCosmosClient;
     private final ReceiptCosmosService receiptCosmosService;
 
-    public RecoverFailedReceiptMassive(){
+    public RecoverFailedReceiptMassive() {
         this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
         this.receiptCosmosService = new ReceiptCosmosServiceImpl();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
@@ -50,19 +49,26 @@ public class RecoverFailedReceiptMassive {
 
     RecoverFailedReceiptMassive(BizEventToReceiptService bizEventToReceiptService,
                                 BizEventCosmosClient bizEventCosmosClient,
-                                ReceiptCosmosService receiptCosmosService){
+                                ReceiptCosmosService receiptCosmosService) {
         this.bizEventToReceiptService = bizEventToReceiptService;
         this.bizEventCosmosClient = bizEventCosmosClient;
         this.receiptCosmosService = receiptCosmosService;
     }
 
     /**
-     * This function will be invoked when a Http Trigger occurs
+     * This function will be invoked when a Http Trigger occurs.
+     * <p>
+     * It recovers all the receipts with the specified status that has to be one of:
+     * - ({@link ReceiptStatusType#INSERTED})
+     * - ({@link ReceiptStatusType#FAILED})
+     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * <p>
+     * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      *
-     * @return response with HttpStatus.OK
+     * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
     @FunctionName("RecoverFailedReceiptMassive")
-    public HttpResponseMessage run (
+    public HttpResponseMessage run(
             @HttpTrigger(name = "RecoverFailedReceiptMassiveTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/recover-failed",
@@ -104,30 +110,12 @@ public class RecoverFailedReceiptMassive {
                     .build();
         }
 
-        List<Receipt> receiptList = new ArrayList<>();
-        String continuationToken = null;
-        int errorCounter = 0;
+        MassiveRecoverResult recoverResult;
         try {
-            do {
-                Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                        this.receiptCosmosService.getFailedReceiptByStatus(continuationToken, 100, statusType);
-
-                for (FeedResponse<Receipt> page : feedResponseIterator) {
-                    for (Receipt receipt : page.getResults()) {
-                        try {
-                            Receipt restored = getEvent(receipt.getEventId(), context, this.bizEventToReceiptService,
-                                    this.bizEventCosmosClient, this.receiptCosmosService, receipt, logger);
-                            receiptList.add(restored);
-                        } catch (Exception e) {
-                            logger.error(e.getMessage(), e);
-                            errorCounter++;
-                        }
-                    }
-                    continuationToken = page.getContinuationToken();
-                }
-            } while (continuationToken != null);
+            recoverResult = massiveRecoverByStatus(
+                    context, bizEventToReceiptService, bizEventCosmosClient, receiptCosmosService, logger, statusType);
         } catch (NoSuchElementException e) {
-            logger.error(e.getMessage(), e);
+            logger.error("[{}] Unexpected error during recover of failed receipt", context.getFunctionName(), e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -137,7 +125,9 @@ public class RecoverFailedReceiptMassive {
                             .build())
                     .build();
         }
-        
+        List<Receipt> receiptList = recoverResult.getReceiptList();
+        int errorCounter = recoverResult.getErrorCounter();
+
         documentdb.setValue(receiptList);
         if (errorCounter > 0) {
             String msg = String.format("Recovered %s receipts but %s encountered an error.", receiptList.size(), errorCounter);
