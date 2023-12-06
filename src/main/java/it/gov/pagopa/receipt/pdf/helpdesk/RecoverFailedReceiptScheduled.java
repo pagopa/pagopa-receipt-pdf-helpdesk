@@ -32,6 +32,8 @@ public class RecoverFailedReceiptScheduled {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverFailedReceiptScheduled.class);
 
+    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("FAILED_AUTORECOVER_ENABLED", "true"));
+
     private final BizEventToReceiptService bizEventToReceiptService;
     private final BizEventCosmosClient bizEventCosmosClient;
     private final ReceiptCosmosService receiptCosmosService;
@@ -71,14 +73,16 @@ public class RecoverFailedReceiptScheduled {
             OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context
     ) {
-        logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
-        List<Receipt> receiptList = new ArrayList<>();
+        if (isEnabled) {
+            logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
+            List<Receipt> receiptList = new ArrayList<>();
 
-        receiptList.addAll(recover(context, ReceiptStatusType.INSERTED));
-        receiptList.addAll(recover(context, ReceiptStatusType.FAILED));
-        receiptList.addAll(recover(context, ReceiptStatusType.NOT_QUEUE_SENT));
+            receiptList.addAll(recover(context, ReceiptStatusType.INSERTED));
+            receiptList.addAll(recover(context, ReceiptStatusType.FAILED));
+            receiptList.addAll(recover(context, ReceiptStatusType.NOT_QUEUE_SENT));
 
-        documentdb.setValue(receiptList);
+            documentdb.setValue(receiptList);
+        }
     }
 
     private List<Receipt> recover(ExecutionContext context, ReceiptStatusType statusType) {
