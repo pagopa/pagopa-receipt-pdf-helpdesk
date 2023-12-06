@@ -114,7 +114,7 @@ class GetReceiptErrorTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatus());
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
         assertEquals(ProblemJson.class, response.getBody().getClass());
 
         ProblemJson responseData = (ProblemJson) response.getBody();
