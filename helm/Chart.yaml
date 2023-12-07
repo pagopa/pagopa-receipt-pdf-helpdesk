@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopareceiptpdfhelpdesk
 description: Microservice description
 type: application
-version: 0.113.0
-appVersion: 0.6.12-fix-schedule-env-vars
+version: 0.114.0
+appVersion: 0.6.13-fix-schedule-env-vars
 dependencies:
   - name: microservice-chart
     version: 2.4.0
