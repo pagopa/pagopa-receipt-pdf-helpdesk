@@ -61,9 +61,9 @@ public class RegenerateReceiptPdf {
      *
      * @return response with HttpStatus.OK
      */
-    @FunctionName("RegenerateReceiptPdf")
+    @FunctionName("RegenerateReceiptPdfTest")
     public HttpResponseMessage run (
-            @HttpTrigger(name = "RegenerateReceiptPdf",
+            @HttpTrigger(name = "RegenerateReceiptPdfTestTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/{bizeventid}/regenerate-receipt-pdf",
                     authLevel = AuthorizationLevel.ANONYMOUS)
@@ -165,19 +165,19 @@ public class RegenerateReceiptPdf {
 
     }
 
-    private static boolean isHasAllAttachments(Receipt receipt) {
-        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
-        String payerCF = receipt.getEventData().getPayerFiscalCode();
-        boolean hasAllAttachments;
-        if (payerCF == null) {
-          hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
-        } else if (debtorCF.equals(payerCF)) {
-            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
-        } else {
-            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null &&
-                    receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
-        }
-        return hasAllAttachments;
-    }
+//    private static boolean isHasAllAttachments(Receipt receipt) {
+//        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+//        String payerCF = receipt.getEventData().getPayerFiscalCode();
+//        boolean hasAllAttachments;
+//        if (payerCF == null) {
+//          hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+//        } else if (debtorCF.equals(payerCF)) {
+//            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+//        } else {
+//            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null &&
+//                    receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
+//        }
+//        return hasAllAttachments;
+//    }
 
 }
