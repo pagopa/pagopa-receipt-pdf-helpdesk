@@ -35,22 +35,32 @@ import static org.apache.http.HttpStatus.SC_OK;
 
 public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService {
 
-    private final Logger logger = LoggerFactory.getLogger(GenerateReceiptPdfServiceImpl.class);
-
-    private static final String TEMPLATE_PREFIX = "pagopa-ricevuta";
-    private static final String PAYER_TEMPLATE_SUFFIX = "p";
-    private static final String DEBTOR_TEMPLATE_SUFFIX = "d";
-
-    public static final int ALREADY_CREATED = 208;
+//    private final Logger logger = LoggerFactory.getLogger(GenerateReceiptPdfServiceImpl.class);
+//
+//    private static final String TEMPLATE_PREFIX = "pagopa-ricevuta";
+//    private static final String PAYER_TEMPLATE_SUFFIX = "p";
+//    private static final String DEBTOR_TEMPLATE_SUFFIX = "d";
+//
+//    public static final int ALREADY_CREATED = 208;
 
     //private final PdfEngineClient pdfEngineClient;
     //private final ReceiptBlobClient receiptBlobClient;
-    private final BuildTemplateService buildTemplateService;
+    //private final BuildTemplateService buildTemplateService;
 
-    public GenerateReceiptPdfServiceImpl() {
+    //public GenerateReceiptPdfServiceImpl() {
         //this.pdfEngineClient = PdfEngineClientImpl.getInstance();
         //this.receiptBlobClient = ReceiptBlobClientImpl.getInstance();
-        this.buildTemplateService = new BuildTemplateServiceImpl();
+        //this.buildTemplateService = new BuildTemplateServiceImpl();
+    //}
+
+    @Override
+    public PdfGeneration generateReceipts(Receipt receipt, BizEvent bizEvent, Path workingDirPath) {
+        return null;
+    }
+
+    @Override
+    public boolean verifyAndUpdateReceipt(Receipt receipt, PdfGeneration pdfGeneration) throws ReceiptGenerationNotToRetryException {
+        return false;
     }
 
 //    GenerateReceiptPdfServiceImpl(PdfEngineClient pdfEngineClient, ReceiptBlobClient receiptBlobClient, BuildTemplateService buildTemplateService) {
@@ -59,112 +69,112 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 //        this.buildTemplateService = buildTemplateService;
 //    }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public PdfGeneration generateReceipts(Receipt receipt, BizEvent bizEvent, Path workingDirPath) {
-        PdfGeneration pdfGeneration = new PdfGeneration();
-
-        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
-        String payerCF = receipt.getEventData().getPayerFiscalCode();
-
-        if (payerCF != null) {
-
-            if (payerCF.equals(debtorCF)) {
-                pdfGeneration.setGenerateOnlyDebtor(true);
-                //Generate debtor's complete PDF
-                PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttach().getName(), false, workingDirPath);
-                pdfGeneration.setDebtorMetadata(generationResult);
-                return pdfGeneration;
-            }
-
-            //Generate payer's complete PDF
-            PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttachPayer().getName(), false, workingDirPath);
-            pdfGeneration.setPayerMetadata(generationResult);
-
-        } else {
-            pdfGeneration.setGenerateOnlyDebtor(true);
-        }
-
-        //Generate debtor's partial PDF
-        PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttach().getName(), true, workingDirPath);
-        pdfGeneration.setDebtorMetadata(generationResult);
-
-
-        return pdfGeneration;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean verifyAndUpdateReceipt(Receipt receipt, PdfGeneration pdfGeneration) throws ReceiptGenerationNotToRetryException {
-        PdfMetadata debtorMetadata = pdfGeneration.getDebtorMetadata();
-        boolean result = true;
-        if (debtorMetadata == null) {
-            logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
-            return false;
-        }
-
-        if (pdfGeneration.isGenerateOnlyDebtor()) {
-            if (debtorMetadata.getStatusCode() != SC_OK) {
-                String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
-                throw new ReceiptGenerationNotToRetryException(errMsg);
-            }
-            return result;
-        }
-
-        PdfMetadata payerMetadata = pdfGeneration.getPayerMetadata();
-        if (payerMetadata == null) {
-            logger.error("Unexpected result for payer pdf receipt generation. Receipt id {}", receipt.getId());
-            return false;
-        }
-
-        if (debtorMetadata.getStatusCode() != SC_OK
-                || payerMetadata.getStatusCode() != SC_OK) {
-            String errMsg = String.format("Receipt generation fail for debtor (status: %s) and/or payer (status: %s)",
-                    debtorMetadata.getStatusCode(), payerMetadata.getStatusCode());
-            throw new ReceiptGenerationNotToRetryException(errMsg);
-        }
-        return result;
-    }
-
-    private PdfMetadata generateAndSavePDFReceipt(BizEvent bizEvent, String blobName, boolean partialTemplate, Path workingDirPath) {
-        try {
-            ReceiptPDFTemplate template = buildTemplateService.buildTemplate(bizEvent, partialTemplate);
-            //PdfEngineResponse pdfEngineResponse = generatePDFReceipt(template, workingDirPath);
-            return saveToBlobStorage(null, blobName);
-        } catch (PDFReceiptGenerationException e) {
-            logger.error("An error occurred when generating or saving the PDF receipt for biz-event {}. Error: {}", bizEvent.getId(), e.getMessage(), e);
-            return PdfMetadata.builder().statusCode(e.getStatusCode()).errorMessage(e.getMessage()).build();
-        }
-    }
-
-    private PdfMetadata saveToBlobStorage(PdfEngineResponse pdfEngineResponse, String blobName) throws SavePDFToBlobException {
-        String tempPdfPath = pdfEngineResponse.getTempPdfPath();
-
-        BlobStorageResponse blobStorageResponse;
-        //Save to Blob Storage
-        try (BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdfPath))) {
-            //blobStorageResponse = receiptBlobClient.savePdfToBlobStorage(pdfStream, blobName);
-        } catch (Exception e) {
-            throw new SavePDFToBlobException("Error saving pdf to blob storage", ReasonErrorCode.ERROR_BLOB_STORAGE.getCode(), e);
-        }
-
-//        if (blobStorageResponse.getStatusCode() != com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
-//            String errMsg = String.format("Error saving pdf to blob storage, storage responded with status %s",
-//                    blobStorageResponse.getStatusCode());
-//            throw new SavePDFToBlobException(errMsg, ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    public PdfGeneration generateReceipts(Receipt receipt, BizEvent bizEvent, Path workingDirPath) {
+//        PdfGeneration pdfGeneration = new PdfGeneration();
+//
+//        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+//        String payerCF = receipt.getEventData().getPayerFiscalCode();
+//
+//        if (payerCF != null) {
+//
+//            if (payerCF.equals(debtorCF)) {
+//                pdfGeneration.setGenerateOnlyDebtor(true);
+//                //Generate debtor's complete PDF
+//                PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttach().getName(), false, workingDirPath);
+//                pdfGeneration.setDebtorMetadata(generationResult);
+//                return pdfGeneration;
+//            }
+//
+//            //Generate payer's complete PDF
+//            PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttachPayer().getName(), false, workingDirPath);
+//            pdfGeneration.setPayerMetadata(generationResult);
+//
+//        } else {
+//            pdfGeneration.setGenerateOnlyDebtor(true);
 //        }
+//
+//        //Generate debtor's partial PDF
+//        PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttach().getName(), true, workingDirPath);
+//        pdfGeneration.setDebtorMetadata(generationResult);
+//
+//
+//        return pdfGeneration;
+//    }
 
-        //Update PDF metadata
-        return PdfMetadata.builder()
-                //.documentName(blobStorageResponse.getDocumentName())
-                //.documentUrl(blobStorageResponse.getDocumentUrl())
-                .statusCode(SC_OK)
-                .build();
-    }
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    public boolean verifyAndUpdateReceipt(Receipt receipt, PdfGeneration pdfGeneration) throws ReceiptGenerationNotToRetryException {
+//        PdfMetadata debtorMetadata = pdfGeneration.getDebtorMetadata();
+//        boolean result = true;
+//        if (debtorMetadata == null) {
+//            logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
+//            return false;
+//        }
+//
+//        if (pdfGeneration.isGenerateOnlyDebtor()) {
+//            if (debtorMetadata.getStatusCode() != SC_OK) {
+//                String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
+//                throw new ReceiptGenerationNotToRetryException(errMsg);
+//            }
+//            return result;
+//        }
+//
+//        PdfMetadata payerMetadata = pdfGeneration.getPayerMetadata();
+//        if (payerMetadata == null) {
+//            logger.error("Unexpected result for payer pdf receipt generation. Receipt id {}", receipt.getId());
+//            return false;
+//        }
+//
+//        if (debtorMetadata.getStatusCode() != SC_OK
+//                || payerMetadata.getStatusCode() != SC_OK) {
+//            String errMsg = String.format("Receipt generation fail for debtor (status: %s) and/or payer (status: %s)",
+//                    debtorMetadata.getStatusCode(), payerMetadata.getStatusCode());
+//            throw new ReceiptGenerationNotToRetryException(errMsg);
+//        }
+//        return result;
+//    }
+
+//    private PdfMetadata generateAndSavePDFReceipt(BizEvent bizEvent, String blobName, boolean partialTemplate, Path workingDirPath) {
+//        try {
+//            ReceiptPDFTemplate template = buildTemplateService.buildTemplate(bizEvent, partialTemplate);
+//            //PdfEngineResponse pdfEngineResponse = generatePDFReceipt(template, workingDirPath);
+//            return saveToBlobStorage(null, blobName);
+//        } catch (PDFReceiptGenerationException e) {
+//            logger.error("An error occurred when generating or saving the PDF receipt for biz-event {}. Error: {}", bizEvent.getId(), e.getMessage(), e);
+//            return PdfMetadata.builder().statusCode(e.getStatusCode()).errorMessage(e.getMessage()).build();
+//        }
+//    }
+
+//    private PdfMetadata saveToBlobStorage(PdfEngineResponse pdfEngineResponse, String blobName) throws SavePDFToBlobException {
+//        String tempPdfPath = pdfEngineResponse.getTempPdfPath();
+//
+//        BlobStorageResponse blobStorageResponse;
+//        //Save to Blob Storage
+//        try (BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdfPath))) {
+//            //blobStorageResponse = receiptBlobClient.savePdfToBlobStorage(pdfStream, blobName);
+//        } catch (Exception e) {
+//            throw new SavePDFToBlobException("Error saving pdf to blob storage", ReasonErrorCode.ERROR_BLOB_STORAGE.getCode(), e);
+//        }
+//
+////        if (blobStorageResponse.getStatusCode() != com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
+////            String errMsg = String.format("Error saving pdf to blob storage, storage responded with status %s",
+////                    blobStorageResponse.getStatusCode());
+////            throw new SavePDFToBlobException(errMsg, ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
+////        }
+//
+//        //Update PDF metadata
+//        return PdfMetadata.builder()
+//                //.documentName(blobStorageResponse.getDocumentName())
+//                //.documentUrl(blobStorageResponse.getDocumentUrl())
+//                .statusCode(SC_OK)
+//                .build();
+//    }
 
 //    private PdfEngineResponse generatePDFReceipt(ReceiptPDFTemplate template, Path workingDirPath) throws PDFReceiptGenerationException {
 //        PdfEngineRequest request = new PdfEngineRequest();
@@ -185,20 +195,20 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 //        return pdfEngineResponse;
 //    }
 
-    private String parseTemplateDataToString(ReceiptPDFTemplate template) throws GeneratePDFException {
-        try {
-            return Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(template));
-        } catch (Exception e) {
-            throw new GeneratePDFException("Error preparing input data for receipt PDF template", ReasonErrorCode.ERROR_PDF_ENGINE.getCode(), e);
-        }
-    }
+//    private String parseTemplateDataToString(ReceiptPDFTemplate template) throws GeneratePDFException {
+//        try {
+//            return Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(template));
+//        } catch (Exception e) {
+//            throw new GeneratePDFException("Error preparing input data for receipt PDF template", ReasonErrorCode.ERROR_PDF_ENGINE.getCode(), e);
+//        }
+//    }
 
-    private boolean receiptAlreadyCreated(ReceiptMetadata receiptMetadata) {
-        return receiptMetadata != null
-                && receiptMetadata.getUrl() != null
-                && receiptMetadata.getName() != null
-                && !receiptMetadata.getUrl().isEmpty()
-                && !receiptMetadata.getName().isEmpty();
-    }
+//    private boolean receiptAlreadyCreated(ReceiptMetadata receiptMetadata) {
+//        return receiptMetadata != null
+//                && receiptMetadata.getUrl() != null
+//                && receiptMetadata.getName() != null
+//                && !receiptMetadata.getUrl().isEmpty()
+//                && !receiptMetadata.getName().isEmpty();
+//    }
 
 }
