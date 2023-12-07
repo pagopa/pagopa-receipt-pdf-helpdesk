@@ -12,7 +12,7 @@ function getRandomInt(min, max) {
   }
   
 
-function createEvent(id, status) {
+function createEvent(id, status, orgCode, iuv) {
 	let json_event = {
 		"id": id,
 		"version": "2",
@@ -28,10 +28,10 @@ function createEvent(id, status) {
 		"debtorPosition": {
 			"modelType": "2",
 			"noticeNumber": "310391366991197059",
-			"iuv": "intTestIuv"
+			"iuv": iuv || "iuv"
 		},
 		"creditor": {
-			"idPA": "intTestOrgCode",
+			"idPA": orgCode || "orgCode",
 			"idBrokerPA": "66666666666",
 			"idStation": "66666666666_08",
 			"companyName": "PA paolo",

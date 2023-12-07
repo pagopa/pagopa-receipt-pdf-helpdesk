@@ -11,6 +11,7 @@ const {
     deleteDocumentFromReceiptErrorDatastore,
     getDocumentFromReceiptsErrorDatastoreByBizEventId,
     getDocumentFromReceiptsDatastoreByEventId,
+    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     deleteAllTestReceipts,
     deleteAllTestReceiptsError
 } = require("./receipts_datastore_client");
@@ -36,7 +37,6 @@ let eventId = null;
 let responseAPI = null;
 let receipt = null;
 let receiptError = null;
-let event = null;
 let receiptPdfFileName = null;
 let listOfReceipts = [];
 
@@ -51,16 +51,14 @@ After(async function () {
     }
     if (receiptPdfFileName != null) {
         await deleteBlob(receiptPdfFileName);
-        fs.unlinkSync(receiptPdfFileName);
+        if(fs.existsSync(receiptPdfFileName)){
+            fs.unlinkSync(receiptPdfFileName);
+        }
     }
     if(listOfReceipts.length > 0){
         for(let receipt of listOfReceipts){
             await deleteDocumentFromReceiptsDatastore(receipt.id);
-        }
-    }
-    if(listOfBizEvents.length > 0){
-        for(let bizEvent of listOfBizEvents){
-            await deleteDocumentFromBizEventsDatastore(bizEvent.id);
+            await deleteDocumentFromBizEventsDatastore(receipt.eventId);
         }
     }
 
@@ -68,7 +66,6 @@ After(async function () {
     responseAPI = null;
     receipt = null;
     receiptError = null;
-    event = null;
     receiptPdfFileName = null;
     listOfReceipts = [];
 });
@@ -91,6 +88,15 @@ Given('a receipt with eventId {string} and status {string} stored into receipt d
     let receiptsStoreResponse = await createDocumentInReceiptsDatastore(id, status);
     assert.strictEqual(receiptsStoreResponse.statusCode, 201);
 });
+
+Given('a biz event with id {string} and status {string} and organizationFiscalCode {string} and IUV {string} stored on biz-events datastore', async function (id, status, orgCode, iuv) {
+    eventId = id;
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromBizEventsDatastore(eventId);
+
+    let bizEventStoreResponse = await createDocumentInBizEventsDatastore(id, status, orgCode, iuv);
+    assert.strictEqual(bizEventStoreResponse.statusCode, 201);
+  });
 
 Given('a receipt-error with bizEventId {string} and status {string} stored into receipt-error datastore', async function (id, status) {
     eventId = id;

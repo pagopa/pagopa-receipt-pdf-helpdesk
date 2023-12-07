@@ -8,7 +8,7 @@ Feature: All about payment events to recover managed by Azure functions receipt-
 
   Scenario: getReceiptByOrganizationFiscalCodeAndIUV API return receipt stored on datastore
      Given a receipt with eventId "receipt-helpdesk-int-test-id-2" and status "TO_REVIEW" stored into receipt datastore
-     And a biz event with id "receipt-helpdesk-int-test-id-2" and status "DONE" stored on biz-events datastore
+     And a biz event with id "receipt-helpdesk-int-test-id-2" and status "DONE" and organizationFiscalCode "intTestOrgCode" and IUV "intTestIuv" stored on biz-events datastore
      When getReceiptByOrganizationFiscalCodeAndIUV API is called with organizationFiscalCode "intTestOrgCode" and IUV "intTestIuv"
      Then the api response has a 200 Http status
      And the receipt has eventId "receipt-helpdesk-int-test-id-2"
@@ -41,8 +41,8 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     And the receipt has not status "FAILED"
 
   Scenario: recoverFailedReceiptMassive API retrieve all the receipts in status FAILED and updates their status
-    Given a list of 10 receipts in status "FAILED" stored into receipt datastore starting from eventId "receipt-helpdesk-int-test-id-7"
-    And a list of 10 biz events in status "DONE" stored into biz-events datastore starting from eventId "receipt-helpdesk-int-test-id-7"
+    Given a list of 5 receipts in status "FAILED" stored into receipt datastore starting from eventId "receipt-helpdesk-int-test-id-7"
+    And a list of 5 biz events in status "DONE" stored into biz-events datastore starting from eventId "receipt-helpdesk-int-test-id-7"
     When recoverFailedReceiptMassive API is called with status "FAILED" as query param
     Then the api response has a 200 Http status
     And the list of receipt is recovered from datastore and no receipt in the list has status "FAILED"
@@ -56,8 +56,8 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     And the receipt has not status "IO_ERROR_TO_NOTIFY"
 
 Scenario: recoverNotNotifiedReceiptMassive API retrieve all the receipts in status IO_ERROR_TO_NOTIFY and updates their status
-    Given a list of 10 receipts in status "IO_ERROR_TO_NOTIFY" stored into receipt datastore starting from eventId "receipt-helpdesk-int-test-id-9"
-    And a list of 10 biz events in status "DONE" stored into biz-events datastore starting from eventId "receipt-helpdesk-int-test-id-9"
+    Given a list of 5 receipts in status "IO_ERROR_TO_NOTIFY" stored into receipt datastore starting from eventId "receipt-helpdesk-int-test-id-9"
+    And a list of 5 biz events in status "DONE" stored into biz-events datastore starting from eventId "receipt-helpdesk-int-test-id-9"
     When recoverNotNotifiedReceiptMassive API is called with status "IO_ERROR_TO_NOTIFY" as query param
     Then the api response has a 200 Http status
     And the list of receipt is recovered from datastore and no receipt in the list has status "IO_ERROR_TO_NOTIFY"  
