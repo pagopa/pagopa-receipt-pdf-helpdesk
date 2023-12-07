@@ -127,6 +127,7 @@ microservice-chart:
     COSMOS_BIZ_EVENT_KEY: "cosmos-bizevent-pkey"
     OTEL_EXPORTER_OTLP_HEADERS: "elastic-otl-secret-token"
     PDV_TOKENIZER_SUBSCRIPTION_KEY: "tokenizer-api-key"
+    OCP_APIM_SUBSCRIPTION_KEY: "shared-apim-u-subscription-key"
   keyvault:
     name: "pagopa-u-receipts-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"

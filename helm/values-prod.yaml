@@ -122,6 +122,7 @@ microservice-chart:
     COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
     RECEIPTS_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
     AzureWebJobsStorage: "receipts-storage-account-connection-string"
+    OCP_APIM_SUBSCRIPTION_KEY: "shared-apim-p-subscription-key"
     COSMOS_BIZ_EVENT_CONN_STRING: "cosmos-biz-event-p-connection-string"
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
     COSMOS_BIZ_EVENT_KEY: "cosmos-bizevent-pkey"
