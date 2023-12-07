@@ -100,15 +100,48 @@ async function updateReceiptToFailed(id) {
     }
 }
 
+async function deleteAllTestReceipts() {
+    let response = await receiptContainer.items.query({
+        query: 'SELECT * from c WHERE c.id LIKE @id',
+        parameters: [{ name: "@id", value: "%receipt-helpdesk-int-test%" }]
+    }).fetchNext();
+
+
+    let receiptList = response.resources;
+    if (receiptList.length > 0) {
+        receiptList.forEach((receipt) => {
+            console.log("\n Deleting receipt with id " + id);
+            deleteDocumentFromReceiptsDatastore(receipt.id);
+        });
+    }
+}
+
+async function deleteAllTestReceiptsError() {
+    let response = await receiptErrorContainer.items.query({
+        query: 'SELECT * from c WHERE c.bizEventId LIKE @bizEventId',
+        parameters: [{ name: "@bizEventId", value: "%receipt-helpdesk-int-test%" }]
+    }).fetchNext();
+
+    let receiptErrorList = response.resources;
+    if (receiptErrorList.length > 0) {
+        receiptErrorList.forEach((receiptError) => {
+            console.log("\n Deleting receiptError with id " + id);
+            deleteDocumentFromReceiptErrorDatastore(receiptError.id);
+        })
+    }
+}
+
 module.exports = {
     createDocumentInReceiptsDatastore,
     getDocumentFromReceiptsDatastoreByEventId,
     deleteMultipleDocumentsFromReceiptsDatastoreByEventId,
     deleteDocumentFromReceiptsDatastore,
     updateReceiptToFailed,
+    deleteAllTestReceipts,
 
     deleteDocumentFromReceiptErrorDatastore,
     deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     createDocumentInReceiptErrorDatastore,
-    getDocumentFromReceiptsErrorDatastoreByBizEventId
+    getDocumentFromReceiptsErrorDatastoreByBizEventId,
+    deleteAllTestReceiptsError
 }

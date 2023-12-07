@@ -2,16 +2,17 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 let fs = require('fs');
 const { sleep } = require("./common");
-const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
+const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore, deleteAllTestBizEvents } = require("./biz_events_datastore_client");
 const {
     deleteDocumentFromReceiptsDatastore,
     createDocumentInReceiptsDatastore,
     deleteMultipleDocumentsFromReceiptsDatastoreByEventId,
-    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     createDocumentInReceiptErrorDatastore,
     deleteDocumentFromReceiptErrorDatastore,
     getDocumentFromReceiptsErrorDatastoreByBizEventId,
     getDocumentFromReceiptsDatastoreByEventId,
+    deleteAllTestReceipts,
+    deleteAllTestReceiptsError
 } = require("./receipts_datastore_client");
 const {
     getReceipt,
@@ -38,10 +39,10 @@ let receiptError = null;
 let event = null;
 let receiptPdfFileName = null;
 let listOfReceipts = [];
-let listOfBizEvents = [];
 
 // After each Scenario
 After(async function () {
+    sleep(10000);
     // remove event
     if (eventId != null) {
         await deleteDocumentFromBizEventsDatastore(eventId);
@@ -70,7 +71,6 @@ After(async function () {
     event = null;
     receiptPdfFileName = null;
     listOfReceipts = [];
-    listOfBizEvents = [];
 });
 
 //Given
@@ -126,7 +126,6 @@ Given("a list of {int} receipts in status {string} stored into receipt datastore
 });
 
 Given("a list of {int} biz events in status {string} stored into biz-events datastore starting from eventId {string}", async function (numberOfEvents, status, startingId) {
-    listOfBizEvents = [];
     for (let i = 0; i < numberOfEvents; i++) {
         let nextEventId = startingId + i;
          // prior cancellation to avoid dirty cases
@@ -134,8 +133,6 @@ Given("a list of {int} biz events in status {string} stored into biz-events data
 
         let bizEventStoreResponse = await createDocumentInBizEventsDatastore(nextEventId, status);
         assert.strictEqual(bizEventStoreResponse.statusCode, 201);
-
-        listOfBizEvents.push(bizEventStoreResponse.resource);
     }
 });
 
@@ -173,6 +170,10 @@ When("recoverFailedReceiptMassive API is called with status {string} as query pa
 
 When("recoverNotNotifiedReceipt API is called with eventId {string}", async function (id) {
     responseAPI = await postRecoverNotNotifiedReceipt(id);
+});
+
+When("recoverNotNotifiedReceiptMassive API is called with status {string} as query param", async function (status) {
+    responseAPI = await postRecoverNotNotifiedReceiptMassive(status);
 });
 
 //Then
@@ -214,7 +215,7 @@ Then("the receipt with eventId {string} is recovered from datastore", async func
 });
 
 Then("the list of receipt is recovered from datastore and no receipt in the list has status {string}", async function (status) {
-    for(let recoveredReceipt of listOfReceipts){
+    for (let recoveredReceipt of listOfReceipts) {
         let responseCosmos = await getDocumentFromReceiptsDatastoreByEventId(recoveredReceipt.eventId);
         assert.strictEqual(responseCosmos.resources.length > 0, true);
         assert.notStrictEqual(responseCosmos.resources[0].status, status);

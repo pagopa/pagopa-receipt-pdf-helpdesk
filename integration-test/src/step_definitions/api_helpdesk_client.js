@@ -112,8 +112,9 @@ async function postRecoverNotNotifiedReceipt(eventId) {
 		});
 }
 
-async function postRecoverNotNotifiedReceiptMassive() {
-	let endpoint = process.env.RECOVER_NOT_NOTIFIED_MASSIVE_ENDPOINT || "receipts/recover-not-notified";
+async function postRecoverNotNotifiedReceiptMassive(status) {
+	let endpoint = process.env.RECOVER_NOT_NOTIFIED_MASSIVE_ENDPOINT || "receipts/recover-not-notified?status={STATUS}";
+	endpoint = endpoint.replace("{STATUS}", status);
 
 	return await axios.post(helpdesk_url + endpoint, {})
 		.then(res => {
