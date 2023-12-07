@@ -1,118 +1,140 @@
 const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
-const { sleep, recoverFailedEvent, regeneratePdf } = require("./common");
+let fs = require('fs');
+const { sleep } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
-const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, updateReceiptToFailed } = require("./receipts_datastore_client");
+const {
+    getDocumentByIdFromReceiptsDatastoreByEventId,
+    deleteDocumentFromReceiptsDatastore,
+    createDocumentInReceiptsDatastore,
+    deleteMultipleDocumentsFromReceiptsDatastoreByEventId,
+    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
+    createDocumentInReceiptErrorDatastore,
+    deleteDocumentFromReceiptErrorDatastore
+} = require("./receipts_datastore_client");
+const {
+    getReceipt,
+    getReceiptByOrganizationFiscalCodeAndIUV,
+    getReceiptError,
+    getReceiptPdf
+} = require("./api_helpdesk_client");
+const { uploadBlobFromLocalPath, deleteBlob } = require("./blob_storage_client");
 
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);
 
 // initialize variables
-this.eventId = null;
-this.responseToCheck = null;
-this.response = null;
-this.receiptId = null;
-this.event = null;
+let eventId = null;
+let responseAPI = null;
+let responseCosmos = null;
+let receipt = null;
+let receiptError = null;
+let event = null;
+let receiptPdfFileName = null;
 
 // After each Scenario
 After(async function () {
     // remove event
-    if (this.eventId != null) {
-        await deleteDocumentFromBizEventsDatastore(this.eventId);
+    if (eventId != null) {
+        await deleteDocumentFromBizEventsDatastore(eventId);
+        await deleteMultipleDocumentsFromReceiptsDatastoreByEventId(eventId);
+        await deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(eventId);
     }
-    if (this.eventId != null && this.receiptId != null) {
-        await deleteDocumentFromReceiptsDatastore(this.receiptId, this.eventId);
+    if(receiptPdfFileName != null){
+        await deleteBlob(receiptPdfFileName);
+        fs.unlinkSync(receiptPdfFileName);
     }
-    this.eventId = null;
-    this.responseToCheck = null;
-    this.receiptId = null;
-    this.event = null;
 });
 
-Given('a random biz event with id {string} stored on biz-events datastore with status DONE', async function (id) {
-    this.eventId = id;
+//Given
+Given('a biz event with id {string} stored on biz-events datastore with status {string}', async function (id, status) {
+    eventId = id;
     // prior cancellation to avoid dirty cases
-    await deleteDocumentFromBizEventsDatastore(this.eventId);
-    await deleteDocumentFromReceiptsDatastoreByEventId(this.eventId);
+    await deleteDocumentFromBizEventsDatastore(eventId);
 
-    let bizEventStoreResponse = await createDocumentInBizEventsDatastore(this.eventId);
+    let bizEventStoreResponse = await createDocumentInBizEventsDatastore(eventId, status);
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
 });
 
-When('biz event has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, eventId) {
-    // boundary time spent by azure function to process event
-    await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
+Given('a receipt with eventId {string} stored into receipt datastore', async function (id) {
+    eventId = id;
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromReceiptsDatastore(id);
+
+    let receiptsStoreResponse = await createDocumentInReceiptsDatastore(id);
+    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
 });
 
-Then('the receipts datastore returns the receipt', async function () {
-    assert.notStrictEqual(this.responseToCheck.resources.length, 0);
-    this.receiptId = this.responseToCheck.resources[0].id;
-    assert.strictEqual(this.responseToCheck.resources.length, 1);
+Given('a receipt-error with bizEventId {string} stored into receipt-error datastore', async function (id) {
+    eventId = id;
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromReceiptErrorDatastore(id);
+
+    let receiptsStoreResponse = await createDocumentInReceiptErrorDatastore(id);
+    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
+});
+
+Given("a receipt pdf with filename {string} stored into blob storage", async function (fileName){
+    receiptPdfFileName = fileName;
+     // prior cancellation to avoid dirty cases
+    await deleteBlob(fileName);
+
+    fs.writeFileSync(fileName, "", "binary");
+    let blobStorageResponse = await uploadBlobFromLocalPath(fileName, fileName);
+    assert.notStrictEqual(blobStorageResponse.status, 500);
+});
+
+//When
+When("getReceipt API is called with eventId {string}", async function (id) {
+    responseAPI = await getReceipt(id);
+    receipt = responseAPI.data;
+});
+
+When("getReceiptByOrganizationFiscalCodeAndIUV API is called with organizationFiscalCode {string} and IUV {string}", async function (orgCode, iuv) {
+    responseAPI = await getReceiptByOrganizationFiscalCodeAndIUV(orgCode, iuv);
+    receipt = responseAPI.data;
+});
+
+When("getReceiptError API is called with bizEventId {string}", async function (id) {
+    responseAPI = await getReceiptError(id);
+    receiptError = responseAPI.data;
+});
+
+When("getReceiptPdf API is called with filename {string}", async function (filename) {
+    responseAPI = await getReceiptPdf(filename);
+});
+
+//Then
+Then('the api response has a {int} Http status', function (expectedStatus) {
+    assert.strictEqual(responseAPI.status, expectedStatus);
 });
 
 Then('the receipt has eventId {string}', function (targetId) {
-    assert.strictEqual(this.responseToCheck.resources[0].eventId, targetId);
+    assert.strictEqual(receipt.eventId, targetId);
 });
 
 Then('the receipt has not the status {string}', function (targetStatus) {
-    assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
-});
-
-Given('a random receipt with id {string} stored with status FAILED', async function (id) {
-    this.eventId = id;
-    // prior cancellation to avoid dirty cases
-    document = await getDocumentByIdFromReceiptsDatastore(this.eventId);
-    await updateReceiptToFailed(document.resources[0].id, this.eventId);
-});
-
-When('HTTP recovery request is called', async function () {
-    // boundary time spent by azure function to process event
-    this.response = await recoverFailedEvent(this.eventId);
+    assert.notStrictEqual(receipt.status, targetStatus);
 });
 
 Then('the receipt has not the status {string} after {int} ms', async function (targetStatus, time) {
     await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(this.eventId);
-    assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
+    responseCosmos = await getDocumentByIdFromReceiptsDatastoreByEventId(eventId);
+    assert.notStrictEqual(responseCosmos.resources[0].status, targetStatus);
 });
 
-When('HTTP recovery request is called without eventId', async function () {
-    this.response = await recoverFailedEvent(null);
+Then('the receipts datastore returns the receipt', async function () {
+    assert.notStrictEqual(responseCosmos.resources.length, 0);
+    eventId = responseCosmos.resources[0].eventId;
+    assert.strictEqual(responseCosmos.resources.length, 1);
 });
 
-Then('response has a {int} Http status', function (expectedStatus) {
-   assert.strictEqual(this.response.status, expectedStatus);
+Then("the receipt-error has bizEventId {string}", async function (id) {
+    assert.strictEqual(receiptError.bizEventId, id);
 });
 
-Given('a receipt with id {string} stored into receipt datastore', async function (id) {
-    this.eventId = id;
-    // prior cancellation to avoid dirty cases
-    await deleteDocumentFromReceiptsDatastore(this.eventId, this.eventId);
-
-    let receiptsStoreResponse = await createDocumentInReceiptsDatastore(this.eventId);
-    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
-    this.receiptId = this.eventId;
-});
-
-Given('a biz-event with id {string} stored into biz-event datastore', async function (id) {
-    this.eventId = id;
-    // prior cancellation to avoid dirty cases
-    await deleteDocumentFromBizEventsDatastore(this.eventId, this.eventId);
-
-    let receiptsStoreResponse = await createDocumentInBizEventsDatastore(this.eventId);
-    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
-    this.receiptId = this.eventId;
-});
-
-When('HTTP regenerate request is called', async function () {
-    // boundary time spent by azure function to process event
-    this.response = await regeneratePdf(this.eventId);
-});
-
-
-Then('response has a {int} Http status', function (expectedStatus) {
-   assert.strictEqual(this.response.status, expectedStatus);
+Then("the receipt-error payload has bizEvent decrypted with eventId {string}", async function (id) {
+    assert.strictEqual(receiptError.messagePayload.eventId, id);
 });
 
 
