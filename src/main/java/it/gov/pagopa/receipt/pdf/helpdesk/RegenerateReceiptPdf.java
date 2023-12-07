@@ -39,10 +39,10 @@ public class RegenerateReceiptPdf {
     private final BizEventCosmosClient bizEventCosmosClient;
     private final ReceiptCosmosClient receiptCosmosClient;
 
-    //private final GenerateReceiptPdfService generateReceiptPdfService;
+    private final GenerateReceiptPdfService generateReceiptPdfService;
 
     public RegenerateReceiptPdf(){
-        //this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
+        this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
     }
@@ -76,11 +76,11 @@ public class RegenerateReceiptPdf {
         if (eventId != null) {
 
             try {
+
                 BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
 
                 //Retrieve receipt's data from CosmosDB
                 Receipt receipt = getReceipt(context, bizEvent, receiptCosmosClient, logger);
-
 
                 //Verify receipt status
                 if (receipt.getEventData() != null && isHasAllAttachments(receipt)) {
@@ -89,39 +89,39 @@ public class RegenerateReceiptPdf {
                             context.getFunctionName(),
                             receipt.getId(),
                             bizEvent.getId());
+
                     //Generate and save PDF
                     PdfGeneration pdfGeneration;
-                    //Path workingDirPath = createWorkingDirectory();
+                    Path workingDirPath = createWorkingDirectory();
                     try {
-//                        pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, bizEvent, workingDirPath);
-//
-//                        //Verify PDF generation success
-//                        boolean success;
-//                        success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
+                        pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, bizEvent, workingDirPath);
 
-//                        return success ?
+                        //Verify PDF generation success
+                        boolean success;
+                        success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
+
+                        return success ?
                                 request.createResponseBuilder(HttpStatus.OK)
-                                        .body("OK").build();
-//                                         :
-//                                request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-//                                        .body(ProblemJson.builder()
-//                                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-//                                                .detail("Receipt could not be updated with the new attachments")
-//                                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-//                                                .build())
-//                                        .build();
+                                        .body("OK").build() :
+                                request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(ProblemJson.builder()
+                                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                                .detail("Receipt could not be updated with the new attachments")
+                                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                                .build())
+                                        .build();
 
-//                    } catch (Exception e) {
-//                        logger.error(e.getMessage(), e);
-//                        request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-//                                .body(ProblemJson.builder()
-//                                        .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-//                                        .detail("Error during receipt generation: " + e.getMessage())
-//                                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-//                                        .build())
-//                                .build();
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                        request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ProblemJson.builder()
+                                        .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                        .detail("Error during receipt generation: " + e.getMessage())
+                                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                        .build())
+                                .build();
                     } finally {
-                       // deleteTempFolder(workingDirPath, logger);
+                       deleteTempFolder(workingDirPath, logger);
                     }
 
                 }
@@ -143,16 +143,16 @@ public class RegenerateReceiptPdf {
                                 .build())
                         .build();
             }
-//            catch (IOException e) {
-//                logger.error(e.getMessage(), e);
-//                return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-//                        .body(ProblemJson.builder()
-//                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-//                                .detail("Unexpected error while managing the receipt file")
-//                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-//                                .build())
-//                        .build();
-//            }
+            catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                .detail("Unexpected error while managing the receipt file")
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .build())
+                        .build();
+            }
 
         }
 
