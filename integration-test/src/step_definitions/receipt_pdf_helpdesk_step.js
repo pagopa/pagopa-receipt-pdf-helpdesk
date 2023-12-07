@@ -42,7 +42,6 @@ let listOfReceipts = [];
 
 // After each Scenario
 After(async function () {
-    sleep(10000);
     // remove event
     if (eventId != null) {
         await deleteDocumentFromBizEventsDatastore(eventId);
