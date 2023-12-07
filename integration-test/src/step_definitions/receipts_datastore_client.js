@@ -20,7 +20,7 @@ async function createDocumentInReceiptsDatastore(id, status) {
     }
 }
 
-async function getDocumentByIdFromReceiptsDatastoreByEventId(id) {
+async function getDocumentFromReceiptsDatastoreByEventId(id) {
     return await receiptContainer.items
         .query({
             query: "SELECT * from c WHERE c.eventId=@eventId",
@@ -30,7 +30,7 @@ async function getDocumentByIdFromReceiptsDatastoreByEventId(id) {
 }
 
 async function deleteMultipleDocumentsFromReceiptsDatastoreByEventId(eventId) {
-    let documents = await getDocumentByIdFromReceiptsDatastoreByEventId(eventId);
+    let documents = await getDocumentFromReceiptsDatastoreByEventId(eventId);
 
     documents?.resources?.forEach(el => {
         deleteDocumentFromReceiptsDatastore(el.id);
@@ -67,7 +67,7 @@ async function getDocumentFromReceiptsErrorDatastoreByBizEventId(id) {
 }
 
 async function deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(id) {
-    let documents = await getDocumentByIdFromReceiptsDatastoreByEventId(id);
+    let documents = await getDocumentFromReceiptsErrorDatastoreByBizEventId(id);
 
     documents?.resources?.forEach(el => {
         deleteDocumentFromReceiptErrorDatastore(el.id);
@@ -102,7 +102,7 @@ async function updateReceiptToFailed(id) {
 
 module.exports = {
     createDocumentInReceiptsDatastore,
-    getDocumentByIdFromReceiptsDatastoreByEventId,
+    getDocumentFromReceiptsDatastoreByEventId,
     deleteMultipleDocumentsFromReceiptsDatastoreByEventId,
     deleteDocumentFromReceiptsDatastore,
     updateReceiptToFailed,

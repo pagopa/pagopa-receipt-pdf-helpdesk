@@ -73,10 +73,78 @@ async function postReceiptToReviewed(eventId) {
 		});
 }
 
+async function postRecoverFailedReceipt(eventId) {
+	let endpoint = process.env.RECOVER_FAILED_ENDPOINT || "receipts/{event-id}/recover-failed";
+	endpoint = endpoint.replace("{event-id}", eventId);
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
+async function postRecoverFailedReceiptMassive() {
+	let endpoint = process.env.RECOVER_FAILED_MASSIVE_ENDPOINT || "receipts/recover-failed";
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
+async function postRecoverNotNotifiedReceipt(eventId) {
+	let endpoint = process.env.RECOVER_NOT_NOTIFIED_ENDPOINT || "receipts/{event-id}/recover-not-notified";
+	endpoint = endpoint.replace("{event-id}", eventId);
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
+async function postRecoverNotNotifiedReceiptMassive() {
+	let endpoint = process.env.RECOVER_NOT_NOTIFIED_MASSIVE_ENDPOINT || "receipts/recover-not-notified";
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
+async function postRegenerateReceiptPdf(eventId) {
+	let endpoint = process.env.REGENERATE_RECEIPT_PDF_ENDPOINT || "receipts/{bizevent-id}/regenerate-receipt-pdf";
+	endpoint = endpoint.replace("{bizevent-id}", eventId);
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
 module.exports = {
 	getReceipt,
 	getReceiptByOrganizationFiscalCodeAndIUV,
 	getReceiptError,
 	getReceiptPdf,
-	postReceiptToReviewed
+	postReceiptToReviewed,
+	postRecoverFailedReceipt,
+	postRecoverFailedReceiptMassive,
+	postRecoverNotNotifiedReceipt,
+	postRecoverNotNotifiedReceiptMassive,
+	postRegenerateReceiptPdf
 }

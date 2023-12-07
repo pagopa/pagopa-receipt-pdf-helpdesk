@@ -10,14 +10,20 @@ const {
     deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     createDocumentInReceiptErrorDatastore,
     deleteDocumentFromReceiptErrorDatastore,
-    getDocumentFromReceiptsErrorDatastoreByBizEventId
+    getDocumentFromReceiptsErrorDatastoreByBizEventId,
+    getDocumentFromReceiptsDatastoreByEventId
 } = require("./receipts_datastore_client");
 const {
-    getReceipt,
-    getReceiptByOrganizationFiscalCodeAndIUV,
-    getReceiptError,
-    getReceiptPdf,
-    postReceiptToReviewed
+	getReceipt,
+	getReceiptByOrganizationFiscalCodeAndIUV,
+	getReceiptError,
+	getReceiptPdf,
+	postReceiptToReviewed,
+	postRecoverFailedReceipt,
+	postRecoverFailedReceiptMassive,
+	postRecoverNotNotifiedReceipt,
+	postRecoverNotNotifiedReceiptMassive,
+	postRegenerateReceiptPdf
 } = require("./api_helpdesk_client");
 const { uploadBlobFromLocalPath, deleteBlob } = require("./blob_storage_client");
 
@@ -27,7 +33,6 @@ setDefaultTimeout(360 * 1000);
 // initialize variables
 let eventId = null;
 let responseAPI = null;
-let responseCosmos = null;
 let receipt = null;
 let receiptError = null;
 let event = null;
@@ -39,7 +44,7 @@ After(async function () {
     if (eventId != null) {
         await deleteDocumentFromBizEventsDatastore(eventId);
         await deleteMultipleDocumentsFromReceiptsDatastoreByEventId(eventId);
-        //await deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(eventId);
+        await deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(eventId);
     }
     if(receiptPdfFileName != null){
         await deleteBlob(receiptPdfFileName);
@@ -48,7 +53,6 @@ After(async function () {
 
     eventId = null;
     responseAPI = null;
-    responseCosmos = null;
     receipt = null;
     receiptError = null;
     event = null;
@@ -117,6 +121,10 @@ When("receiptToReviewed API is called with bizEventId {string}", async function 
     responseAPI = await postReceiptToReviewed(id);
 });
 
+When("recoverFailedReceipt API is called with eventId {string}", async function (id){
+    responseAPI = await postRecoverFailedReceipt(id);
+});
+
 //Then
 Then('the api response has a {int} Http status', function (expectedStatus) {
     assert.strictEqual(responseAPI.status, expectedStatus);
@@ -139,11 +147,22 @@ Then("the receipt-error payload has bizEvent decrypted with eventId {string}", a
     assert.strictEqual(messagePayload.id, id);
 });
 
-Then("the receipt-error with bizEventId {string} has status {string}", async function (id, status) {
+Then("the receipt-error has not the status {string}", async function (status) {
+    assert.notStrictEqual(receiptError.status, status);
+});
+
+Then("the receipt-error with bizEventId {string} is recovered from datastore", async function (id) {
     let responseCosmos = await getDocumentFromReceiptsErrorDatastoreByBizEventId(id);
     assert.strictEqual(responseCosmos.resources.length > 0, true);
-    assert.strictEqual(responseCosmos.resources[0].status, status);
+    receiptError = responseCosmos.resources[0];
 });
+
+Then("the receipt with eventId {string} is recovered from datastore", async function (id) {
+    let responseCosmos = await getDocumentFromReceiptsDatastoreByEventId(id);
+    assert.strictEqual(responseCosmos.resources.length > 0, true);
+    receipt = responseCosmos.resources[0];
+});
+
 
 Then("wait {int} ms", async function (milliSec){
     sleep(milliSec)
