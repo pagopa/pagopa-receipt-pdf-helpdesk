@@ -44,12 +44,12 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
     public static final int ALREADY_CREATED = 208;
 
     private final PdfEngineClient pdfEngineClient;
-    private final ReceiptBlobClient receiptBlobClient;
+    //private final ReceiptBlobClient receiptBlobClient;
     private final BuildTemplateService buildTemplateService;
 
     public GenerateReceiptPdfServiceImpl() {
         this.pdfEngineClient = PdfEngineClientImpl.getInstance();
-        this.receiptBlobClient = ReceiptBlobClientImpl.getInstance();
+        //this.receiptBlobClient = ReceiptBlobClientImpl.getInstance();
         this.buildTemplateService = new BuildTemplateServiceImpl();
     }
 
@@ -176,24 +176,24 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 //                .build();
 //    }
 
-    private PdfEngineResponse generatePDFReceipt(ReceiptPDFTemplate template, Path workingDirPath) throws PDFReceiptGenerationException {
-        PdfEngineRequest request = new PdfEngineRequest();
-
-        URL templateStream = GenerateReceiptPdfServiceImpl.class.getClassLoader().getResource("template.zip");
-        //Build the request
-        request.setTemplate(templateStream);
-        request.setData(parseTemplateDataToString(template));
-        request.setApplySignature(false);
-
-        PdfEngineResponse pdfEngineResponse = pdfEngineClient.generatePDF(request, workingDirPath);
-
-        if (pdfEngineResponse.getStatusCode() != SC_OK) {
-            String errMsg = String.format("PDF-Engine response KO (%s): %s", pdfEngineResponse.getStatusCode(), pdfEngineResponse.getErrorMessage());
-            throw new GeneratePDFException(errMsg, pdfEngineResponse.getStatusCode());
-        }
-
-        return pdfEngineResponse;
-    }
+//    private PdfEngineResponse generatePDFReceipt(ReceiptPDFTemplate template, Path workingDirPath) throws PDFReceiptGenerationException {
+//        PdfEngineRequest request = new PdfEngineRequest();
+//
+//        URL templateStream = GenerateReceiptPdfServiceImpl.class.getClassLoader().getResource("template.zip");
+//        //Build the request
+//        request.setTemplate(templateStream);
+//        request.setData(parseTemplateDataToString(template));
+//        request.setApplySignature(false);
+//
+//        PdfEngineResponse pdfEngineResponse = pdfEngineClient.generatePDF(request, workingDirPath);
+//
+//        if (pdfEngineResponse.getStatusCode() != SC_OK) {
+//            String errMsg = String.format("PDF-Engine response KO (%s): %s", pdfEngineResponse.getStatusCode(), pdfEngineResponse.getErrorMessage());
+//            throw new GeneratePDFException(errMsg, pdfEngineResponse.getStatusCode());
+//        }
+//
+//        return pdfEngineResponse;
+//    }
 
     private String parseTemplateDataToString(ReceiptPDFTemplate template) throws GeneratePDFException {
         try {
