@@ -1,7 +1,7 @@
 const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 let fs = require('fs');
-const {sleep} = require("./common");
+const { sleep } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
 const {
     deleteDocumentFromReceiptsDatastore,
@@ -11,19 +11,19 @@ const {
     createDocumentInReceiptErrorDatastore,
     deleteDocumentFromReceiptErrorDatastore,
     getDocumentFromReceiptsErrorDatastoreByBizEventId,
-    getDocumentFromReceiptsDatastoreByEventId
+    getDocumentFromReceiptsDatastoreByEventId,
 } = require("./receipts_datastore_client");
 const {
-	getReceipt,
-	getReceiptByOrganizationFiscalCodeAndIUV,
-	getReceiptError,
-	getReceiptPdf,
-	postReceiptToReviewed,
-	postRecoverFailedReceipt,
-	postRecoverFailedReceiptMassive,
-	postRecoverNotNotifiedReceipt,
-	postRecoverNotNotifiedReceiptMassive,
-	postRegenerateReceiptPdf
+    getReceipt,
+    getReceiptByOrganizationFiscalCodeAndIUV,
+    getReceiptError,
+    getReceiptPdf,
+    postReceiptToReviewed,
+    postRecoverFailedReceipt,
+    postRecoverFailedReceiptMassive,
+    postRecoverNotNotifiedReceipt,
+    postRecoverNotNotifiedReceiptMassive,
+    postRegenerateReceiptPdf
 } = require("./api_helpdesk_client");
 const { uploadBlobFromLocalPath, deleteBlob } = require("./blob_storage_client");
 
@@ -37,6 +37,8 @@ let receipt = null;
 let receiptError = null;
 let event = null;
 let receiptPdfFileName = null;
+let listOfReceipts = [];
+let listOfBizEvents = [];
 
 // After each Scenario
 After(async function () {
@@ -46,9 +48,19 @@ After(async function () {
         await deleteMultipleDocumentsFromReceiptsDatastoreByEventId(eventId);
         await deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(eventId);
     }
-    if(receiptPdfFileName != null){
+    if (receiptPdfFileName != null) {
         await deleteBlob(receiptPdfFileName);
         fs.unlinkSync(receiptPdfFileName);
+    }
+    if(listOfReceipts.length > 0){
+        for(let receipt of listOfReceipts){
+            await deleteDocumentFromReceiptsDatastore(receipt.id);
+        }
+    }
+    if(listOfBizEvents.length > 0){
+        for(let bizEvent of listOfBizEvents){
+            await deleteDocumentFromBizEventsDatastore(bizEvent.id);
+        }
     }
 
     eventId = null;
@@ -57,6 +69,8 @@ After(async function () {
     receiptError = null;
     event = null;
     receiptPdfFileName = null;
+    listOfReceipts = [];
+    listOfBizEvents = [];
 });
 
 //Given
@@ -87,14 +101,42 @@ Given('a receipt-error with bizEventId {string} and status {string} stored into 
     assert.strictEqual(receiptsStoreResponse.statusCode, 201);
 });
 
-Given("a receipt pdf with filename {string} stored into blob storage", async function (fileName){
+Given("a receipt pdf with filename {string} stored into blob storage", async function (fileName) {
     receiptPdfFileName = fileName;
-     // prior cancellation to avoid dirty cases
+    // prior cancellation to avoid dirty cases
     await deleteBlob(fileName);
 
     fs.writeFileSync(fileName, "", "binary");
     let blobStorageResponse = await uploadBlobFromLocalPath(fileName, fileName);
     assert.notStrictEqual(blobStorageResponse.status, 500);
+});
+
+Given("a list of {int} receipts in status {string} stored into receipt datastore starting from eventId {string}", async function (numberOfReceipts, status, startingId) {
+    listOfReceipts = [];
+    for (let i = 0; i < numberOfReceipts; i++) {
+        let nextEventId = startingId + i;
+         // prior cancellation to avoid dirty cases
+        await deleteMultipleDocumentsFromReceiptsDatastoreByEventId(nextEventId);
+
+        let receiptsStoreResponse = await createDocumentInReceiptsDatastore(nextEventId, status);
+        assert.strictEqual(receiptsStoreResponse.statusCode, 201);
+
+        listOfReceipts.push(receiptsStoreResponse.resource);
+    }
+});
+
+Given("a list of {int} biz events in status {string} stored into biz-events datastore starting from eventId {string}", async function (numberOfEvents, status, startingId) {
+    listOfBizEvents = [];
+    for (let i = 0; i < numberOfEvents; i++) {
+        let nextEventId = startingId + i;
+         // prior cancellation to avoid dirty cases
+        await deleteDocumentFromBizEventsDatastore(nextEventId);
+
+        let bizEventStoreResponse = await createDocumentInBizEventsDatastore(nextEventId, status);
+        assert.strictEqual(bizEventStoreResponse.statusCode, 201);
+
+        listOfBizEvents.push(bizEventStoreResponse.resource);
+    }
 });
 
 //When
@@ -121,8 +163,12 @@ When("receiptToReviewed API is called with bizEventId {string}", async function 
     responseAPI = await postReceiptToReviewed(id);
 });
 
-When("recoverFailedReceipt API is called with eventId {string}", async function (id){
+When("recoverFailedReceipt API is called with eventId {string}", async function (id) {
     responseAPI = await postRecoverFailedReceipt(id);
+});
+
+When("recoverFailedReceiptMassive API is called with status {string} as query param", async function (status) {
+    responseAPI = await postRecoverFailedReceiptMassive(status);
 });
 
 //Then
@@ -134,7 +180,7 @@ Then('the receipt has eventId {string}', function (targetId) {
     assert.strictEqual(receipt.eventId, targetId);
 });
 
-Then('the receipt has not the status {string}', function (targetStatus) {
+Then('the receipt has not status {string}', function (targetStatus) {
     assert.notStrictEqual(receipt.status, targetStatus);
 });
 
@@ -147,7 +193,7 @@ Then("the receipt-error payload has bizEvent decrypted with eventId {string}", a
     assert.strictEqual(messagePayload.id, id);
 });
 
-Then("the receipt-error has not the status {string}", async function (status) {
+Then("the receipt-error has not status {string}", async function (status) {
     assert.notStrictEqual(receiptError.status, status);
 });
 
@@ -163,8 +209,15 @@ Then("the receipt with eventId {string} is recovered from datastore", async func
     receipt = responseCosmos.resources[0];
 });
 
+Then("the list of receipt is recovered from datastore and no receipt in the list has status {string}", async function (status) {
+    for(let recoveredReceipt of listOfReceipts){
+        let responseCosmos = await getDocumentFromReceiptsDatastoreByEventId(recoveredReceipt.eventId);
+        assert.strictEqual(responseCosmos.resources.length > 0, true);
+        assert.notStrictEqual(responseCosmos.resources[0].status, status);
+    }
+});
 
-Then("wait {int} ms", async function (milliSec){
+Then("wait {int} ms", async function (milliSec) {
     sleep(milliSec)
 });
 

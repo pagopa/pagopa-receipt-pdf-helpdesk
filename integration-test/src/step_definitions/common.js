@@ -1,4 +1,5 @@
 const TOKENIZED_FISCAL_CODE = "cd07268c-73e8-4df4-8305-a35085e32eff";
+const FISCAL_CODE = "AAAAAA00A00A000A";
 
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -30,7 +31,7 @@ function createEvent(id, status) {
 			"officeName": "office"
 		},
 		"psp": {
-			"idPsp": "60000000001",
+			"idPsp": "BNLIITRR",
 			"idBrokerPsp": "60000000001",
 			"idChannel": "60000000001_08",
 			"psp": "PSP Paolo",
@@ -40,7 +41,7 @@ function createEvent(id, status) {
 		"debtor": {
 			"fullName": "paGetPaymentName",
 			"entityUniqueIdentifierType": "G",
-			"entityUniqueIdentifierValue": "JHNDOE00A01F205N",
+			"entityUniqueIdentifierValue": FISCAL_CODE,
 			"streetName": "paGetPaymentStreet",
 			"civicNumber": "paGetPayment99",
 			"postalCode": "20155",
@@ -52,7 +53,7 @@ function createEvent(id, status) {
 		"payer": {
 			"fullName": "name",
 			"entityUniqueIdentifierType": "G",
-			"entityUniqueIdentifierValue": "JHNDOE00A01F205S",
+			"entityUniqueIdentifierValue": FISCAL_CODE,
 			"streetName": "street",
 			"civicNumber": "civic",
 			"postalCode": "postal",
@@ -95,7 +96,7 @@ function createEvent(id, status) {
 			"user": {
 				"fullName": "John Doe",
 				"type": "F",
-				"fiscalCode": "JHNDOE00A01F205N",
+				"fiscalCode": FISCAL_CODE,
 				"notificationEmail": "john.doe@mail.it",
 				"userId": "1234",
 				"userStatus": "11",

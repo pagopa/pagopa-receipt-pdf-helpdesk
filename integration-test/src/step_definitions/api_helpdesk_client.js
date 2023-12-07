@@ -86,8 +86,9 @@ async function postRecoverFailedReceipt(eventId) {
 		});
 }
 
-async function postRecoverFailedReceiptMassive() {
-	let endpoint = process.env.RECOVER_FAILED_MASSIVE_ENDPOINT || "receipts/recover-failed";
+async function postRecoverFailedReceiptMassive(status) {
+	let endpoint = process.env.RECOVER_FAILED_MASSIVE_ENDPOINT || "receipts/recover-failed?status={STATUS}";
+	endpoint = endpoint.replace("{STATUS}", status);
 
 	return await axios.post(helpdesk_url + endpoint, {})
 		.then(res => {

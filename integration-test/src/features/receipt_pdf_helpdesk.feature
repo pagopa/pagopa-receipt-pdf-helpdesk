@@ -30,7 +30,7 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     When receiptToReviewed API is called with bizEventId "receipt-helpdesk-int-test-id-5"
     Then the api response has a 200 Http status
     And the receipt-error with bizEventId "receipt-helpdesk-int-test-id-5" is recovered from datastore
-    And the receipt-error has not the status "TO_REVIEW"
+    And the receipt-error has not status "TO_REVIEW"
 
   Scenario: recoverFailedReceipt API retrieve a receipt in status FAILED and updates its status to INSERTED
     Given a receipt with eventId "receipt-helpdesk-int-test-id-6" and status "FAILED" stored into receipt datastore
@@ -38,4 +38,11 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     When recoverFailedReceipt API is called with eventId "receipt-helpdesk-int-test-id-6"
     Then the api response has a 200 Http status
     And the receipt with eventId "receipt-helpdesk-int-test-id-6" is recovered from datastore
-    And the receipt has not the status "FAILED"
+    And the receipt has not status "FAILED"
+
+  Scenario: recoverFailedReceiptMassive API retrieve all the receipts in status FAILED and updates their status to INSERTED
+    Given a list of 10 receipts in status "FAILED" stored into receipt datastore starting from eventId "receipt-helpdesk-int-test-id-7"
+    And a list of 10 biz events in status "DONE" stored into biz-events datastore starting from eventId "receipt-helpdesk-int-test-id-7"
+    When recoverFailedReceiptMassive API is called with status "FAILED" as query param
+    Then the api response has a 200 Http status
+    And the list of receipt is recovered from datastore and no receipt in the list has status "FAILED"
