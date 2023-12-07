@@ -36,12 +36,11 @@ public class RegenerateReceiptPdf {
     private final Logger logger = LoggerFactory.getLogger(RegenerateReceiptPdf.class);
     private final BizEventCosmosClient bizEventCosmosClient;
     private final ReceiptCosmosClient receiptCosmosClient;
-
     private final GenerateReceiptPdfService generateReceiptPdfService;
 
     public RegenerateReceiptPdf(){
-        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
         this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
     }
 
