@@ -8,10 +8,12 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptErrorStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.Aes256Exception;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
 import it.gov.pagopa.receipt.pdf.helpdesk.util.HttpResponseMessageMock;
+import it.gov.pagopa.receipt.pdf.helpdesk.utils.Aes256Utils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +22,9 @@ import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.util.Optional;
 
@@ -29,16 +34,25 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ExtendWith(SystemStubsExtension.class)
 class GetReceiptErrorTest {
+
+    private final String AES_SALT = "salt";
+    private final String AES_KEY = "key";
+
+    @SystemStub
+    private EnvironmentVariables environment = new EnvironmentVariables("AES_SALT", AES_SALT, "AES_SECRET_KEY", AES_KEY);
 
     String INVALID_DATA_BASE64 = "==eyJkYXRhIjoidGVzdCJ9";
 
-    String VALID_DATA_BASE64 = "eyJkYXRhIjoidGVzdCJ9";
     String VALID_DATA = "{\"data\":\"test\"}";
 
     private ReceiptCosmosClient receiptCosmosClient;
     private ExecutionContext executionContextMock;
     private GetReceiptError sut;
+
+    GetReceiptErrorTest() throws Aes256Exception {
+    }
 
     @BeforeEach
     void setUp() {
@@ -49,7 +63,7 @@ class GetReceiptErrorTest {
     }
 
     @Test
-    void shouldReturnPlainDataOnValidInput() throws ReceiptNotFoundException {
+    void shouldReturnPlainDataOnValidInput() throws ReceiptNotFoundException, Aes256Exception {
         @SuppressWarnings("unchecked")
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
@@ -175,13 +189,13 @@ class GetReceiptErrorTest {
 
     }
 
-    public ReceiptError getValidBase64ReceiptError() {
+    public ReceiptError getValidBase64ReceiptError() throws Aes256Exception {
         return ReceiptError.builder()
                 .id("1")
                 .bizEventId("1")
                 .messageError("test")
                 .status(ReceiptErrorStatusType.TO_REVIEW)
-                .messagePayload(VALID_DATA_BASE64)
+                .messagePayload(Aes256Utils.encrypt("{\"data\":\"test\"}"))
                 .build();
     }
 
