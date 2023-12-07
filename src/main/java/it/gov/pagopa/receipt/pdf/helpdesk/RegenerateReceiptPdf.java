@@ -36,17 +36,17 @@ public class RegenerateReceiptPdf {
 
 
     private final Logger logger = LoggerFactory.getLogger(RegenerateReceiptPdf.class);
-//    private final BizEventCosmosClient bizEventCosmosClient;
-//    private final ReceiptCosmosClient receiptCosmosClient;
-//
-//    private final GenerateReceiptPdfService generateReceiptPdfService;
-//
-//    public RegenerateReceiptPdf(){
-//        this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
-//        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
-//        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
-//    }
-//
+    private final BizEventCosmosClient bizEventCosmosClient;
+    private final ReceiptCosmosClient receiptCosmosClient;
+
+    //private final GenerateReceiptPdfService generateReceiptPdfService;
+
+    public RegenerateReceiptPdf(){
+        //this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
+        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+    }
+
 //    RegenerateReceiptPdf(BizEventCosmosClient bizEventCosmosClient,
 //                         ReceiptCosmosClient receiptCosmosClient,
 //                         GenerateReceiptPdfService generateReceiptPdfService){
@@ -61,9 +61,9 @@ public class RegenerateReceiptPdf {
      *
      * @return response with HttpStatus.OK
      */
-    @FunctionName("RegenerateReceiptPdfTest")
+    @FunctionName("RegenerateReceiptFunc")
     public HttpResponseMessage run (
-            @HttpTrigger(name = "RegenerateReceiptPdfTestTrigger",
+            @HttpTrigger(name = "RegenerateReceiptPdfFuncTrigger",
                     methods = {HttpMethod.POST},
                     route = "receipts/{bizeventid}/regenerate-receipt-pdf",
                     authLevel = AuthorizationLevel.ANONYMOUS)
@@ -73,36 +73,36 @@ public class RegenerateReceiptPdf {
 
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-//        if (eventId != null) {
-//
-//            try {
-//                BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
-//
-//                //Retrieve receipt's data from CosmosDB
-//                Receipt receipt = getReceipt(context, bizEvent, receiptCosmosClient, logger);
-//
-//
-//                //Verify receipt status
-//                if (receipt.getEventData() != null && isHasAllAttachments(receipt)) {
-//
-//                    logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
-//                            context.getFunctionName(),
-//                            receipt.getId(),
-//                            bizEvent.getId());
-//                    //Generate and save PDF
-//                    PdfGeneration pdfGeneration;
-//                    Path workingDirPath = createWorkingDirectory();
-//                    try {
+        if (eventId != null) {
+
+            try {
+                BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
+
+                //Retrieve receipt's data from CosmosDB
+                Receipt receipt = getReceipt(context, bizEvent, receiptCosmosClient, logger);
+
+
+                //Verify receipt status
+                if (receipt.getEventData() != null && isHasAllAttachments(receipt)) {
+
+                    logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
+                            context.getFunctionName(),
+                            receipt.getId(),
+                            bizEvent.getId());
+                    //Generate and save PDF
+                    PdfGeneration pdfGeneration;
+                    //Path workingDirPath = createWorkingDirectory();
+                    try {
 //                        pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, bizEvent, workingDirPath);
 //
 //                        //Verify PDF generation success
 //                        boolean success;
 //                        success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
-//
+
 //                        return success ?
-//                                request.createResponseBuilder(HttpStatus.OK)
-//                                        .body("OK")
-//                                        .build() :
+                                request.createResponseBuilder(HttpStatus.OK)
+                                        .body("OK").build();
+//                                         :
 //                                request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
 //                                        .body(ProblemJson.builder()
 //                                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
@@ -110,7 +110,7 @@ public class RegenerateReceiptPdf {
 //                                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
 //                                                .build())
 //                                        .build();
-//
+
 //                    } catch (Exception e) {
 //                        logger.error(e.getMessage(), e);
 //                        request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -120,29 +120,30 @@ public class RegenerateReceiptPdf {
 //                                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
 //                                        .build())
 //                                .build();
-//                    } finally {
-//                        deleteTempFolder(workingDirPath, logger);
-//                    }
-//
-//                }
-//
-//            } catch (ReceiptNotFoundException | BizEventNotFoundException exception) {
-//                logger.error(exception.getMessage(), exception);
-//                String message = "Missing required informations";
-//                if (exception.getClass().equals(ReceiptNotFoundException.class)) {
-//                    message = "Receipt not found with event-id " + eventId;
-//                } else if (exception.getClass().equals(BizEventNotFoundException.class)) {
-//                    message = "BizEvent not found with event-id " + eventId;
-//                }
-//                return request
-//                        .createResponseBuilder(HttpStatus.BAD_REQUEST)
-//                        .body(ProblemJson.builder()
-//                                .title(HttpStatus.BAD_REQUEST.name())
-//                                .detail(message)
-//                                .status(HttpStatus.BAD_REQUEST.value())
-//                                .build())
-//                        .build();
-//            } catch (IOException e) {
+                    } finally {
+                       // deleteTempFolder(workingDirPath, logger);
+                    }
+
+                }
+
+            } catch (ReceiptNotFoundException | BizEventNotFoundException exception) {
+                logger.error(exception.getMessage(), exception);
+                String message = "Missing required informations";
+                if (exception.getClass().equals(ReceiptNotFoundException.class)) {
+                    message = "Receipt not found with event-id " + eventId;
+                } else if (exception.getClass().equals(BizEventNotFoundException.class)) {
+                    message = "BizEvent not found with event-id " + eventId;
+                }
+                return request
+                        .createResponseBuilder(HttpStatus.BAD_REQUEST)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.BAD_REQUEST.name())
+                                .detail(message)
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .build())
+                        .build();
+            }
+//            catch (IOException e) {
 //                logger.error(e.getMessage(), e);
 //                return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
 //                        .body(ProblemJson.builder()
@@ -152,8 +153,8 @@ public class RegenerateReceiptPdf {
 //                                .build())
 //                        .build();
 //            }
-//
-//        }
+
+        }
 
         return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
                 .body(ProblemJson.builder()
@@ -165,19 +166,19 @@ public class RegenerateReceiptPdf {
 
     }
 
-//    private static boolean isHasAllAttachments(Receipt receipt) {
-//        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
-//        String payerCF = receipt.getEventData().getPayerFiscalCode();
-//        boolean hasAllAttachments;
-//        if (payerCF == null) {
-//          hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
-//        } else if (debtorCF.equals(payerCF)) {
-//            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
-//        } else {
-//            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null &&
-//                    receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
-//        }
-//        return hasAllAttachments;
-//    }
+    private static boolean isHasAllAttachments(Receipt receipt) {
+        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+        String payerCF = receipt.getEventData().getPayerFiscalCode();
+        boolean hasAllAttachments;
+        if (payerCF == null) {
+          hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+        } else if (debtorCF.equals(payerCF)) {
+            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+        } else {
+            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null &&
+                    receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
+        }
+        return hasAllAttachments;
+    }
 
 }
