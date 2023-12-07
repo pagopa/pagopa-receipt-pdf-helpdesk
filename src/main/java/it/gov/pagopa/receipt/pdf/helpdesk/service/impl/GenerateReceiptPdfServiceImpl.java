@@ -35,23 +35,23 @@ import static org.apache.http.HttpStatus.SC_OK;
 
 public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService {
 
-//    private final Logger logger = LoggerFactory.getLogger(GenerateReceiptPdfServiceImpl.class);
-//
-//    private static final String TEMPLATE_PREFIX = "pagopa-ricevuta";
-//    private static final String PAYER_TEMPLATE_SUFFIX = "p";
-//    private static final String DEBTOR_TEMPLATE_SUFFIX = "d";
-//
-//    public static final int ALREADY_CREATED = 208;
+    private final Logger logger = LoggerFactory.getLogger(GenerateReceiptPdfServiceImpl.class);
 
-    //private final PdfEngineClient pdfEngineClient;
+    private static final String TEMPLATE_PREFIX = "pagopa-ricevuta";
+    private static final String PAYER_TEMPLATE_SUFFIX = "p";
+    private static final String DEBTOR_TEMPLATE_SUFFIX = "d";
+
+    public static final int ALREADY_CREATED = 208;
+
+    private final PdfEngineClient pdfEngineClient;
     //private final ReceiptBlobClient receiptBlobClient;
     //private final BuildTemplateService buildTemplateService;
 
-    //public GenerateReceiptPdfServiceImpl() {
-        //this.pdfEngineClient = PdfEngineClientImpl.getInstance();
-        //this.receiptBlobClient = ReceiptBlobClientImpl.getInstance();
-        //this.buildTemplateService = new BuildTemplateServiceImpl();
-    //}
+    public GenerateReceiptPdfServiceImpl() {
+        this.pdfEngineClient = PdfEngineClientImpl.getInstance();
+//        this.receiptBlobClient = ReceiptBlobClientImpl.getInstance();
+//        this.buildTemplateService = new BuildTemplateServiceImpl();
+    }
 
     @Override
     public PdfGeneration generateReceipts(Receipt receipt, BizEvent bizEvent, Path workingDirPath) {
@@ -195,20 +195,20 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 //        return pdfEngineResponse;
 //    }
 
-//    private String parseTemplateDataToString(ReceiptPDFTemplate template) throws GeneratePDFException {
-//        try {
-//            return Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(template));
-//        } catch (Exception e) {
-//            throw new GeneratePDFException("Error preparing input data for receipt PDF template", ReasonErrorCode.ERROR_PDF_ENGINE.getCode(), e);
-//        }
-//    }
+    private String parseTemplateDataToString(ReceiptPDFTemplate template) throws GeneratePDFException {
+        try {
+            return Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(template));
+        } catch (Exception e) {
+            throw new GeneratePDFException("Error preparing input data for receipt PDF template", ReasonErrorCode.ERROR_PDF_ENGINE.getCode(), e);
+        }
+    }
 
-//    private boolean receiptAlreadyCreated(ReceiptMetadata receiptMetadata) {
-//        return receiptMetadata != null
-//                && receiptMetadata.getUrl() != null
-//                && receiptMetadata.getName() != null
-//                && !receiptMetadata.getUrl().isEmpty()
-//                && !receiptMetadata.getName().isEmpty();
-//    }
+    private boolean receiptAlreadyCreated(ReceiptMetadata receiptMetadata) {
+        return receiptMetadata != null
+                && receiptMetadata.getUrl() != null
+                && receiptMetadata.getName() != null
+                && !receiptMetadata.getUrl().isEmpty()
+                && !receiptMetadata.getName().isEmpty();
+    }
 
 }
