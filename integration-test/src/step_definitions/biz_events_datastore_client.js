@@ -17,8 +17,8 @@ async function getDocumentByIdFromBizEventsDatastore(id) {
         .fetchAll();
 }
 
-async function createDocumentInBizEventsDatastore(id) {
-    let event = createEvent(id);
+async function createDocumentInBizEventsDatastore(id, status) {
+    let event = createEvent(id, status);
     try {
         return await container.items.create(event);
     } catch (err) {
