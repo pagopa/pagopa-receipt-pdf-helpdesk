@@ -1,7 +1,10 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
 import com.microsoft.azure.functions.*;
-import com.microsoft.azure.functions.annotation.*;
+import com.microsoft.azure.functions.annotation.AuthorizationLevel;
+import com.microsoft.azure.functions.annotation.BindingName;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
@@ -20,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.GenerateReceiptUtils.*;
@@ -34,24 +36,24 @@ public class RegenerateReceiptPdf {
 
 
     private final Logger logger = LoggerFactory.getLogger(RegenerateReceiptPdf.class);
-    private final BizEventCosmosClient bizEventCosmosClient;
-    private final ReceiptCosmosClient receiptCosmosClient;
-
-    private final GenerateReceiptPdfService generateReceiptPdfService;
-
-    public RegenerateReceiptPdf(){
-        this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
-        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
-        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
-    }
-
-    RegenerateReceiptPdf(BizEventCosmosClient bizEventCosmosClient,
-                         ReceiptCosmosClient receiptCosmosClient,
-                         GenerateReceiptPdfService generateReceiptPdfService){
-        this.bizEventCosmosClient = bizEventCosmosClient;
-        this.receiptCosmosClient = receiptCosmosClient;
-        this.generateReceiptPdfService = generateReceiptPdfService;
-    }
+//    private final BizEventCosmosClient bizEventCosmosClient;
+//    private final ReceiptCosmosClient receiptCosmosClient;
+//
+//    private final GenerateReceiptPdfService generateReceiptPdfService;
+//
+//    public RegenerateReceiptPdf(){
+//        this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
+//        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+//        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+//    }
+//
+//    RegenerateReceiptPdf(BizEventCosmosClient bizEventCosmosClient,
+//                         ReceiptCosmosClient receiptCosmosClient,
+//                         GenerateReceiptPdfService generateReceiptPdfService){
+//        this.bizEventCosmosClient = bizEventCosmosClient;
+//        this.receiptCosmosClient = receiptCosmosClient;
+//        this.generateReceiptPdfService = generateReceiptPdfService;
+//    }
 
 
     /**
@@ -61,18 +63,12 @@ public class RegenerateReceiptPdf {
      */
     @FunctionName("RegenerateReceiptPdf")
     public HttpResponseMessage run (
-            @HttpTrigger(name = "RegenerateReceiptPdfTrigger",
+            @HttpTrigger(name = "RegenerateReceiptPdf",
                     methods = {HttpMethod.POST},
-                    route = "receipts/{bizevent-id}/regenerate-receipt-pdf",
+                    route = "receipts/{bizeventid}/regenerate-receipt-pdf",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("bizevent-id") String eventId,
-            @CosmosDBOutput(
-                    name = "ReceiptDatastore",
-                    databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<Receipt>> documentReceipts,
+            @BindingName("bizeventid") String eventId,
             final ExecutionContext context) {
 
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
