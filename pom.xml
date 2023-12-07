@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-helpdesk</artifactId>
-    <version>0.6.8-fix-schedule-env-vars</version>
+    <version>0.6.9-fix-schedule-env-vars</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-helpdesk</name>
