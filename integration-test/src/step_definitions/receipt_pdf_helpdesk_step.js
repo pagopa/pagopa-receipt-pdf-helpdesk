@@ -171,6 +171,10 @@ When("recoverFailedReceiptMassive API is called with status {string} as query pa
     responseAPI = await postRecoverFailedReceiptMassive(status);
 });
 
+When("recoverNotNotifiedReceipt API is called with eventId {string}", async function (id) {
+    responseAPI = await postRecoverNotNotifiedReceipt(id);
+});
+
 //Then
 Then('the api response has a {int} Http status', function (expectedStatus) {
     assert.strictEqual(responseAPI.status, expectedStatus);
