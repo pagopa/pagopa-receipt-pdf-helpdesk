@@ -173,6 +173,7 @@ function createReceiptError(id, status) {
 }
 
 module.exports = {
+	TOKENIZED_FISCAL_CODE,
 	createEvent,
 	sleep,
 	createReceipt,
