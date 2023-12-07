@@ -38,3 +38,9 @@ local.settings.json
 bin/
 obj/
 **/.identity
+.azure/
+
+package-lock.json
+yarn.lock
+.env
+node_modules/
