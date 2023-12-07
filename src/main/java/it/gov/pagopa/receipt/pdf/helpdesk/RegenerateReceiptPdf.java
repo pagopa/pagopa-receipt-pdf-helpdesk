@@ -83,7 +83,9 @@ public class RegenerateReceiptPdf {
                 Receipt receipt = getReceipt(context, bizEvent, receiptCosmosClient, logger);
 
                 //Verify receipt status
-                if (receipt.getEventData() != null && isHasAllAttachments(receipt)) {
+                if (receipt.getEventData() != null
+//                        && isHasAllAttachments(receipt)
+                ) {
 
                     logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
                             context.getFunctionName(),
