@@ -57,6 +57,15 @@ async function createDocumentInReceiptErrorDatastore(id, status) {
     }
 }
 
+async function getDocumentFromReceiptsErrorDatastoreByBizEventId(id) {
+    return await receiptErrorContainer.items
+        .query({
+            query: "SELECT * from c WHERE c.bizEventId=@bizEventId",
+            parameters: [{ name: "@bizEventId", value: id }]
+        })
+        .fetchNext();
+}
+
 async function deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(id) {
     let documents = await getDocumentByIdFromReceiptsDatastoreByEventId(id);
 
@@ -100,5 +109,6 @@ module.exports = {
 
     deleteDocumentFromReceiptErrorDatastore,
     deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
-    createDocumentInReceiptErrorDatastore
+    createDocumentInReceiptErrorDatastore,
+    getDocumentFromReceiptsErrorDatastoreByBizEventId
 }

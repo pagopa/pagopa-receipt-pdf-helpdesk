@@ -60,9 +60,23 @@ async function getReceiptPdf(fileName) {
 		});
 }
 
+async function postReceiptToReviewed(eventId) {
+	let endpoint = process.env.RECEIPT_TO_REVIEW_ENDPOINT || "receipts-error/{event-id}/reviewed";
+	endpoint = endpoint.replace("{event-id}", eventId);
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
 module.exports = {
 	getReceipt,
 	getReceiptByOrganizationFiscalCodeAndIUV,
 	getReceiptError,
-	getReceiptPdf
+	getReceiptPdf,
+	postReceiptToReviewed
 }
