@@ -40,9 +40,9 @@ public class RegenerateReceiptPdf {
     private final GenerateReceiptPdfService generateReceiptPdfService;
 
     public RegenerateReceiptPdf(){
-        this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+        this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
     }
 
 //    RegenerateReceiptPdf(BizEventCosmosClient bizEventCosmosClient,
