@@ -44,13 +44,13 @@ public class RegenerateReceiptPdf {
         this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
     }
 
-//    RegenerateReceiptPdf(BizEventCosmosClient bizEventCosmosClient,
-//                         ReceiptCosmosClient receiptCosmosClient,
-//                         GenerateReceiptPdfService generateReceiptPdfService){
-//        this.bizEventCosmosClient = bizEventCosmosClient;
-//        this.receiptCosmosClient = receiptCosmosClient;
-//        this.generateReceiptPdfService = generateReceiptPdfService;
-//    }
+    RegenerateReceiptPdf(BizEventCosmosClient bizEventCosmosClient,
+                         ReceiptCosmosClient receiptCosmosClient,
+                         GenerateReceiptPdfService generateReceiptPdfService){
+        this.bizEventCosmosClient = bizEventCosmosClient;
+        this.receiptCosmosClient = receiptCosmosClient;
+        this.generateReceiptPdfService = generateReceiptPdfService;
+    }
 
 
     /**
@@ -81,7 +81,7 @@ public class RegenerateReceiptPdf {
 
                 //Verify receipt status
                 if (receipt.getEventData() != null
-//                        && isHasAllAttachments(receipt)
+                        && isHasAllAttachments(receipt)
                 ) {
 
                     logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
@@ -93,11 +93,11 @@ public class RegenerateReceiptPdf {
                     PdfGeneration pdfGeneration;
                     Path workingDirPath = createWorkingDirectory();
                     try {
-                        //pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, bizEvent, workingDirPath);
+                        pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, bizEvent, workingDirPath);
 
                         //Verify PDF generation success
                         boolean success = true;
-                        //success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
+                        success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
 
                         return success ?
                                 request.createResponseBuilder(HttpStatus.OK)
