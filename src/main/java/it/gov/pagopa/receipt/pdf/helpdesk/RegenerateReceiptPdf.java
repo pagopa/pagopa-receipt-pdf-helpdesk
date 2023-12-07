@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.GenerateReceiptUtils.*;
@@ -70,10 +71,11 @@ public class RegenerateReceiptPdf {
             @BindingName("bizevent-id") String eventId,
             final ExecutionContext context) {
 
-        try {
+        logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-            if (eventId != null) {
+        if (eventId != null) {
 
+            try {
                 BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
 
                 //Retrieve receipt's data from CosmosDB
@@ -99,8 +101,8 @@ public class RegenerateReceiptPdf {
 
                         return success ?
                                 request.createResponseBuilder(HttpStatus.OK)
-                                    .body("OK")
-                                    .build() :
+                                        .body("OK")
+                                        .build() :
                                 request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                                         .body(ProblemJson.builder()
                                                 .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
@@ -124,42 +126,43 @@ public class RegenerateReceiptPdf {
 
                 }
 
+            } catch (ReceiptNotFoundException | BizEventNotFoundException exception) {
+                logger.error(exception.getMessage(), exception);
+                String message = "Missing required informations";
+                if (exception.getClass().equals(ReceiptNotFoundException.class)) {
+                    message = "Receipt not found with event-id " + eventId;
+                } else if (exception.getClass().equals(BizEventNotFoundException.class)) {
+                    message = "BizEvent not found with event-id " + eventId;
+                }
+                return request
+                        .createResponseBuilder(HttpStatus.BAD_REQUEST)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.BAD_REQUEST.name())
+                                .detail(message)
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .build())
+                        .build();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+                return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                .detail("Unexpected error while managing the receipt file")
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .build())
+                        .build();
             }
 
-            return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Missing valid eventId paramater")
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
-
-        } catch (ReceiptNotFoundException | BizEventNotFoundException exception) {
-            logger.error(exception.getMessage(), exception);
-            String message = "Missing required informations";
-            if (exception.getClass().equals(ReceiptNotFoundException.class)) {
-                message = "Receipt not found with event-id " + eventId;
-            } else if (exception.getClass().equals(BizEventNotFoundException.class)) {
-                message = "BizEvent not found with event-id " + eventId;
-            }
-            return request
-                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail(message)
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-                            .detail("Unexpected error while managing the receipt file")
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                            .build())
-                    .build();
         }
+
+        return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
+                .body(ProblemJson.builder()
+                        .title(HttpStatus.BAD_REQUEST.name())
+                        .detail("Missing valid eventId paramater")
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .build())
+                .build();
+
     }
 
     private static boolean isHasAllAttachments(Receipt receipt) {
