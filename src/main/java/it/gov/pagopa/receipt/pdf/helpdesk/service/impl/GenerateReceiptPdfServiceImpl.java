@@ -44,13 +44,13 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
     public static final int ALREADY_CREATED = 208;
 
     private final PdfEngineClient pdfEngineClient;
-    //private final ReceiptBlobClient receiptBlobClient;
-    private final BuildTemplateService buildTemplateService;
+    private final ReceiptBlobClient receiptBlobClient;
+    //private final BuildTemplateService buildTemplateService;
 
     public GenerateReceiptPdfServiceImpl() {
         this.pdfEngineClient = PdfEngineClientImpl.getInstance();
-        //this.receiptBlobClient = ReceiptBlobClientImpl.getInstance();
-        this.buildTemplateService = new BuildTemplateServiceImpl();
+        this.receiptBlobClient = ReceiptBlobClientImpl.getInstance();
+        //this.buildTemplateService = new BuildTemplateServiceImpl();
     }
 
     @Override
