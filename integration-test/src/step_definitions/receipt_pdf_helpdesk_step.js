@@ -134,7 +134,8 @@ Then("the receipt-error has bizEventId {string}", async function (id) {
 });
 
 Then("the receipt-error payload has bizEvent decrypted with eventId {string}", async function (id) {
-    assert.strictEqual(receiptError.messagePayload.eventId, id);
+    let messagePayload = JSON.parse(receiptError.messagePayload);
+    assert.strictEqual(messagePayload.id, id);
 });
 
 
