@@ -78,6 +78,12 @@ jobs:
           chmod +x ./run_integration_test.sh
           ./run_integration_test.sh ${{( github.event.inputs == null && 'uat') || inputs.environment }}
 
+  teardown:
+    needs: [ create_runner, integration_test ]
+    name: Teardown ${{(github.event.inputs == null && 'uat') || inputs.environment }}
+    runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
+    environment: ${{(github.event.inputs == null && 'uat') || inputs.environment }}
+    steps:
       - name: Teardown integration tests
         shell: bash
         run: |
@@ -144,7 +150,7 @@ jobs:
 
   cleanup_runner:
     name: Cleanup Runner
-    needs: [ create_runner, integration_test ]
+    needs: [ create_runner, integration_test, teardown ]
     if: ${{ always() }}
     runs-on: ubuntu-22.04
     environment: ${{(github.event.inputs == null && 'uat') || inputs.environment }}
