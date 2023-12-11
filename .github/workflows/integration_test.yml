@@ -83,6 +83,7 @@ jobs:
     name: Teardown ${{(github.event.inputs == null && 'uat') || inputs.environment }}
     runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
     environment: ${{(github.event.inputs == null && 'uat') || inputs.environment }}
+    if: ${{ always() }}
     steps:
       - name: Teardown integration tests
         shell: bash
@@ -116,7 +117,7 @@ jobs:
 
   delete_github_deployments:
     runs-on: ubuntu-latest
-    needs: integration_test
+    needs: [integration_test, teardown]
     if: ${{ always() }}
     steps:
       - name: Delete Previous deployments

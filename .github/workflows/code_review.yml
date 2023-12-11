@@ -108,7 +108,7 @@ jobs:
 
   delete_github_deployments:
     runs-on: ubuntu-latest
-    needs: smoke-test
+    needs: [smoke-test, teardown]
     if: ${{ always() }}
     steps:
       - name: Dump GitHub context
