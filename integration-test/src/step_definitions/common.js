@@ -128,7 +128,7 @@ function createEvent(id, status, orgCode, iuv) {
 	return json_event
 }
 
-function createReceipt(id, status, pdfName) {
+function createReceipt(id, status) {
 	let receipt =
 	{
 		"eventId": id,
@@ -147,8 +147,8 @@ function createReceipt(id, status, pdfName) {
 		"numRetry": 0,
 		"id": id
 	}
-	if (status === "NOTIFIED" || status === "GENERATED") {
-		receipt.mdAttach = { "name": pdfName, "url": pdfName };
+	if (status === "IO_NOTIFIED" || status === "GENERATED") {
+		receipt.mdAttach = { "name": "helpdesk-pdf-p.pdf", "url": "helpdesk-pdf-p.pdf" };
 	}
 	return receipt
 }

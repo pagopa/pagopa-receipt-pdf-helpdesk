@@ -42,7 +42,18 @@ async function deleteBlob(blobName) {
     await blockBlobClient.deleteIfExists(options);
 }
 
+async function receiptPDFExist(blobName) {
+    let blobs = containerClient.listBlobsFlat();
+    for await (const blob of blobs) {
+        if (blob.name === blobName) {
+            return true;
+        }
+    }
+    return false;
+}
+
 module.exports = {
     uploadBlobFromLocalPath,
-    deleteBlob
+    deleteBlob,
+    receiptPDFExist
 }

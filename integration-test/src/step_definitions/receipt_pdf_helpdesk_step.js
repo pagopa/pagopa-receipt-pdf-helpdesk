@@ -2,7 +2,7 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 let fs = require('fs');
 const { sleep } = require("./common");
-const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore, deleteAllTestBizEvents } = require("./biz_events_datastore_client");
+const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
 const {
     deleteDocumentFromReceiptsDatastore,
     createDocumentInReceiptsDatastore,
@@ -11,9 +11,7 @@ const {
     deleteDocumentFromReceiptErrorDatastore,
     getDocumentFromReceiptsErrorDatastoreByBizEventId,
     getDocumentFromReceiptsDatastoreByEventId,
-    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
-    deleteAllTestReceipts,
-    deleteAllTestReceiptsError
+    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId
 } = require("./receipts_datastore_client");
 const {
     getReceipt,
@@ -27,7 +25,7 @@ const {
     postRecoverNotNotifiedReceiptMassive,
     postRegenerateReceiptPdf
 } = require("./api_helpdesk_client");
-const { uploadBlobFromLocalPath, deleteBlob } = require("./blob_storage_client");
+const { uploadBlobFromLocalPath, deleteBlob, receiptPDFExist } = require("./blob_storage_client");
 
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);
@@ -79,15 +77,6 @@ Given('a biz event with id {string} and status {string} stored on biz-events dat
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
 });
 
-Given('a receipt with eventId {string} and status {string} stored into receipt datastore', async function (id, status) {
-    eventId = id;
-    // prior cancellation to avoid dirty cases
-    await deleteDocumentFromReceiptsDatastore(id);
-
-    let receiptsStoreResponse = await createDocumentInReceiptsDatastore(id, status);
-    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
-});
-
 Given('a biz event with id {string} and status {string} and organizationFiscalCode {string} and IUV {string} stored on biz-events datastore', async function (id, status, orgCode, iuv) {
     eventId = id;
     // prior cancellation to avoid dirty cases
@@ -96,6 +85,15 @@ Given('a biz event with id {string} and status {string} and organizationFiscalCo
     let bizEventStoreResponse = await createDocumentInBizEventsDatastore(id, status, orgCode, iuv);
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
   });
+
+Given('a receipt with eventId {string} and status {string} stored into receipt datastore', async function (id, status) {
+    eventId = id;
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromReceiptsDatastore(id);
+
+    let receiptsStoreResponse = await createDocumentInReceiptsDatastore(id, status);
+    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
+});
 
 Given('a receipt-error with bizEventId {string} and status {string} stored into receipt-error datastore', async function (id, status) {
     eventId = id;
@@ -181,6 +179,10 @@ When("recoverNotNotifiedReceiptMassive API is called with status {string} as que
     responseAPI = await postRecoverNotNotifiedReceiptMassive(status);
 });
 
+When('recoverNotNotifiedReceiptMassive API is called with bizEventId {string} as query param', async function (id) {
+    responseAPI = await postRegenerateReceiptPdf(id);
+  });
+
 //Then
 Then('the api response has a {int} Http status', function (expectedStatus) {
     assert.strictEqual(responseAPI.status, expectedStatus);
@@ -226,6 +228,15 @@ Then("the list of receipt is recovered from datastore and no receipt in the list
         assert.notStrictEqual(responseCosmos.resources[0].status, status);
     }
 });
+
+Then('the receipt has attachment metadata', function () {
+    assert.strictEqual(receipt.mdAttachment != null || receipt.mdAttachment != "", true);
+});
+
+Then('the PDF is present on blob storage', async function () {
+    let blobExist = await receiptPDFExist(receiptPdfFileName);
+    assert.strictEqual(true, blobExist);
+  });
 
 Then("wait {int} ms", async function (milliSec) {
     sleep(milliSec)
