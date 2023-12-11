@@ -78,6 +78,17 @@ jobs:
           chmod +x ./run_integration_test.sh
           ./run_integration_test.sh ${{( github.event.inputs == null && 'uat') || inputs.environment }}
 
+      - name: Teardown integration tests
+        shell: bash
+        run: |
+          export CUCUMBER_PUBLISH_TOKEN=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
+          export RECEIPTS_COSMOS_CONN_STRING='${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}'
+          export BIZEVENTS_COSMOS_CONN_STRING='${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}'
+          export SUBKEY='${{ secrets.SUBKEY }}'
+          cd ./integration-test
+          chmod +x ./run_teardown.sh
+          ./run_teardown.sh ${{( github.event.inputs == null && 'uat') || inputs.environment }}
+
   notify:
     needs: [ create_runner, integration_test ]
     runs-on: [ self-hosted, "${{ needs.create_runner.outputs.runner_name }}" ]
