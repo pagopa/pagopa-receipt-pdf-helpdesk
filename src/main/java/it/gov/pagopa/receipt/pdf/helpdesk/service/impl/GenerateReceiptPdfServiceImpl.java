@@ -6,7 +6,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptBlobClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.GeneratePDFException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDFReceiptGenerationException;
@@ -21,7 +20,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.model.template.ReceiptPDFTemplate;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BuildTemplateService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.ObjectMapperUtils;
-import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +34,6 @@ import static org.apache.http.HttpStatus.SC_OK;
 public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService {
 
     private final Logger logger = LoggerFactory.getLogger(GenerateReceiptPdfServiceImpl.class);
-
-    private static final String TEMPLATE_PREFIX = "pagopa-ricevuta";
-    private static final String PAYER_TEMPLATE_SUFFIX = "p";
-    private static final String DEBTOR_TEMPLATE_SUFFIX = "d";
 
     public static final int ALREADY_CREATED = 208;
 
@@ -74,13 +68,13 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
             if (payerCF.equals(debtorCF)) {
                 pdfGeneration.setGenerateOnlyDebtor(true);
                 //Generate debtor's complete PDF
-                PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttach().getName(), false, workingDirPath);
+                PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttach().getName(), false, workingDirPath);
                 pdfGeneration.setDebtorMetadata(generationResult);
                 return pdfGeneration;
             }
 
             //Generate payer's complete PDF
-            PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttachPayer().getName(), false, workingDirPath);
+            PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttachPayer().getName(), false, workingDirPath);
             pdfGeneration.setPayerMetadata(generationResult);
 
         } else {
@@ -88,7 +82,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         }
 
         //Generate debtor's partial PDF
-        PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt.getMdAttach().getName(), true, workingDirPath);
+        PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttach().getName(), true, workingDirPath);
         pdfGeneration.setDebtorMetadata(generationResult);
 
 
@@ -130,9 +124,9 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         return result;
     }
 
-    private PdfMetadata generateAndSavePDFReceipt(BizEvent bizEvent, String blobName, boolean partialTemplate, Path workingDirPath) {
+    private PdfMetadata generateAndSavePDFReceipt(BizEvent bizEvent, Receipt receipt, String blobName, boolean isGeneratingDebtor, Path workingDirPath) {
         try {
-            ReceiptPDFTemplate template = buildTemplateService.buildTemplate(bizEvent, partialTemplate);
+            ReceiptPDFTemplate template = buildTemplateService.buildTemplate(bizEvent, isGeneratingDebtor, receipt);
             PdfEngineResponse pdfEngineResponse = generatePDFReceipt(template, workingDirPath);
             return saveToBlobStorage(pdfEngineResponse, blobName);
         } catch (PDFReceiptGenerationException e) {
