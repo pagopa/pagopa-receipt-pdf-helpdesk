@@ -21,7 +21,7 @@ const bizClient = new CosmosClient(biz_cosmos_db_conn_string);
 const bizContainer = bizClient.database(bizDatabaseId).container(bizContainerId);
 
 //BLOB
-const blobStorageConnString = process.env.BLOB_STORAGE_CONN_STRING;
+const blobStorageConnString = process.env.RECEIPTS_STORAGE_CONN_STRING;
 const blobStorageContainerName = process.env.BLOB_STORAGE_CONTAINER_NAME;
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(blobStorageConnString || "");
