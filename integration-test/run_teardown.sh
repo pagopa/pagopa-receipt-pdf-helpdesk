@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "Sleeping for 300 seconds (5 minutes) before running teardown"
-sleep 300
+echo "Sleeping for 120 seconds (2 minutes) before running teardown"
+sleep 120
 
 cd ./src || exit
 yarn install
