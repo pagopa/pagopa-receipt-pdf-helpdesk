@@ -230,12 +230,13 @@ Then("the list of receipt is recovered from datastore and no receipt in the list
 });
 
 Then('the receipt has attachment metadata', function () {
-    assert.strictEqual(receipt.mdAttachment != null || receipt.mdAttachment != "", true);
+    assert.strictEqual(receipt.mdAttach != undefined && receipt.mdAttach != null && receipt.mdAttach.name != "", true);
+    receiptPdfFileName = receipt.mdAttach.name;
 });
 
 Then('the PDF is present on blob storage', async function () {
     let blobExist = await receiptPDFExist(receiptPdfFileName);
-    assert.strictEqual(true, blobExist);
+    assert.strictEqual(blobExist, true);
   });
 
 Then("wait {int} ms", async function (milliSec) {
