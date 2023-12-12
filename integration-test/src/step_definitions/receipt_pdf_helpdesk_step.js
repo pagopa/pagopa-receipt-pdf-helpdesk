@@ -179,7 +179,7 @@ When("recoverNotNotifiedReceiptMassive API is called with status {string} as que
     responseAPI = await postRecoverNotNotifiedReceiptMassive(status);
 });
 
-When('recoverNotNotifiedReceiptMassive API is called with bizEventId {string} as query param', async function (id) {
+When('regenerateReceiptPdf API is called with bizEventId {string} as query param', async function (id) {
     responseAPI = await postRegenerateReceiptPdf(id);
   });
 

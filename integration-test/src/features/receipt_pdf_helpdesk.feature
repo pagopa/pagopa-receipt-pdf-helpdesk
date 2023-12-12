@@ -65,7 +65,7 @@ Feature: All about payment events to recover managed by Azure functions receipt-
   Scenario: regenerateReceiptPdf API retrieve the receipt with the given eventId and regenerate its pdf updating receipt's metadata
     Given a receipt with eventId "receipt-helpdesk-int-test-id-10" and status "IO_NOTIFIED" stored into receipt datastore
     And a biz event with id "receipt-helpdesk-int-test-id-10" and status "DONE" stored on biz-events datastore
-    When recoverNotNotifiedReceiptMassive API is called with bizEventId "receipt-helpdesk-int-test-id-10" as query param
+    When regenerateReceiptPdf API is called with bizEventId "receipt-helpdesk-int-test-id-10" as query param
     Then the api response has a 200 Http status
     And the receipt with eventId "receipt-helpdesk-int-test-id-10" is recovered from datastore
     And the receipt has attachment metadata
