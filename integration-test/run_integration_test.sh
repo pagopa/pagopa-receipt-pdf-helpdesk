@@ -7,3 +7,4 @@ set -e
 cd ./src || exit
 yarn install
 yarn test:"$1"
+

@@ -111,6 +111,8 @@ then replace env variables with correct values
 | `MAX_DATE_DIFF_NOTIFY_MILLIS`         | Difference in millis between the current time and the date from witch the<br/> receipts to notify will be fetched in massive recover operation |                         360000                         |
 | `RECOVER_FAILED_CRON`                 | CRON expression for timer trigger function that recover failed receipt                                                                         |                                                        |
 | `TRIGGER_GEN_SCHEDULE`                | CRON expression for timer trigger function that recover nor notified generater receipt                                                         |                                                        |
+| `AES_SECRET_KEY`                      | AES encryption secret key                                                                                                                      |                                                        |
+| `AES_SALT`                            | AES encryption salt                                                                                                                            |                                                        |
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)

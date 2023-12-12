@@ -42,7 +42,7 @@ public class GetReceiptError {
     public HttpResponseMessage run (
             @HttpTrigger(name = "GetReceiptErrorFunction",
                     methods = {HttpMethod.GET},
-                    route = "/errors-toreview/{bizvent-id}",
+                    route = "errors-toreview/{bizvent-id}",
                     authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
             @BindingName("bizvent-id") String eventId,
             final ExecutionContext context) {

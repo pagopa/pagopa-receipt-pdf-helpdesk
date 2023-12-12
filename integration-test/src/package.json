@@ -7,6 +7,10 @@
     "test:local": "dotenv -e ./config/.env.local yarn cucumber",
     "test:dev": "dotenv -e ./config/.env.dev yarn cucumber",
     "test:uat": "dotenv -e ./config/.env.uat yarn cucumber",
+    "teardown": "dotenv -e ./config/.env.local node script/teardown_script.js",
+    "teardown:local": "dotenv -e ./config/.env.local node script/teardown_script.js",
+    "teardown:dev": "dotenv -e ./config/.env.dev node script/teardown_script.js",
+    "teardown:uat": "dotenv -e ./config/.env.uat node script/teardown_script.js",
     "cucumber": "npx cucumber-js --publish -r step_definitions"
   },
   "devDependencies": {
