@@ -9,12 +9,7 @@ import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptQueueClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Debtor;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Payer;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.PaymentInfo;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Transaction;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.TransactionDetails;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
@@ -145,6 +140,47 @@ class RecoverFailedReceiptTest {
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
     }
+
+    @Test
+    @SneakyThrows
+    void requestOnValidBizEventTransactionDetailsShouldCreateRequest() {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
+                .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
+                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+        Response<SendMessageResult> queueResponse = mock(Response.class);
+        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
+
+        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
+                .thenReturn(generateValidBizEventWithTDetails("1"));
+
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt captured = receiptCaptor.getValue();
+        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
+        assertEquals(EVENT_ID, captured.getEventId());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
+    }
+
 
     @Test
     void requestOnValidBizEventAndFailedReceiptShouldResend() throws BizEventNotFoundException, ReceiptNotFoundException {
@@ -441,6 +477,30 @@ class RecoverFailedReceiptTest {
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);
         item.setPayer(payer);
+        item.setDebtor(debtor);
+        item.setTransactionDetails(transactionDetails);
+        item.setPaymentInfo(paymentInfo);
+
+        return item;
+    }
+
+    private BizEvent generateValidBizEventWithTDetails(String totalNotice){
+        BizEvent item = new BizEvent();
+
+        Debtor debtor = new Debtor();
+        debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
+
+        TransactionDetails transactionDetails = new TransactionDetails();
+        Transaction transaction = new Transaction();
+        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transactionDetails.setTransaction(transaction);
+        transactionDetails.setUser(User.builder().fiscalCode(PAYER_FISCAL_CODE).build());
+
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setTotalNotice(totalNotice);
+
+        item.setEventStatus(BizEventStatusType.DONE);
+        item.setId(EVENT_ID);
         item.setDebtor(debtor);
         item.setTransactionDetails(transactionDetails);
         item.setPaymentInfo(paymentInfo);
