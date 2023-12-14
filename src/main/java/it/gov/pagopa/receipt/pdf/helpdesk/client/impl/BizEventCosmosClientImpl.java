@@ -8,6 +8,7 @@ import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 
 /**
@@ -52,7 +53,7 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.id = '%s'", eventId);
+        String query = String.format("SELECT * FROM c WHERE c.eventStatus = '%s' and c.id = '%s'", BizEventStatusType.DONE, eventId);
 
         //Query the container
         CosmosPagedIterable<BizEvent> queryResponse = cosmosContainer
