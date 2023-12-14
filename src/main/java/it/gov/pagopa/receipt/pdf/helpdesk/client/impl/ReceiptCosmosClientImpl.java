@@ -16,6 +16,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStat
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Client for the CosmosDB database
@@ -31,6 +32,10 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
     private final String millisNotifyDif = System.getenv("MAX_DATE_DIFF_NOTIFY_MILLIS");
+
+    private final String numDaysRecoverFailed = System.getenv().getOrDefault("RECOVER_FAILED_MASSIVE_MAX_DAYS", "0");
+
+    private final String numDaysRecoverNotNotified = System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS", "0");
 
     private final CosmosClient cosmosClient;
 
@@ -88,8 +93,10 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.status = '%s' or c.status = '%s'",
-                ReceiptStatusType.FAILED, ReceiptStatusType.NOT_QUEUE_SENT);
+        String query = String.format("SELECT * FROM c WHERE (c.status = '%s' or c.status = '%s') AND c.inserted_at >= %s",
+                ReceiptStatusType.FAILED, ReceiptStatusType.NOT_QUEUE_SENT,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli());
 
         //Query the container
         return cosmosContainer
@@ -106,8 +113,12 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query =  String.format("SELECT * FROM c WHERE (c.status= = '%s' AND ( %s - c.inserted_at) >= %s)",
-                ReceiptStatusType.INSERTED, OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
+        String query =  String.format("SELECT * FROM c WHERE (c.status= = '%s' AND c.inserted_at >= %s " +
+                        "AND ( %s - c.inserted_at) >= %s)",
+                ReceiptStatusType.INSERTED,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli(),
+                OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
 
         //Query the container
         return cosmosContainer
@@ -186,8 +197,11 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query =  String.format("SELECT * FROM c WHERE (c.status = '%s' AND ( %s - c.generated_at) >= %s)",
-                ReceiptStatusType.GENERATED, OffsetDateTime.now().toInstant().toEpochMilli(), millisNotifyDif);
+        String query =  String.format("SELECT * FROM c WHERE (c.status = '%s' AND c.generated_at >= %s AND ( %s - c.generated_at) >= %s)",
+                ReceiptStatusType.GENERATED,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli(),
+                OffsetDateTime.now().toInstant().toEpochMilli(), millisNotifyDif);
 
         //Query the container
         return cosmosContainer
@@ -204,7 +218,11 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.status = '%s'", ReceiptStatusType.IO_ERROR_TO_NOTIFY);
+        String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s",
+                ReceiptStatusType.IO_ERROR_TO_NOTIFY,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli()
+        );
 
         //Query the container
         return cosmosContainer
