@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopareceiptpdfhelpdesk
 description: Microservice description
 type: application
-version: 0.123.0
-appVersion: 0.6.22
+version: 0.124.0
+appVersion: 0.6.23
 dependencies:
   - name: microservice-chart
     version: 2.4.0
