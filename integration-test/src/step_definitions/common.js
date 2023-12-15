@@ -147,7 +147,7 @@ function createReceipt(id, status) {
 		"status": status || "INSERTED",
 		"numRetry": 0,
 		"inserted_at": currentDate.getTime() - 360000,
-		"generated_at" currentDate.getTime() - 360000,
+		"generated_at": currentDate.getTime() - 360000,
 		"id": id
 	}
 	if (status === "IO_NOTIFIED" || status === "GENERATED") {
