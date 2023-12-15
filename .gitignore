@@ -38,9 +38,12 @@ local.settings.json
 bin/
 obj/
 **/.identity
+**/node_modules
+**/report*.txt
+**/*.lock
+**/.env.local
+**/copy.js
 .azure/
-
 package-lock.json
 yarn.lock
 .env
-node_modules/
