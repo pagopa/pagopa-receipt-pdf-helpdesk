@@ -7,16 +7,17 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 
+import java.util.List;
+
 public interface BizEventToReceiptService {
 
     /**
      * Handles sending biz-events as message to queue and updates receipt's status
      *
-     * @param bizEvent Biz-event from CosmosDB
+     * @param bizEventList Biz-event list from CosmosDB
      * @param receipt  Receipt to update
      */
-    void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
-
+    void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
 
     /**
      * Retrieve conditionally the transaction creation date from biz-event
@@ -36,4 +37,23 @@ public interface BizEventToReceiptService {
      * @throws PDVTokenizerException if an error occur when invoking the PDV Tokenizer
      */
     void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData)  throws JsonProcessingException, PDVTokenizerException;
+
+    void handleSaveReceipt(Receipt receipt);
+
+    /**
+     * Retrieve all events that are associated to the cart with the specified id
+     *
+     * @param cartId the id of the cart
+     * @return a list of biz-events
+     */
+    List<BizEvent> getCartBizEvents(long cartId);
+
+    /**
+     * Creates the receipt for a cart, using the tokenizer service to mask the PII, based on
+     * the provided list of BizEvent
+     *
+     * @param bizEventList a list og BizEvent
+     * @return a receipt
+     */
+    Receipt createCartReceipt(List<BizEvent> bizEventList);
 }
