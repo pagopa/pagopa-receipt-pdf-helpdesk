@@ -26,9 +26,7 @@ if test -f "$FILE"; then
     rm .env
 fi
 config=$(yq  -r '."microservice-chart".envConfig' ../helm/values-$ENV.yaml)
-for line in $(echo $config | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
-    echo $line >> .env
-done
+echo "$config" | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value| @sh)"' >> .env
 
 keyvault=$(yq  -r '."microservice-chart".keyvault.name' ../helm/values-$ENV.yaml)
 secret=$(yq  -r '."microservice-chart".envSecret' ../helm/values-$ENV.yaml)

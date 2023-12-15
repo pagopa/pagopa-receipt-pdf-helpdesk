@@ -8,8 +8,10 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.Aes256Exception;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.helpdesk.utils.Aes256Utils;
 
 import java.util.Base64;
 import java.util.Optional;
@@ -40,7 +42,7 @@ public class GetReceiptError {
     public HttpResponseMessage run (
             @HttpTrigger(name = "GetReceiptErrorFunction",
                     methods = {HttpMethod.GET},
-                    route = "/errors-toreview/{bizvent-id}",
+                    route = "errors-toreview/{bizvent-id}",
                     authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
             @BindingName("bizvent-id") String eventId,
             final ExecutionContext context) {
@@ -49,10 +51,9 @@ public class GetReceiptError {
             try {
                 ReceiptError receiptError = receiptCosmosClient.getReceiptError(eventId);
                 try {
-                    receiptError.setMessagePayload(new String(
-                            Base64.getMimeDecoder().decode(receiptError.getMessagePayload()))
+                    receiptError.setMessagePayload(Aes256Utils.decrypt(receiptError.getMessagePayload())
                     );
-                } catch (IllegalArgumentException ignored) {}
+                } catch (IllegalArgumentException | Aes256Exception ignored) {}
                 return request.createResponseBuilder(HttpStatus.OK)
                         .body(receiptError)
                         .build();

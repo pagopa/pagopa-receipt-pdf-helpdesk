@@ -43,3 +43,7 @@ obj/
 **/*.lock
 **/.env.local
 **/copy.js
+.azure/
+package-lock.json
+yarn.lock
+.env

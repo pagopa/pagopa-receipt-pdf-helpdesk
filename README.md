@@ -107,8 +107,14 @@ then replace env variables with correct values
 | `PDV_TOKENIZER_RANDOMIZATION_FACTOR`  | PDV Tokenizer randomization factor for interval retry calculation                                                                    |                          0.6                           |
 | `PDV_TOKENIZER_MAX_RETRIES`           | PDV Tokenizer max request retry                                                                                                      |                           3                            |
 | `TOKENIZER_APIM_HEADER_KEY`           | Tokenizer APIM header key                                                                                                            |                       x-api-key                        |
-| `MAX_DATE_DIFF_MILLIS`                | Difference in millis between the current time and the date from witch the<br/> receipts will be fetched in massive recover operation |                         360000                         |
-| `RECOVER_FAILED_CRON`                 | CRON expression for timer trigger function that recover failed receipt                                                               |                                                        |
+| `MAX_DATE_DIFF_MILLIS`                  | Difference in millis between the current time and the date from witch the<br/> receipts will be fetched in massive recover operation                 |                         360000                         |
+| `MAX_DATE_DIFF_NOTIFY_MILLIS`           | Difference in millis between the current time and the date from witch the<br/> receipts will be fetched in massive recover operation on notification |                         360000                         |
+| `RECOVER_FAILED_CRON`                   | CRON expression for timer trigger function that recover failed receipt                                                                               |                                                        |
+| `TRIGGER_NOTIFY_REC_SCHEDULE`           | CRON expression for timer trigger function that recover not notifier receipt                                                                         |                                                        |
+| `RECOVER_FAILED_MASSIVE_MAX_DAYS`       | Number of days in addition to the current one to executed failed recovery                                                                            |                           0                            |
+| `RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS` | Number of days in addition to the current one to executed not notified recovery                                                                      |                           0                            |
+| `AES_SECRET_KEY`                      | AES encryption secret key                                                                                                                      |                                                        |
+| `AES_SALT`                            | AES encryption salt                                                                                                                            |
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)
