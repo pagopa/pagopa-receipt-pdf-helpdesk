@@ -29,5 +29,5 @@ public class Receipt {
     private long generatedAt;
     @JsonProperty("notified_at")
     private long notifiedAt;
-
+    private boolean isCart;
 }
