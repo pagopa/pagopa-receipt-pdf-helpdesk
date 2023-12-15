@@ -1,10 +1,7 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
 import com.microsoft.azure.functions.*;
-import com.microsoft.azure.functions.annotation.AuthorizationLevel;
-import com.microsoft.azure.functions.annotation.BindingName;
-import com.microsoft.azure.functions.annotation.FunctionName;
-import com.microsoft.azure.functions.annotation.HttpTrigger;
+import com.microsoft.azure.functions.annotation.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
@@ -15,8 +12,11 @@ import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.GenerateReceiptPdfServiceImpl;
+import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,18 +38,23 @@ public class RegenerateReceiptPdf {
     private final ReceiptCosmosClient receiptCosmosClient;
     private final GenerateReceiptPdfService generateReceiptPdfService;
 
+    private final BizEventToReceiptService bizEventToReceiptService;
+
     public RegenerateReceiptPdf(){
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
         this.generateReceiptPdfService = new GenerateReceiptPdfServiceImpl();
+        this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
     }
 
     RegenerateReceiptPdf(BizEventCosmosClient bizEventCosmosClient,
                          ReceiptCosmosClient receiptCosmosClient,
-                         GenerateReceiptPdfService generateReceiptPdfService){
+                         GenerateReceiptPdfService generateReceiptPdfService,
+                         BizEventToReceiptService bizEventToReceiptService){
         this.bizEventCosmosClient = bizEventCosmosClient;
         this.receiptCosmosClient = receiptCosmosClient;
         this.generateReceiptPdfService = generateReceiptPdfService;
+        this.bizEventToReceiptService = bizEventToReceiptService;
     }
 
 
@@ -66,6 +71,12 @@ public class RegenerateReceiptPdf {
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("bizeventid") String eventId,
+            @CosmosDBOutput(
+                    name = "ReceiptDatastore",
+                    databaseName = "db",
+                    collectionName = "receipts",
+                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+            OutputBinding<Receipt> documentdb,
             final ExecutionContext context) {
 
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
@@ -93,6 +104,19 @@ public class RegenerateReceiptPdf {
                     PdfGeneration pdfGeneration;
                     Path workingDirPath = createWorkingDirectory();
                     try {
+
+                        if (receipt.getEventData().getDebtorFiscalCode() == null ||
+                                receipt.getEventData().getPayerFiscalCode() == null) {
+                            BizEventToReceiptUtils.tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
+                            documentdb.setValue(receipt);
+                        }
+
+                        if (receipt.getEventData().getCart() == null || receipt.getEventData().getCart()
+                                .isEmpty() || receipt.getEventData().getCart().get(0).getSubject() == null) {
+                            receipt.getEventData().setCart(BizEventToReceiptUtils.getCartItems(bizEvent));
+                            documentdb.setValue(receipt);
+                        }
+
                         pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, bizEvent, workingDirPath);
 
                         //Verify PDF generation success

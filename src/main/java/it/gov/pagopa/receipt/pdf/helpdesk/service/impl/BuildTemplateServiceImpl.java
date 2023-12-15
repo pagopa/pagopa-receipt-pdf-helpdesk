@@ -289,7 +289,7 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
         throw new TemplateDataMappingException(formatErrorMessage(TemplateDataField.CART_ITEM_PAYEE_TAX_CODE), ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode());
     }
 
-    private String getItemSubject(Receipt receipt) {
+    private String getItemSubject(Receipt receipt) throws TemplateDataMappingException {
         if (receipt.getEventData() != null &&
                 !receipt.getEventData().getCart().isEmpty() &&
                 receipt.getEventData().getCart().get(0) != null
@@ -297,7 +297,7 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
             return receipt.getEventData().getCart().get(0).getSubject();
         }
 
-        return null;
+        throw new TemplateDataMappingException(formatErrorMessage(TemplateDataField.CART_ITEM_SUBJECT), ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode());
     }
 
     private String getItemAmount(BizEvent event) throws TemplateDataMappingException {

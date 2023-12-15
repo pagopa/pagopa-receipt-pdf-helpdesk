@@ -12,6 +12,8 @@ import it.gov.pagopa.receipt.pdf.helpdesk.utils.TemplateDataField;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -1293,7 +1295,10 @@ class BuildTemplateServiceImplTest {
                         .idPA(ID_PA)
                         .build())
                 .build();
-        assertDoesNotThrow(() -> buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER, Receipt.builder().build()));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER,
+                Receipt.builder().eventData(eventData).build()));
     }
 
     @Test
@@ -1321,7 +1326,10 @@ class BuildTemplateServiceImplTest {
                         .idPA(ID_PA)
                         .build())
                 .build();
-        assertDoesNotThrow(() -> buildTemplateService.buildTemplate(event, GENERATED_BY_DEBTOR, Receipt.builder().build()));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> buildTemplateService.buildTemplate(
+                event, GENERATED_BY_DEBTOR, Receipt.builder().eventData(eventData).build()));
     }
 
     @Test
@@ -1356,7 +1364,10 @@ class BuildTemplateServiceImplTest {
                 )
                 .build();
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
-        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_DEBTOR, Receipt.builder().build())));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(
+                event, GENERATED_BY_DEBTOR, Receipt.builder().eventData(eventData).build())));
 
         ReceiptPDFTemplate receiptPDFTemplate = atomicReference.get();
         assertTrue(receiptPDFTemplate.getTransaction().isRequestedByDebtor());
@@ -1397,7 +1408,10 @@ class BuildTemplateServiceImplTest {
                 )
                 .build();
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
-        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_DEBTOR, Receipt.builder().build())));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(
+                event, GENERATED_BY_DEBTOR, Receipt.builder().eventData(eventData).build())));
 
         ReceiptPDFTemplate receiptPDFTemplate = atomicReference.get();
         assertTrue(receiptPDFTemplate.getTransaction().isRequestedByDebtor());
@@ -1436,7 +1450,10 @@ class BuildTemplateServiceImplTest {
                 )
                 .build();
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
-        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_DEBTOR, Receipt.builder().build())));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event,
+                GENERATED_BY_DEBTOR, Receipt.builder().eventData(eventData).build())));
 
         ReceiptPDFTemplate receiptPDFTemplate = atomicReference.get();
         assertTrue(receiptPDFTemplate.getTransaction().isRequestedByDebtor());
@@ -1479,7 +1496,10 @@ class BuildTemplateServiceImplTest {
                 )
                 .build();
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
-        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_DEBTOR, Receipt.builder().build())));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(
+                event, GENERATED_BY_DEBTOR, Receipt.builder().eventData(eventData).build())));
 
         ReceiptPDFTemplate receiptPDFTemplate = atomicReference.get();
         assertFalse(receiptPDFTemplate.getTransaction().isRequestedByDebtor());
@@ -1521,7 +1541,10 @@ class BuildTemplateServiceImplTest {
                 )
                 .build();
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
-        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER, Receipt.builder().build())));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER,
+                Receipt.builder().eventData(eventData).build())));
 
         ReceiptPDFTemplate receiptPDFTemplate = atomicReference.get();
         assertFalse(receiptPDFTemplate.getTransaction().isRequestedByDebtor());
@@ -1566,7 +1589,10 @@ class BuildTemplateServiceImplTest {
                 )
                 .build();
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
-        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER, Receipt.builder().build())));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate
+                (event, GENERATED_BY_PAYER, Receipt.builder().eventData(eventData).build())));
 
         ReceiptPDFTemplate receiptPDFTemplate = atomicReference.get();
         assertEquals(USER_FORMATTED_FULL_NAME, receiptPDFTemplate.getUser().getData().getFullName());
@@ -1612,7 +1638,10 @@ class BuildTemplateServiceImplTest {
                 )
                 .build();
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
-        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER, Receipt.builder().build())));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(
+                event, GENERATED_BY_PAYER, Receipt.builder().eventData(eventData).build())));
 
         ReceiptPDFTemplate receiptPDFTemplate = atomicReference.get();
         assertEquals(USER_TAX_CODE, receiptPDFTemplate.getUser().getData().getTaxCode());
@@ -2071,7 +2100,10 @@ class BuildTemplateServiceImplTest {
                         .build()
                 )
                 .build();
-        TemplateDataMappingException e = assertThrows(TemplateDataMappingException.class, () -> buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER, Receipt.builder().build()));
+        EventData eventData = EventData.builder().cart(Collections.singletonList(
+                CartItem.builder().subject(REMITTANCE_INFORMATION).build())).build();
+        TemplateDataMappingException e = assertThrows(TemplateDataMappingException.class, () ->
+                buildTemplateService.buildTemplate(event, GENERATED_BY_PAYER, Receipt.builder().eventData(eventData).build()));
 
         assertEquals(ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode(), e.getStatusCode());
         assertEquals(String.format(TemplateDataField.ERROR_MAPPING_MESSAGE, TemplateDataField.CART_ITEM_AMOUNT), e.getMessage());
