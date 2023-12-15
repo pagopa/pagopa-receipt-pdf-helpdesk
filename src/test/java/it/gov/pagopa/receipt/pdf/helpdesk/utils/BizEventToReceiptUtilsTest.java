@@ -2,6 +2,7 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.*;
@@ -48,7 +49,7 @@ class BizEventToReceiptUtilsTest {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class));
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class), mock(BizEventCosmosClientImpl.class));
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false,false), receiptService, logger);
 
@@ -64,7 +65,7 @@ class BizEventToReceiptUtilsTest {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class));
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class), mock(BizEventCosmosClientImpl.class));
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false,true), receiptService, logger);
 
@@ -80,7 +81,7 @@ class BizEventToReceiptUtilsTest {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class));
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class), mock(BizEventCosmosClientImpl.class));
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(true,false), receiptService, logger);
 
@@ -95,7 +96,7 @@ class BizEventToReceiptUtilsTest {
     void createReceiptSuccessWithTokenizerFailed() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenThrow(new PDVTokenizerException("exception", HttpStatus.I_AM_A_TEAPOT.value()));
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class));
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class), mock(BizEventCosmosClientImpl.class));
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false,false), receiptService, logger);
 
