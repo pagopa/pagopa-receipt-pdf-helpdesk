@@ -10,6 +10,8 @@ import java.util.List;
 
 public class RecoverNotNotifiedReceiptUtils {
 
+    private static final int IO_ERROR_TO_NOTIFY_MASSIVE_RECOVER_MAX_PAGES = Integer.parseInt(System.getenv().getOrDefault("IO_ERROR_TO_NOTIFY_MASSIVE_RECOVER_MAX_PAGES", "2"));
+
     public static Receipt restoreReceipt(Receipt receipt) {
         receipt.setStatus(ReceiptStatusType.GENERATED);
         receipt.setNotificationNumRetry(0);
@@ -40,7 +42,7 @@ public class RecoverNotNotifiedReceiptUtils {
                 continuationToken = page.getContinuationToken();
             }
             totalPages++;
-        } while (continuationToken != null && totalPages < 10);
+        } while (continuationToken != null && totalPages < IO_ERROR_TO_NOTIFY_MASSIVE_RECOVER_MAX_PAGES);
         return receiptList;
     }
 
