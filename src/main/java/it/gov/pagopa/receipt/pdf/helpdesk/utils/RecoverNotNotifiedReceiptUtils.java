@@ -27,6 +27,7 @@ public class RecoverNotNotifiedReceiptUtils {
     public static List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType, ReceiptCosmosService receiptCosmosService) {
         List<Receipt> receiptList = new ArrayList<>();
         String continuationToken = null;
+        int totalPages = 0;
         do {
             Iterable<FeedResponse<Receipt>> feedResponseIterator =
                     receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
@@ -38,7 +39,8 @@ public class RecoverNotNotifiedReceiptUtils {
                 }
                 continuationToken = page.getContinuationToken();
             }
-        } while (continuationToken != null);
+            totalPages++;
+        } while (continuationToken != null && totalPages < 10);
         return receiptList;
     }
 

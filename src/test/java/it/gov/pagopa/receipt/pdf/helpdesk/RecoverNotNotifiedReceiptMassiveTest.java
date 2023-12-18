@@ -117,6 +117,48 @@ class RecoverNotNotifiedReceiptMassiveTest {
     }
 
     @Test
+    void recoverNotNotifiedReceiptMassiveForIOErrorToNotifySuccessWithMoreThan10Pages() {
+        when(requestMock.getQueryParameters())
+                .thenReturn(Collections.singletonMap("status", ReceiptStatusType.IO_ERROR_TO_NOTIFY.name()));
+
+        FeedResponse feedResponseMock = mock(FeedResponse.class);
+        when(feedResponseMock.getResults())
+                .thenReturn(Collections.singletonList(buildReceipt(ReceiptStatusType.IO_ERROR_TO_NOTIFY)));
+        when(feedResponseMock.getContinuationToken())
+                .thenReturn("token", "token", "token", "token", "token", "token", "token", "token", "token", "token");
+        when(receiptCosmosServiceMock.getNotNotifiedReceiptByStatus(any(), any(), any()))
+                .thenReturn(Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock),
+                        Collections.singletonList(feedResponseMock));
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(documentReceipts).setValue(receiptCaptor.capture());
+
+        assertEquals(10, receiptCaptor.getValue().size());
+    }
+
+    @Test
     void recoverNotNotifiedReceiptMassiveForGeneratedSuccess() {
         when(requestMock.getQueryParameters())
                 .thenReturn(Collections.singletonMap("status", ReceiptStatusType.GENERATED.name()));
