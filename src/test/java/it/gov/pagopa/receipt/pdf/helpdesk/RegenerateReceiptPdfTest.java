@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
@@ -14,7 +15,9 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStat
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.request.RegenerateReceiptRequest;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
+import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.util.HttpResponseMessageMock;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.ObjectMapperUtils;
 import lombok.SneakyThrows;
@@ -22,6 +25,7 @@ import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
@@ -46,21 +50,27 @@ class RegenerateReceiptPdfTest {
 
     private static final long ORIGINAL_GENERATED_AT = 0L;
 
+    private BizEventToReceiptService bizEventToReceiptService;
+
     private GenerateReceiptPdfService generateReceiptPdfServiceMock;
     private ReceiptCosmosClient receiptCosmosClientMock;
     private BizEventCosmosClient bizEventCosmosClient;
     private ExecutionContext executionContextMock;
     private RegenerateReceiptPdf sut;
 
+    @Spy
+    private OutputBinding<Receipt> documentdb;
+
     @BeforeEach
     void setUp() {
         generateReceiptPdfServiceMock = mock(GenerateReceiptPdfService.class);
+        bizEventToReceiptService = mock(BizEventToReceiptService.class);
         receiptCosmosClientMock = mock(ReceiptCosmosClient.class);
         bizEventCosmosClient = mock(BizEventCosmosClient.class);
         executionContextMock = mock(ExecutionContext.class);
 
         sut = spy(new RegenerateReceiptPdf(
-                bizEventCosmosClient, receiptCosmosClientMock, generateReceiptPdfServiceMock));
+                bizEventCosmosClient, receiptCosmosClientMock, generateReceiptPdfServiceMock, bizEventToReceiptService));
     }
 
     @Test
@@ -82,7 +92,34 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(200,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
+        assertEquals(200,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+
+        verify(receiptCosmosClientMock).getReceiptDocument(anyString());
+        verify(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
+        verify(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
+    }
+
+    @Test
+    @SneakyThrows
+    void regeneratePDFSuccessRegenPayer() {
+        int numRetry = 0;
+        Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+        receipt.getEventData().setPayerFiscalCode(null);
+
+        doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
+        doReturn(receipt).when(receiptCosmosClientMock).getReceiptDocument(anyString());
+        doReturn(new PdfGeneration()).when(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
+        doReturn(true).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
+
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
+
+        // test execution
+        assertEquals(200,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
         verify(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
@@ -103,7 +140,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, null, executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, null, documentdb, executionContextMock)).getStatusCode());
 
         verifyNoInteractions(receiptCosmosClientMock);
         verifyNoInteractions(generateReceiptPdfServiceMock);
@@ -130,7 +167,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
     }
@@ -151,7 +188,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
 
@@ -178,7 +215,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
         verify(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());

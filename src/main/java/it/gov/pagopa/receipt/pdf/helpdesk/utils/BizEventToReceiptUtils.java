@@ -138,14 +138,19 @@ public class BizEventToReceiptUtils {
         eventData.setAmount(bizEvent.getPaymentInfo() != null ?
                 bizEvent.getPaymentInfo().getAmount() : null);
 
-        CartItem item = new CartItem();
-        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
-        item.setSubject(getItemSubject(bizEvent));
-        List<CartItem> cartItems = Collections.singletonList(item);
+        List<CartItem> cartItems = getCartItems(bizEvent);
         eventData.setCart(cartItems);
 
         receipt.setEventData(eventData);
         return receipt;
+    }
+
+    public static List<CartItem> getCartItems(BizEvent bizEvent) {
+        CartItem item = new CartItem();
+        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
+        item.setSubject(getItemSubject(bizEvent));
+        List<CartItem> cartItems = Collections.singletonList(item);
+        return cartItems;
     }
 
     /**
@@ -216,13 +221,17 @@ public class BizEventToReceiptUtils {
             eventData.setAmount(bizEvent.getPaymentInfo() != null ?
                     bizEvent.getPaymentInfo().getAmount() : null);
 
-            CartItem item = new CartItem();
-            item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
-            item.setSubject(getItemSubject(bizEvent));
-            List<CartItem> cartItems = Collections.singletonList(item);
-            eventData.setCart(cartItems);
+            createCart(bizEvent, eventData);
         }
         service.tokenizeFiscalCodes(bizEvent, receipt, receipt.getEventData());
+    }
+
+    private static void createCart(BizEvent bizEvent, EventData eventData) {
+        CartItem item = new CartItem();
+        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
+        item.setSubject(getItemSubject(bizEvent));
+        List<CartItem> cartItems = Collections.singletonList(item);
+        eventData.setCart(cartItems);
     }
 
     /**

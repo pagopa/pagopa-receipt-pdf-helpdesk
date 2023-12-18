@@ -19,6 +19,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.model.response.PdfEngineResponse;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.template.ReceiptPDFTemplate;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BuildTemplateService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
+import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
