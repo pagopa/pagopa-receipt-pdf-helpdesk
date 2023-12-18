@@ -102,7 +102,14 @@ public class RecoverFailedCart {
             if (cartForReceipt.getTotalNotice() != cartForReceipt.getCartPaymentId().size()) {
                 logger.info("[{}] Not all items collected for cart with id {}, this event will be skipped",
                         context.getFunctionName(), cartForReceipt.getId());
-                return;
+                return request
+                        .createResponseBuilder(HttpStatus.NOT_FOUND)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.BAD_REQUEST.name())
+                                .detail("Items not found on cart for the id")
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .build())
+                        .build();
             }
 
             List<BizEvent> bizEventList = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt.getId());
@@ -114,7 +121,14 @@ public class RecoverFailedCart {
                 cartForReceipt.setStatus(CartStatusType.FAILED);
                 cartForReceipt.setReasonError(receipt.getReasonErr());
                 cartForReceiptDocumentdb.setValue(cartForReceipt);
-                return;
+                return request
+                        .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                .detail("Failed to process cart: fail to tokenize fiscal codes")
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .build())
+                        .build();
             }
 
             // Add receipt to items to be saved on CosmosDB
@@ -126,7 +140,14 @@ public class RecoverFailedCart {
                 cartForReceipt.setStatus(CartStatusType.FAILED);
                 cartForReceipt.setReasonError(receipt.getReasonErr());
                 cartForReceiptDocumentdb.setValue(cartForReceipt);
-                return;
+                return request
+                        .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                .detail("Failed to process cart: fail to save receipt")
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .build())
+                        .build();
             }
 
             // Send biz event as message to queue (to be processed from the other function)
@@ -134,7 +155,14 @@ public class RecoverFailedCart {
 
 
             if (!isReceiptStatusValid(receipt)) {
-                return;
+                return request
+                        .createResponseBuilder(HttpStatus.NOT_FOUND)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                .detail("Failed to process cart: fail to send message queue")
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .build())
+                        .build();
             }
             cartForReceipt.setStatus(CartStatusType.SENT);
             logger.info("[{}] Cart with id {} processes successfully. Cart with status: {} and receipt with status: {}",
