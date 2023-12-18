@@ -116,6 +116,7 @@ microservice-chart:
     NOT_NOTIFIED_AUTORECOVER_ENABLED: "true"
     RECOVER_FAILED_MASSIVE_MAX_DAYS: "0"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "0"
+    IO_ERROR_TO_NOTIFY_MASSIVE_RECOVER_MAX_PAGES: "2"
   envConfigMapExternals:
     template-maps:
       BRAND_LOGO_MAP: brand-logo-map

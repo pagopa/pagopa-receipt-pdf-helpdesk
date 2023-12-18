@@ -33,7 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -124,18 +123,9 @@ class RecoverNotNotifiedReceiptMassiveTest {
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         when(feedResponseMock.getResults())
                 .thenReturn(Collections.singletonList(buildReceipt(ReceiptStatusType.IO_ERROR_TO_NOTIFY)));
-        when(feedResponseMock.getContinuationToken())
-                .thenReturn("token", "token", "token", "token", "token", "token", "token", "token", "token", "token");
+        when(feedResponseMock.getContinuationToken()).thenReturn("token", "token");
         when(receiptCosmosServiceMock.getNotNotifiedReceiptByStatus(any(), any(), any()))
                 .thenReturn(Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
-                        Collections.singletonList(feedResponseMock),
                         Collections.singletonList(feedResponseMock),
                         Collections.singletonList(feedResponseMock),
                         Collections.singletonList(feedResponseMock));
@@ -155,7 +145,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
 
         verify(documentReceipts).setValue(receiptCaptor.capture());
 
-        assertEquals(10, receiptCaptor.getValue().size());
+        assertEquals(2, receiptCaptor.getValue().size());
     }
 
     @Test
