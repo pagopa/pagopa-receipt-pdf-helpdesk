@@ -10,8 +10,6 @@ import java.util.List;
 
 public class RecoverNotNotifiedReceiptUtils {
 
-    private static final int IO_ERROR_TO_NOTIFY_MASSIVE_RECOVER_MAX_PAGES = Integer.parseInt(System.getenv().getOrDefault("IO_ERROR_TO_NOTIFY_MASSIVE_RECOVER_MAX_PAGES", "2"));
-
     public static Receipt restoreReceipt(Receipt receipt) {
         receipt.setStatus(ReceiptStatusType.GENERATED);
         receipt.setNotificationNumRetry(0);
@@ -29,7 +27,6 @@ public class RecoverNotNotifiedReceiptUtils {
     public static List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType, ReceiptCosmosService receiptCosmosService) {
         List<Receipt> receiptList = new ArrayList<>();
         String continuationToken = null;
-        int totalPages = 0;
         do {
             Iterable<FeedResponse<Receipt>> feedResponseIterator =
                     receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
@@ -41,8 +38,7 @@ public class RecoverNotNotifiedReceiptUtils {
                 }
                 continuationToken = page.getContinuationToken();
             }
-            totalPages++;
-        } while (continuationToken != null && totalPages < IO_ERROR_TO_NOTIFY_MASSIVE_RECOVER_MAX_PAGES);
+        } while (continuationToken != null);
         return receiptList;
     }
 
