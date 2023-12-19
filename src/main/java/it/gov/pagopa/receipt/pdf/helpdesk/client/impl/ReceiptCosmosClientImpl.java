@@ -37,6 +37,9 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final String numDaysRecoverNotNotified = System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS", "0");
 
+    private final int recordsLimitRecoverNotNotified = Integer.parseInt(System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_RECORDS", "200"));
+
+
     private final CosmosClient cosmosClient;
 
     private ReceiptCosmosClientImpl() {
@@ -218,10 +221,11 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s",
+        String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s OFFSET 0 LIMIT %s",
                 ReceiptStatusType.IO_ERROR_TO_NOTIFY,
                 OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
-                        Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli()
+                        Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli(),
+                recordsLimitRecoverNotNotified
         );
 
         //Query the container
