@@ -20,6 +20,19 @@ async function getReceipt(id) {
 		});
 }
 
+async function getReceiptMessage(id) {
+	let endpoint = process.env.GET_RECEIPT_ENDPOINT || "receipts/io-message/{message-id}";
+	endpoint = endpoint.replace("{message-id}", id);
+
+	return await axios.get(helpdesk_url + endpoint)
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
 async function getReceiptByOrganizationFiscalCodeAndIUV(orgCode, iuv) {
 	let endpoint = process.env.GET_RECEIPT_BY_ORGCODE_AND_IUV_ENDPOINT || "receipts/organizations/{organization-fiscal-code}/iuvs/{iuv}";
 	endpoint = endpoint.replace("{organization-fiscal-code}", orgCode);
@@ -142,6 +155,7 @@ module.exports = {
 	getReceipt,
 	getReceiptByOrganizationFiscalCodeAndIUV,
 	getReceiptError,
+	getReceiptMessage,
 	getReceiptPdf,
 	postReceiptToReviewed,
 	postRecoverFailedReceipt,
