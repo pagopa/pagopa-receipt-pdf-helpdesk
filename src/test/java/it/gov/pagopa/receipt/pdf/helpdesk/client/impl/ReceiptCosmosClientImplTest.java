@@ -4,7 +4,9 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.util.CosmosPagedIterable;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -188,4 +190,57 @@ class ReceiptCosmosClientImplTest {
 
         assertDoesNotThrow(() -> client.getIOErrorToNotifyReceiptDocuments(null, 100));
     }
+
+    @Test
+    void getIoMessageReceiptDocumentSuccess() {
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+
+        Iterator<IOMessage> mockIterator = mock(Iterator.class);
+        IOMessage ioMessage = new IOMessage();
+        ioMessage.setEventId(RECEIPT_ID);
+        ioMessage.setMessageId("MESSAGE_ID");
+
+        when(mockIterator.hasNext()).thenReturn(true);
+        when(mockIterator.next()).thenReturn(ioMessage);
+
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+
+        when(mockContainer.queryItems(anyString(), any(), eq(IOMessage.class))).thenReturn(
+                mockIterable
+        );
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+
+        IOMessage response = assertDoesNotThrow(() -> client.getIoMessage("MESSAGE_ID"));
+
+        assertEquals("MESSAGE_ID", response.getMessageId());
+        assertEquals(RECEIPT_ID, response.getEventId());
+
+    }
+
+    @Test
+    void getIoMessageReceiptDocumentFail() {
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+
+        Iterator<Receipt> mockIterator = mock(Iterator.class);
+
+        when(mockIterator.hasNext()).thenReturn(false);
+
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+
+        when(mockContainer.queryItems(anyString(), any(), eq(IOMessage.class))).thenReturn(
+                mockIterable
+        );
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+
+        assertThrows(IoMessageNotFoundException.class, () -> client.getIoMessage("an invalid receipt id"));
+    }
+
 }

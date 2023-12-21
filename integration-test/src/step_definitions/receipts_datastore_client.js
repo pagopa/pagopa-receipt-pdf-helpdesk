@@ -1,14 +1,16 @@
 const { CosmosClient } = require("@azure/cosmos");
-const { createReceipt, createReceiptError } = require("./common");
+const { createReceipt, createReceiptError, createReceiptMessage } = require("./common");
 
 const cosmos_db_conn_string = process.env.RECEIPTS_COSMOS_CONN_STRING || "";
 const databaseId = process.env.RECEIPT_COSMOS_DB_NAME;
 const receiptContainerId = process.env.RECEIPT_COSMOS_DB_CONTAINER_NAME;
 const receiptErrorContainerId = process.env.RECEIPT_ERROR_COSMOS_DB_CONTAINER_NAME;
+const receiptMessageContainerId = process.env.RECEIPT_MESSAGE_COSMOS_DB_CONTAINER_NAME;
 
 const client = new CosmosClient(cosmos_db_conn_string);
 const receiptContainer = client.database(databaseId).container(receiptContainerId);
 const receiptErrorContainer = client.database(databaseId).container(receiptErrorContainerId);
+const receiptMessageContainer = client.database(databaseId).container(receiptMessageContainerId);
 
 //RECEIPT
 async function createDocumentInReceiptsDatastore(id, status) {
@@ -57,6 +59,16 @@ async function createDocumentInReceiptErrorDatastore(id, status) {
     }
 }
 
+//RECEIPT-MESSAGE
+async function createDocumentInReceiptIoMessageDatastore(eventId, messageId) {
+    let message = createReceiptMessage(eventId, messageId);
+    try {
+        return await receiptMessageContainer.items.create(receipt);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
 async function getDocumentFromReceiptsErrorDatastoreByBizEventId(id) {
     return await receiptErrorContainer.items
         .query({
@@ -77,6 +89,16 @@ async function deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(id) {
 async function deleteDocumentFromReceiptErrorDatastore(id) {
     try {
         return await receiptErrorContainer.item(id, id).delete();
+    } catch (error) {
+        if (error.code !== 404) {
+            console.log(error)
+        }
+    }
+}
+
+async function deleteDocumentFromReceiptMessageDatastore(id) {
+    try {
+        return await receiptMessageContainer.item(id, id).delete();
     } catch (error) {
         if (error.code !== 404) {
             console.log(error)
@@ -131,6 +153,21 @@ async function deleteAllTestReceiptsError() {
     }
 }
 
+async function deleteAllTestReceiptsMessage() {
+    let response = await receiptErrorContainer.items.query({
+        query: 'SELECT * from c WHERE c.messageId LIKE @messageId',
+        parameters: [{ name: "@messageId", value: "%receipt-helpdesk-int-test-message%" }]
+    }).fetchNext();
+
+    let receiptErrorList = response.resources;
+    if (receiptErrorList.length > 0) {
+        receiptErrorList.forEach((receiptMessage) => {
+            console.log("\n Deleting receiptMessage with id " + receiptMessage.messageId);
+            deleteDocumentFromReceiptMessageDatastore(receiptMessage.id);
+        })
+    }
+}
+
 module.exports = {
     createDocumentInReceiptsDatastore,
     getDocumentFromReceiptsDatastoreByEventId,
@@ -138,8 +175,11 @@ module.exports = {
     deleteDocumentFromReceiptsDatastore,
     updateReceiptToFailed,
     deleteAllTestReceipts,
+    deleteAllTestReceiptsMessage,
+    createDocumentInReceiptIoMessageDatastore,
 
     deleteDocumentFromReceiptErrorDatastore,
+    deleteDocumentFromReceiptMessageDatastore,
     deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     createDocumentInReceiptErrorDatastore,
     getDocumentFromReceiptsErrorDatastoreByBizEventId,

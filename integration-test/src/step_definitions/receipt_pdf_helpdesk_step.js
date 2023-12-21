@@ -11,12 +11,15 @@ const {
     deleteDocumentFromReceiptErrorDatastore,
     getDocumentFromReceiptsErrorDatastoreByBizEventId,
     getDocumentFromReceiptsDatastoreByEventId,
-    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId
+    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
+    deleteDocumentFromReceiptMessageDatastore,
+    createDocumentInReceiptIoMessageDatastore
 } = require("./receipts_datastore_client");
 const {
     getReceipt,
     getReceiptByOrganizationFiscalCodeAndIUV,
     getReceiptError,
+    getReceiptMessage,
     getReceiptPdf,
     postReceiptToReviewed,
     postRecoverFailedReceipt,
@@ -32,9 +35,11 @@ setDefaultTimeout(360 * 1000);
 
 // initialize variables
 let eventId = null;
+let messageId = null;
 let responseAPI = null;
 let receipt = null;
 let receiptError = null;
+let receiptMessage = null;
 let receiptPdfFileName = null;
 let listOfReceipts = [];
 
@@ -241,6 +246,28 @@ Then('the PDF is present on blob storage', async function () {
 
 Then("wait {int} ms", async function (milliSec) {
     sleep(milliSec)
+});
+
+Given('a receipt-io-message with bizEventId {string} and status {string} stored into receipt-error datastore', async function (eventId, messageId) {
+    messageId = messageId;
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromReceiptMessageDatastore(messageId);
+
+    let receiptsMessageStoreResponse = await createDocumentInReceiptIoMessageDatastore(eventId, messageId);
+    assert.strictEqual(receiptsMessageStoreResponse.statusCode, 201);
+});
+
+When("getReceiptMessage API is called with messageId {string}", async function (id) {
+    responseAPI = await getReceiptMessage(id);
+    receiptMessage = responseAPI.data;
+});
+
+Then("the receipt-message has eventId {string}", async function (id) {
+    assert.strictEqual(receiptMessage.eventId, id);
+});
+
+Then("the receipt-message has messageId {string}", async function (id) {
+    assert.strictEqual(receiptMessage.messageId, id);
 });
 
 
