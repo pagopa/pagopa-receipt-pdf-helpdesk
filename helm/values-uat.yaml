@@ -89,6 +89,7 @@ microservice-chart:
     COSMOS_BIZ_EVENT_DB_NAME: "db"
     COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
     COSMOS_RECEIPT_ERROR_CONTAINER_NAME: "receipts-message-errors"
+    COSMOS_RECEIPT_MESSAGE_CONTAINER_NAME: "receipts-io-messages"
     COSMOS_BIZ_EVENT_CONTAINER_NAME: "biz-events"
     PDF_ENGINE_ENDPOINT: "https://api.uat.platform.pagopa.it/shared/pdf-engine/v1/generate-pdf"
     BLOB_STORAGE_ACCOUNT_ENDPOINT: "https://pagopauweureceiptsfnsa.blob.core.windows.net"
