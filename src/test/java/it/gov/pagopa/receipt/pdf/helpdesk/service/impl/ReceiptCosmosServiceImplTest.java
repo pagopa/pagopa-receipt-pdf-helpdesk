@@ -2,8 +2,10 @@ package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 
 import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import org.junit.jupiter.api.BeforeEach;
@@ -173,4 +175,28 @@ class ReceiptCosmosServiceImplTest {
         verify(receiptCosmosClientMock, never()).getFailedReceiptDocuments(anyString(), anyInt());
         verify(receiptCosmosClientMock, never()).getInsertedReceiptDocuments(anyString(), anyInt());
     }
+
+    @Test
+    void getReceiptMessageSuccess() throws IoMessageNotFoundException {
+        when(receiptCosmosClientMock.getIoMessage(anyString())).thenReturn(new IOMessage());
+
+        IOMessage message = assertDoesNotThrow(() -> sut.getReceiptMessage(anyString()));
+
+        assertNotNull(message);
+    }
+
+    @Test
+    void getReceiptMessageFailClientThrowsReceiptNotFound() throws IoMessageNotFoundException {
+        when(receiptCosmosClientMock.getIoMessage(anyString())).thenThrow(IoMessageNotFoundException.class);
+
+        assertThrows(IoMessageNotFoundException.class, () -> sut.getReceiptMessage(anyString()));
+    }
+
+    @Test
+    void getReceiptMessageFailClientReturnNull() throws IoMessageNotFoundException {
+        when(receiptCosmosClientMock.getIoMessage(anyString())).thenReturn(null);
+
+        assertThrows(IoMessageNotFoundException.class, () -> sut.getReceiptMessage(anyString()));
+    }
+
 }
