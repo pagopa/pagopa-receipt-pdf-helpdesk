@@ -43,7 +43,7 @@ public class GetReceiptMessage {
      *
      * @return response with {@link HttpStatus#OK} and the receipt notification message if found
      */
-    @FunctionName("GetReceipt")
+    @FunctionName("GetReceiptMessage")
     public HttpResponseMessage run(
             @HttpTrigger(name = "GetReceiptMessageTrigger",
                     methods = {HttpMethod.GET},
