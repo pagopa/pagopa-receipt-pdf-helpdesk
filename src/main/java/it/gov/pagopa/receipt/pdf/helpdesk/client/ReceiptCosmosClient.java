@@ -2,9 +2,11 @@ package it.gov.pagopa.receipt.pdf.helpdesk.client;
 
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.FeedResponse;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
 public interface ReceiptCosmosClient {
@@ -53,4 +55,6 @@ public interface ReceiptCosmosClient {
      * @return receipt documents
      */
     Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(String continuationToken, Integer pageSize);
+
+    IOMessage getIoMessage(String messageId) throws IoMessageNotFoundException;
 }

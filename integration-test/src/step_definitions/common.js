@@ -175,11 +175,19 @@ function createReceiptError(id, status) {
 	}
 }
 
+function createReceiptMessage(eventId, messageId) {
+	return {
+		"messageId": messageId,
+		"eventId": eventId
+	}
+}
+
 module.exports = {
 	TOKENIZED_FISCAL_CODE,
 	createEvent,
 	sleep,
 	createReceipt,
 	createReceiptError,
+	createReceiptMessage,
 	getRandomInt
 }

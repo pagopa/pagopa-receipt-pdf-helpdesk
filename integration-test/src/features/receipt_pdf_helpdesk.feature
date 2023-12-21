@@ -25,6 +25,13 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     When getReceiptPdf API is called with filename "int-test-helpdesk-receipt.pdf"
     Then the api response has a 200 Http status
 
+  Scenario: getReceiptMessage API return receipt-error stored on datastore
+    Given a receipt-io-message with bizEventId "receipt-helpdesk-int-test-id-3" and messageId "receipt-helpdesk-int-test-message-id-3" stored into receipt-io-message datastore
+    When getReceiptMessage API is called with messageId "receipt-helpdesk-int-test-id-3"
+    Then the api response has a 200 Http status
+    And the receipt-message has messageId "receipt-helpdesk-int-test-message-id-3"
+    And the receipt-message has eventId "receipt-helpdesk-int-test-id-3"
+
   Scenario: receiptToReviewed API retrieve a receipt error and updates its status to REVIEWED
     Given a receipt-error with bizEventId "receipt-helpdesk-int-test-id-5" and status "TO_REVIEW" stored into receipt-error datastore
     When receiptToReviewed API is called with bizEventId "receipt-helpdesk-int-test-id-5"

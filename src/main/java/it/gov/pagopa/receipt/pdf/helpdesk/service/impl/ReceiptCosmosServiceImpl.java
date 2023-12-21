@@ -3,8 +3,10 @@ package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 
@@ -82,5 +84,22 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         }
         String errMsg = String.format("Unexpected status for retrieving failed receipt: %s", statusType);
         throw new IllegalStateException(errMsg);
+    }
+
+    @Override
+    public IOMessage getReceiptMessage(String messageId) throws IoMessageNotFoundException {
+        IOMessage message;
+        try {
+            message = this.receiptCosmosClient.getIoMessage(messageId);
+        } catch (IoMessageNotFoundException e) {
+            String errorMsg = String.format("Receipt Message to IO not found with the message id %s", messageId);
+            throw new IoMessageNotFoundException(errorMsg, e);
+        }
+
+        if (message == null) {
+            String errorMsg = String.format("Receipt retrieved with the message id %s is null", messageId);
+            throw new IoMessageNotFoundException(errorMsg);
+        }
+        return message;
     }
 }
