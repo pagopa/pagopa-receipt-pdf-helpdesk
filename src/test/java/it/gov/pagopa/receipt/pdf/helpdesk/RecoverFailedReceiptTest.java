@@ -318,7 +318,9 @@ class RecoverFailedReceiptTest {
 
     @Test
     void generateAnonymousDebtorBizEvent() throws BizEventNotFoundException {
-        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID)).thenReturn(generateAnonymDebtorBizEvent());
+        BizEvent bizEvent = generateAnonymDebtorBizEvent();
+        bizEvent.setPayer(null);
+        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID)).thenReturn(bizEvent);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];

@@ -285,6 +285,7 @@ class GenerateReceiptPdfServiceImplTest {
     @Test
     void verifyPayerNullOrSameDebtorPayerWithSuccess() throws ReceiptGenerationNotToRetryException {
         Receipt receipt = buildReceiptForVerify(true, true);
+        receipt.setEventData(EventData.builder().debtorFiscalCode("DEBTOR_FC").build());
 
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
@@ -360,6 +361,7 @@ class GenerateReceiptPdfServiceImplTest {
     @Test
     void verifyPayerNullOrSameDebtorPayerAlreadyCreatedSuccess() throws ReceiptGenerationNotToRetryException {
         Receipt receipt = buildReceiptForVerify(true, false);
+        receipt.setEventData(EventData.builder().debtorFiscalCode("DEBTOR_FC").build());
 
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
@@ -384,6 +386,7 @@ class GenerateReceiptPdfServiceImplTest {
     @Test
     void verifyPayerNullOrSameDebtorPayerFailReceiptGenerationInError() throws ReceiptGenerationNotToRetryException {
         Receipt receipt = buildReceiptForVerify(false, false);
+        receipt.setEventData(EventData.builder().debtorFiscalCode("DEBTOR_FC").build());
 
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
@@ -400,6 +403,7 @@ class GenerateReceiptPdfServiceImplTest {
     @Test
     void verifyPayerNullOrSameDebtorPayerFailThrowsReceiptGenerationNotToRetryException() {
         Receipt receipt = buildReceiptForVerify(false, false);
+        receipt.setEventData(EventData.builder().debtorFiscalCode("DEBTOR_FC").build());
 
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
