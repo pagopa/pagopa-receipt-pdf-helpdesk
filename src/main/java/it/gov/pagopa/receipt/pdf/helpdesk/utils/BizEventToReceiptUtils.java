@@ -176,7 +176,8 @@ public class BizEventToReceiptUtils {
         }
 
         if (bizEvent.getDebtor().getEntityUniqueIdentifierValue() == null ||
-                bizEvent.getDebtor().getEntityUniqueIdentifierValue().equals("ANONIMO")) {
+                (bizEvent.getDebtor().getEntityUniqueIdentifierValue().equals("ANONIMO") &&
+                        (bizEvent.getPayer() == null || bizEvent.getPayer().getEntityUniqueIdentifierValue() == null))) {
             logger.debug("[{}] event with id {} discarded because debtor identifier is missing or ANONIMO",
                     context.getFunctionName(), bizEvent.getId());
             return true;

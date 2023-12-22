@@ -83,11 +83,12 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         }
 
         //Generate debtor's partial PDF
-        PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttach().getName(), true, workingDirPath);
-        pdfGeneration.setDebtorMetadata(generationResult);
+       if (!"ANONIMO".equals(debtorCF)) {
+           PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttach().getName(), true, workingDirPath);
+           pdfGeneration.setDebtorMetadata(generationResult);
+        }
 
-
-        return pdfGeneration;
+       return pdfGeneration;
     }
 
     /**
@@ -97,17 +98,23 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
     public boolean verifyAndUpdateReceipt(Receipt receipt, PdfGeneration pdfGeneration) throws ReceiptGenerationNotToRetryException {
         PdfMetadata debtorMetadata = pdfGeneration.getDebtorMetadata();
         boolean result = true;
-        if (debtorMetadata == null) {
-            logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
-            return false;
-        }
 
-        if (pdfGeneration.isGenerateOnlyDebtor()) {
-            if (debtorMetadata.getStatusCode() != SC_OK) {
-                String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
-                throw new ReceiptGenerationNotToRetryException(errMsg);
+        if (receipt.getEventData() != null && !"ANONIMO".equals(receipt.getEventData().getDebtorFiscalCode())) {
+
+
+            if (debtorMetadata == null) {
+                logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
+                return false;
             }
-            return result;
+
+            if (pdfGeneration.isGenerateOnlyDebtor()) {
+                if (debtorMetadata.getStatusCode() != SC_OK) {
+                    String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
+                    throw new ReceiptGenerationNotToRetryException(errMsg);
+                }
+                return result;
+            }
+
         }
 
         PdfMetadata payerMetadata = pdfGeneration.getPayerMetadata();
@@ -119,7 +126,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         if (debtorMetadata.getStatusCode() != SC_OK
                 || payerMetadata.getStatusCode() != SC_OK) {
             String errMsg = String.format("Receipt generation fail for debtor (status: %s) and/or payer (status: %s)",
-                    debtorMetadata.getStatusCode(), payerMetadata.getStatusCode());
+                    debtorMetadata != null ? debtorMetadata.getStatusCode() : "N/A", payerMetadata.getStatusCode());
             throw new ReceiptGenerationNotToRetryException(errMsg);
         }
         return result;
