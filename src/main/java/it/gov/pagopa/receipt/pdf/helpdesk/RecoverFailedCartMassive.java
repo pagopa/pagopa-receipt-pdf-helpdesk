@@ -5,22 +5,14 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverCartResult;
-import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
-import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +21,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.massiveRecoverByStatus;
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.massiveRecoverCartByStatus;
 
 /**
@@ -60,7 +51,7 @@ public class RecoverFailedCartMassive {
      * - ({@link it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType#INSERTED})
      * - ({@link it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType#FAILED})
      * <p>
-     * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
+     * It attempts to recreate and send receipt data based on cart having a failed or stuck status.
      *
      * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
