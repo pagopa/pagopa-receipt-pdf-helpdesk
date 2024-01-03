@@ -248,7 +248,7 @@ Then("wait {int} ms", async function (milliSec) {
     sleep(milliSec)
 });
 
-Given('a receipt-io-message with bizEventId {string} and status {string} stored into receipt-error datastore', async function (eventId, messageId) {
+Given('a receipt-io-message with bizEventId {string} and messageId {string} stored into receipt-io-message datastore', async function (eventId, messageId) {
     messageId = messageId;
     // prior cancellation to avoid dirty cases
     await deleteDocumentFromReceiptMessageDatastore(messageId);

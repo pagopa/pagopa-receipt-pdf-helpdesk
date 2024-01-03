@@ -63,7 +63,7 @@ async function createDocumentInReceiptErrorDatastore(id, status) {
 async function createDocumentInReceiptIoMessageDatastore(eventId, messageId) {
     let message = createReceiptMessage(eventId, messageId);
     try {
-        return await receiptMessageContainer.items.create(receipt);
+        return await receiptMessageContainer.items.create(message);
     } catch (err) {
         console.log(err);
     }
