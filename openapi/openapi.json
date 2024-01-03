@@ -4,7 +4,7 @@
     "title": "Receipts Helpdesk",
     "description": "Microservice for exposing REST APIs about receipts helpdesk.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "0.7.3"
+    "version": "0.8.0"
   },
   "servers": [
     {
@@ -1670,7 +1670,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["INSERTED", "FAILED", "SENT"]
+            "enum": [
+              "INSERTED",
+              "FAILED",
+              "SENT"
+            ]
           },
           "reasonError": {
             "$ref": "#/components/schemas/ReasonErr"
