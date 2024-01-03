@@ -171,8 +171,6 @@ public class RecoverFailedCart {
             logger.info("[{}] Cart with id {} processes successfully. Cart with status: {} and receipt with status: {}",
                     context.getFunctionName(), cartForReceipt.getId(), cartForReceipt.getStatus(), receipt.getStatus());
             cartForReceiptDocumentdb.setValue(cartForReceipt);
-
-            cartForReceiptDocumentdb.setValue(cartForReceipt);
             String responseMsg = String.format("Cart with id %s recovered", transactionId);
             return request.createResponseBuilder(HttpStatus.OK)
                     .body(responseMsg)
