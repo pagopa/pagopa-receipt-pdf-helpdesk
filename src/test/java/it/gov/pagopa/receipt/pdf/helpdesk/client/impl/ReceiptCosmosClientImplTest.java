@@ -28,7 +28,7 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables
 class ReceiptCosmosClientImplTest {
 
     private static final String RECEIPT_ID = "a valid receipt id";
-    private static final Long CART_ID = 1L;
+    private static final String CART_ID = "a valid cart id";
 
     private CosmosClient mockClient;
 
@@ -268,7 +268,7 @@ class ReceiptCosmosClientImplTest {
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        CartForReceipt cartForReceipt = assertDoesNotThrow(() -> client.getCartDocument(CART_ID.toString()));
+        CartForReceipt cartForReceipt = assertDoesNotThrow(() -> client.getCartDocument(CART_ID));
 
         assertEquals(CART_ID, cartForReceipt.getId());
     }
