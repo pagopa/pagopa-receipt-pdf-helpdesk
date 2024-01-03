@@ -4,8 +4,10 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.util.CosmosPagedIterable;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,7 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables
 class ReceiptCosmosClientImplTest {
 
     private static final String RECEIPT_ID = "a valid receipt id";
+    private static final String CART_ID = "a valid cart id";
 
     private CosmosClient mockClient;
 
@@ -243,4 +246,51 @@ class ReceiptCosmosClientImplTest {
         assertThrows(IoMessageNotFoundException.class, () -> client.getIoMessage("an invalid receipt id"));
     }
 
+
+    @Test
+    void getCartDocumentSuccess() {
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+
+        Iterator<CartForReceipt> mockIterator = mock(Iterator.class);
+        CartForReceipt cart = new CartForReceipt();
+        cart.setId(CART_ID);
+
+        when(mockIterator.hasNext()).thenReturn(true);
+        when(mockIterator.next()).thenReturn(cart);
+
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+
+        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
+                .thenReturn(mockIterable);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+
+        CartForReceipt cartForReceipt = assertDoesNotThrow(() -> client.getCartDocument(CART_ID));
+
+        assertEquals(CART_ID, cartForReceipt.getId());
+    }
+
+    @Test
+    void getCartDocumentFail() {
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+
+        Iterator<Receipt> mockIterator = mock(Iterator.class);
+
+        when(mockIterator.hasNext()).thenReturn(false);
+
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+
+        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
+                .thenReturn(mockIterable);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+
+        assertThrows(CartNotFoundException.class, () -> client.getCartDocument("an invalid receipt id"));
+    }
 }
