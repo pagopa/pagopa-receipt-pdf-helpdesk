@@ -9,6 +9,7 @@ import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptQueueClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
@@ -77,6 +78,9 @@ class RecoverFailedReceiptTest {
     private BizEventCosmosClientImpl bizEventCosmosClientMock;
 
     @Mock
+    private ReceiptCosmosClientImpl receiptCosmosClient;
+
+    @Mock
     private HttpRequestMessage<Optional<String>> requestMock;
 
     @Captor
@@ -93,7 +97,7 @@ class RecoverFailedReceiptTest {
     public void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, queueClientMock, bizEventCosmosClientMock);
+                pdvTokenizerServiceMock, queueClientMock, bizEventCosmosClientMock, receiptCosmosClient);
         sut = spy(new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosServiceMock));
     }
 

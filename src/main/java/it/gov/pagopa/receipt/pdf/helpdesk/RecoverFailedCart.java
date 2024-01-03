@@ -118,9 +118,6 @@ public class RecoverFailedCart {
             if (!isReceiptStatusValid(receipt)) {
                 logger.error("[{}] Failed to process cart with id {}: fail to tokenize fiscal codes",
                         context.getFunctionName(), cartForReceipt.getId());
-                cartForReceipt.setStatus(CartStatusType.FAILED);
-                cartForReceipt.setReasonError(receipt.getReasonErr());
-                cartForReceiptDocumentdb.setValue(cartForReceipt);
                 return request
                         .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ProblemJson.builder()
@@ -137,9 +134,6 @@ public class RecoverFailedCart {
             if (!isReceiptStatusValid(receipt)) {
                 logger.error("[{}] Failed to process cart with id {}: fail to save receipt",
                         context.getFunctionName(), cartForReceipt.getId());
-                cartForReceipt.setStatus(CartStatusType.FAILED);
-                cartForReceipt.setReasonError(receipt.getReasonErr());
-                cartForReceiptDocumentdb.setValue(cartForReceipt);
                 return request
                         .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ProblemJson.builder()

@@ -5,6 +5,7 @@ import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
@@ -84,4 +85,23 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         }
         throw new BizEventNotFoundException("Document not found in the defined container");
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(long transactionId, String continuationToken, Integer pageSize) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        //Build query
+        String query = String.format("SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = '%s'",
+                transactionId);
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), BizEvent.class)
+                .iterableByPage(continuationToken, pageSize);
+    }
+
 }
