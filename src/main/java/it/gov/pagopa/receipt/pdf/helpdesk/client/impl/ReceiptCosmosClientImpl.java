@@ -9,11 +9,13 @@ import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
@@ -29,9 +31,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final String databaseId = System.getenv().getOrDefault("COSMOS_RECEIPT_DB_NAME", "db");
     private final String containerId = System.getenv().getOrDefault("COSMOS_RECEIPT_CONTAINER_NAME", "receipt");
-
+    private final String containerCartId = System.getenv().getOrDefault("COSMOS_RECEIPT_CART_CONTAINER_NAME", "cart-for-receipts");
     private final String containerMessageId = System.getenv().getOrDefault("COSMOS_RECEIPT_MESSAGE_CONTAINER_NAME", "receipts-io-messages");
-
     private final String containerReceiptErrorId = System.getenv().getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
 
     private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
@@ -43,6 +44,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final int recordsLimitRecoverNotNotified = Integer.parseInt(System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_RECORDS", "200"));
 
+    private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
     private final CosmosClient cosmosClient;
 
@@ -88,7 +90,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
         }
-        throw new ReceiptNotFoundException("Document not found in the defined container");
+        throw new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
     }
 
     /**
@@ -169,9 +171,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
-        } else {
-            throw new ReceiptNotFoundException("Document not found in the defined container");
         }
+        throw new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
     }
 
     /**
@@ -260,6 +261,24 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
         }
-        throw new IoMessageNotFoundException("Document not found in the defined container");
+        throw new IoMessageNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
+    }
+
+    @Override
+    public CartForReceipt getCartDocument(String cartId) throws CartNotFoundException {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerCartId);
+
+        //Build query
+        String query = String.format("SELECT * FROM c WHERE c.id = '%s'", cartId);
+
+        //Query the container
+        CosmosPagedIterable<CartForReceipt> queryResponse = cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), CartForReceipt.class);
+
+        if (queryResponse.iterator().hasNext()) {
+            return queryResponse.iterator().next();
+        }
+        throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
     }
 }

@@ -3,9 +3,11 @@ package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
@@ -101,5 +103,22 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
             throw new IoMessageNotFoundException(errorMsg);
         }
         return message;
+    }
+
+    @Override
+    public CartForReceipt getCart(String cartId) throws CartNotFoundException {
+        CartForReceipt cartForReceipt;
+        try {
+            cartForReceipt = this.receiptCosmosClient.getCartDocument(cartId);
+        } catch (CartNotFoundException e) {
+            String errorMsg = String.format("Receipt not found with the biz-event id %s", cartId);
+            throw new CartNotFoundException(errorMsg, e);
+        }
+
+        if (cartForReceipt == null) {
+            String errorMsg = String.format("Receipt retrieved with the biz-event id %s is null", cartId);
+            throw new CartNotFoundException(errorMsg);
+        }
+        return cartForReceipt;
     }
 }
