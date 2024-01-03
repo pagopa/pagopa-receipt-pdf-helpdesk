@@ -270,7 +270,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerCartId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.id = '%s'", cartId);
+        String query = String.format("SELECT * FROM c WHERE c.id = %s", cartId);
 
         //Query the container
         CosmosPagedIterable<CartForReceipt> queryResponse = cosmosContainer
