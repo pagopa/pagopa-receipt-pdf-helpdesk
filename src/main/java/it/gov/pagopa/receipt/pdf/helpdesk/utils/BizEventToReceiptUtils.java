@@ -3,7 +3,11 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 import com.azure.cosmos.models.FeedResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
@@ -14,7 +18,9 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStat
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverCartResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import org.slf4j.Logger;
@@ -279,6 +285,54 @@ public class BizEventToReceiptUtils {
 
     public static boolean isReceiptStatusValid(Receipt receipt) {
         return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
+    }
+
+    public static MassiveRecoverCartResult massiveRecoverCartByStatus(
+            ExecutionContext context, BizEventToReceiptService bizEventToReceiptService,
+            CartReceiptsCosmosClient cartReceiptsCosmosClient,
+            Logger logger, CartStatusType statusType) {
+        int errorCounter = 0;
+        List<CartForReceipt> cartItems = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
+                    cartReceiptsCosmosClient.getFailedCarts(continuationToken, 100, statusType);
+
+            for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
+                for (CartForReceipt cart : page.getResults()) {
+                    try {
+                        List<BizEvent> bizEventList = bizEventToReceiptService.getCartBizEvents(cart.getId());
+                        Receipt receipt = bizEventToReceiptService.createCartReceipt(bizEventList);
+
+                        if (!isReceiptStatusValid(receipt)) {
+                            logger.error("[{}] Failed to process cart with id {}: fail to tokenize fiscal codes",
+                                    context.getFunctionName(), cart.getId());
+                            throw new Exception("receipt status not valid");
+                        }
+
+                        // Add receipt to items to be saved on CosmosDB
+                        bizEventToReceiptService.handleSaveReceipt(receipt);
+
+                        if (!isReceiptStatusValid(receipt)) {
+                            throw new Exception("receipt not valid");
+                        }
+
+                        // Send biz event as message to queue (to be processed from the other function)
+                        bizEventToReceiptService.handleSendMessageToQueue(bizEventList, receipt);
+                        cart.setStatus(CartStatusType.SENT);
+                        cartItems.add(cart);
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                        errorCounter++;
+                    }
+                }
+                continuationToken = page.getContinuationToken();
+            }
+        } while (continuationToken != null);
+        return MassiveRecoverCartResult.builder()
+                .cartItems(cartItems)
+                .errorCounter(errorCounter)
+                .build();
     }
 
     private BizEventToReceiptUtils() {}

@@ -39,20 +39,16 @@ public class RecoverFailedCart {
 
     private final BizEventToReceiptService bizEventToReceiptService;
     private final CartReceiptsCosmosClient cartReceiptsCosmosClient;
-    private final ReceiptCosmosService receiptCosmosService;
 
     public RecoverFailedCart(){
         this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
-        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
         this.cartReceiptsCosmosClient = CartReceiptsCosmosClientImpl.getInstance();
     }
 
     RecoverFailedCart(BizEventToReceiptService bizEventToReceiptService,
-                      CartReceiptsCosmosClient cartReceiptsCosmosClient,
-                      ReceiptCosmosService receiptCosmosService){
+                      CartReceiptsCosmosClient cartReceiptsCosmosClient){
         this.bizEventToReceiptService = bizEventToReceiptService;
         this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
-        this.receiptCosmosService = receiptCosmosService;
     }
 
     /**
@@ -98,6 +94,19 @@ public class RecoverFailedCart {
         try {
 
             CartForReceipt cartForReceipt = cartReceiptsCosmosClient.getCartItem(transactionId);
+
+            if (!cartForReceipt.getStatus().equals(CartStatusType.FAILED) && !cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
+                String responseMsg = String.format("The requested cart with transaction ID %s is not in the expected status",
+                        cartForReceipt.getId());
+                return request
+                        .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ProblemJson.builder()
+                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                                .detail(responseMsg)
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .build())
+                        .build();
+            }
 
             if (cartForReceipt.getTotalNotice() != cartForReceipt.getCartPaymentId().size()) {
                 logger.info("[{}] Not all items collected for cart with id {}, this event will be skipped",

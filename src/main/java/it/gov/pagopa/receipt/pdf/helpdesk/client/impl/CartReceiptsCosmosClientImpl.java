@@ -3,9 +3,11 @@ package it.gov.pagopa.receipt.pdf.helpdesk.client.impl;
 import com.azure.cosmos.*;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
@@ -79,6 +81,11 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
         return cosmosContainer.createItem(receipt);
+    }
+
+    @Override
+    public Iterable<FeedResponse<CartForReceipt>> getFailedCarts(String continuationToken, int i, CartStatusType statusType) {
+        return null;
     }
 
 }
