@@ -244,7 +244,6 @@ class RecoverFailedCartTest {
         when(feedResponseMock.getResults()).thenReturn(receiptList);
         doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
                 .getAllBizEventDocument(Mockito.eq("1"), any(), any());
-
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
 
@@ -280,7 +279,6 @@ class RecoverFailedCartTest {
         when(feedResponseMock.getResults()).thenReturn(receiptList);
         doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
                 .getAllBizEventDocument(Mockito.eq("1"), any(), any());
-
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
