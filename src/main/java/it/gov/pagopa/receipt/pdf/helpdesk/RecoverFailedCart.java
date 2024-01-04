@@ -67,10 +67,10 @@ public class RecoverFailedCart {
     public HttpResponseMessage run (
             @HttpTrigger(name = "RecoverFailedCartTrigger",
                     methods = {HttpMethod.POST},
-                    route = "cart/{transaction-id}/recover-failed",
+                    route = "cart/{cart-id}/recover-failed",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("transaction-id") String transactionId,
+            @BindingName("cart-id") String cartId,
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
@@ -80,7 +80,7 @@ public class RecoverFailedCart {
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        if (transactionId == null || transactionId.isBlank()) {
+        if (cartId == null || cartId.isBlank()) {
             return request
                     .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
@@ -93,7 +93,7 @@ public class RecoverFailedCart {
 
         try {
 
-            CartForReceipt cartForReceipt = cartReceiptsCosmosClient.getCartItem(transactionId);
+            CartForReceipt cartForReceipt = cartReceiptsCosmosClient.getCartItem(cartId);
 
             if (!cartForReceipt.getStatus().equals(CartStatusType.FAILED) && !cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
                 String responseMsg = String.format("The requested cart with transaction ID %s is not in the expected status",
@@ -112,7 +112,7 @@ public class RecoverFailedCart {
                 logger.info("[{}] Not all items collected for cart with id {}, this event will be skipped",
                         context.getFunctionName(), cartForReceipt.getId());
                 return request
-                        .createResponseBuilder(HttpStatus.NOT_FOUND)
+                        .createResponseBuilder(HttpStatus.BAD_REQUEST)
                         .body(ProblemJson.builder()
                                 .title(HttpStatus.BAD_REQUEST.name())
                                 .detail("Items not found on cart for the id")
@@ -159,7 +159,7 @@ public class RecoverFailedCart {
 
             if (!isReceiptStatusValid(receipt)) {
                 return request
-                        .createResponseBuilder(HttpStatus.NOT_FOUND)
+                        .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ProblemJson.builder()
                                 .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
                                 .detail("Failed to process cart: fail to send message queue")
@@ -171,13 +171,13 @@ public class RecoverFailedCart {
             logger.info("[{}] Cart with id {} processes successfully. Cart with status: {} and receipt with status: {}",
                     context.getFunctionName(), cartForReceipt.getId(), cartForReceipt.getStatus(), receipt.getStatus());
             cartForReceiptDocumentdb.setValue(cartForReceipt);
-            String responseMsg = String.format("Cart with id %s recovered", transactionId);
+            String responseMsg = String.format("Cart with id %s recovered", cartId);
             return request.createResponseBuilder(HttpStatus.OK)
                     .body(responseMsg)
                     .build();
 
         } catch (CartNotFoundException exception) {
-            String msg = String.format("Unable to retrieve the cart with id %s", transactionId);
+            String msg = String.format("Unable to retrieve the cart with id %s", cartId);
             logger.error(msg, exception);
             return request
                     .createResponseBuilder(HttpStatus.NOT_FOUND)

@@ -294,10 +294,20 @@ public class BizEventToReceiptUtils {
         int errorCounter = 0;
         List<CartForReceipt> cartItems = new ArrayList<>();
         String continuationToken = null;
+        if (statusType == null) {
+            throw new IllegalArgumentException("at least one status must be specified");
+        }
         do {
-            Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
-                    cartReceiptsCosmosClient.getFailedCarts(continuationToken, 100, statusType);
+            Iterable<FeedResponse<CartForReceipt>> feedResponseIterator = null;
 
+            if (statusType.equals(CartStatusType.FAILED)) {
+                feedResponseIterator = cartReceiptsCosmosClient.getFailedCarts(continuationToken, 100);
+            }
+            if (statusType.equals(CartStatusType.INSERTED)) {
+                feedResponseIterator = cartReceiptsCosmosClient.getInsertedCarts(continuationToken, 100);
+            }
+
+            assert feedResponseIterator != null;
             for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
                 for (CartForReceipt cart : page.getResults()) {
                     try {

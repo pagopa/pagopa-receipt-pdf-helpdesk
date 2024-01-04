@@ -8,14 +8,23 @@ import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     private static CartReceiptsCosmosClientImpl instance;
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
     private final String cartForReceiptContainerName = System.getenv("CART_FOR_RECEIPT_CONTAINER_NAME");
+
+    private final String millisDiff = System.getenv("MAX_DATE_DIFF_CART_MILLIS");
+
+    private final String numDaysCartNotSent = System.getenv().getOrDefault("RECOVER_CART_MASSIVE_MAX_DAYS", "0");
+
 
     private final CosmosClient cosmosClient;
 
@@ -84,8 +93,39 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     @Override
-    public Iterable<FeedResponse<CartForReceipt>> getFailedCarts(String continuationToken, int i, CartStatusType statusType) {
-        return null;
+    public Iterable<FeedResponse<CartForReceipt>> getFailedCarts(String continuationToken, int size) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
+
+        //Build query
+        String query = String.format("SELECT * FROM c WHERE (c.status = '%s') AND c._ts >= %s",
+                CartStatusType.FAILED,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysCartNotSent)).toInstant().toEpochMilli());
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), CartForReceipt.class)
+                .iterableByPage(continuationToken,size);
+    }
+
+    @Override
+    public Iterable<FeedResponse<CartForReceipt>> getInsertedCarts(String continuationToken, int size) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
+
+        //Build query
+        String query =  String.format("SELECT * FROM c WHERE (c.status = '%s' AND c._ts >= %s " +
+                        "AND ( %s - c._ts) >= %s)",
+                ReceiptStatusType.INSERTED,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysCartNotSent)).toInstant().toEpochMilli(),
+                OffsetDateTime.now().toInstant().toEpochMilli(), millisDiff);
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), CartForReceipt.class)
+                .iterableByPage(continuationToken,100);
     }
 
 }
