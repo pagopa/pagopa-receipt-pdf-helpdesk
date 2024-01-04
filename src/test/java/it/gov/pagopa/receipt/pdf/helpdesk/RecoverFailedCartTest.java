@@ -119,7 +119,7 @@ class RecoverFailedCartTest {
         List<BizEvent> receiptList = Collections.singletonList(generateValidBizEvent("1"));
         when(feedResponseMock.getResults()).thenReturn(receiptList);
         doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-                .getAllBizEventDocument(Mockito.eq(1L), any(), any());
+                .getAllBizEventDocument(Mockito.eq("1"), any(), any());
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -243,7 +243,7 @@ class RecoverFailedCartTest {
         List<BizEvent> receiptList = Collections.singletonList(generateValidBizEvent("1"));
         when(feedResponseMock.getResults()).thenReturn(receiptList);
         doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-                .getAllBizEventDocument(Mockito.eq(1L), any(), any());
+                .getAllBizEventDocument(Mockito.eq("1"), any(), any());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
@@ -279,7 +279,7 @@ class RecoverFailedCartTest {
         List<BizEvent> receiptList = Collections.singletonList(generateValidBizEvent("1"));
         when(feedResponseMock.getResults()).thenReturn(receiptList);
         doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-                .getAllBizEventDocument(Mockito.eq(1L), any(), any());
+                .getAllBizEventDocument(Mockito.eq("1"), any(), any());
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -320,7 +320,7 @@ class RecoverFailedCartTest {
 
     private CartForReceipt generateCart() {
         CartForReceipt cart = new CartForReceipt();
-        cart.setId(1L);
+        cart.setId("1");
         cart.setStatus(CartStatusType.FAILED);
         cart.setTotalNotice(2);
         cart.setCartPaymentId(new HashSet<>(new ArrayList<>(

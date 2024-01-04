@@ -26,8 +26,10 @@ import it.gov.pagopa.receipt.pdf.helpdesk.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getItemSubject;
 
@@ -194,7 +196,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public List<BizEvent> getCartBizEvents(long cartId) {
+    public List<BizEvent> getCartBizEvents(String cartId) {
         List<BizEvent> bizEventList = new ArrayList<>();
         String continuationToken = null;
         do {
@@ -214,42 +216,56 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      */
     @Override
     public Receipt createCartReceipt(List<BizEvent> bizEventList) {
-        // TODO: capire come gestire la creazione della receipt
         Receipt receipt = new Receipt();
-        // TODO il campo è transactionDetails.transaction.transactionId non idTransaction
-        long carId = bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction();
+        BizEvent firstBizEvent = bizEventList.get(0);
+        String carId = firstBizEvent.getTransactionDetails().getTransaction().getTransactionId();
 
         // Insert biz-event data into receipt
         receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
-        receipt.setEventId(Long.toString(carId));
+        receipt.setEventId(carId);
         receipt.setIsCart(true);
 
         EventData eventData = new EventData();
         try {
-            tokenizeFiscalCodes(bizEventList.get(0), receipt, eventData);
+            this.tokenizeFiscalCodes(firstBizEvent, receipt, eventData);
         } catch (Exception e) {
-            logger.error("Error tokenizing receipt for cart with id {}",
-                    carId, e);
+            logger.error("Error tokenizing receipt for cart with id {}", carId, e);
             receipt.setStatus(ReceiptStatusType.FAILED);
             return receipt;
         }
 
-        eventData.setTransactionCreationDate(
-                getTransactionCreationDate(bizEventList.get(0)));
-        eventData.setAmount(bizEventList.get(0).getPaymentInfo() != null ?
-                bizEventList.get(0).getPaymentInfo().getAmount() : null);
+        eventData.setTransactionCreationDate(this.getTransactionCreationDate(firstBizEvent));
 
-
+        AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
         List<CartItem> cartItems = new ArrayList<>();
-        bizEventList.forEach(bizEvent -> cartItems.add(
-                CartItem.builder()
-                        .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
-                        .subject(getItemSubject(bizEvent))
-                        .build()));
+        bizEventList.forEach(bizEvent -> {
+            BigDecimal amountExtracted = getAmount(bizEvent);
+            amount.updateAndGet(v -> v.add(amountExtracted));
+            cartItems.add(
+                    CartItem.builder()
+                            .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                            .subject(getItemSubject(bizEvent))
+                            .build());
+        });
+
+        if (!amount.get().equals(BigDecimal.ZERO)) {
+            eventData.setAmount(amount.get().toString());
+        }
+
         eventData.setCart(cartItems);
 
         receipt.setEventData(eventData);
         return receipt;
+    }
+
+    private static BigDecimal getAmount(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
+            return new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+        }
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
+            return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
+        }
+        return BigDecimal.ZERO;
     }
 
 }

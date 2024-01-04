@@ -52,8 +52,8 @@ public class BizEventToReceiptServiceImplTest {
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         when(feedResponseMock.getResults()).thenReturn(Collections.singletonList(new BizEvent()));
         doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-                .getAllBizEventDocument(Mockito.eq(1), any(), any());
-        assertDoesNotThrow(() -> bizEventToReceiptService.getCartBizEvents(1));
+                .getAllBizEventDocument(Mockito.eq("1"), any(), any());
+        assertDoesNotThrow(() -> bizEventToReceiptService.getCartBizEvents("1"));
     }
 
 }

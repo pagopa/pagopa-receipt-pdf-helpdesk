@@ -50,7 +50,7 @@ public class RecoverFailedCartScheduled {
     }
 
     RecoverFailedCartScheduled(BizEventToReceiptService bizEventToReceiptService,
-                               CartReceiptsCosmosClientImpl cartReceiptsCosmosClient) {
+                               CartReceiptsCosmosClient cartReceiptsCosmosClient) {
         this.bizEventToReceiptService = bizEventToReceiptService;
         this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
     }
@@ -95,7 +95,7 @@ public class RecoverFailedCartScheduled {
                         context.getFunctionName(), recoverResult.getErrorCounter(), statusType);
             }
             return recoverResult.getCartItems();
-        } catch (NoSuchElementException e) {
+        } catch (Exception e) {
             logger.error("[{}] Unexpected error during recover of failed cart for status {}",
                     context.getFunctionName(), statusType, e);
             return Collections.emptyList();

@@ -102,8 +102,8 @@ public class RecoverFailedCartMassive {
         try {
             recoverResult = massiveRecoverCartByStatus(
                     context, bizEventToReceiptService, cartReceiptsCosmosClient, logger, statusType);
-        } catch (NoSuchElementException e) {
-            logger.error("[{}] Unexpected error during recover of failed receipt", context.getFunctionName(), e);
+        } catch (Exception e) {
+            logger.error("[{}] Unexpected error during recover of failed cart", context.getFunctionName(), e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
