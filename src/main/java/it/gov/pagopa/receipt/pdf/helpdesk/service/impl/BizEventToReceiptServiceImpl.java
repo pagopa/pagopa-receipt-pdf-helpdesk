@@ -258,7 +258,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         return receipt;
     }
 
-    private static BigDecimal getAmount(BizEvent bizEvent) {
+    public static BigDecimal getAmount(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
             return new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
         }
