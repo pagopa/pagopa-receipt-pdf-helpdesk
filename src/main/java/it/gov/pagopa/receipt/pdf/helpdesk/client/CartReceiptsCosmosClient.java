@@ -12,5 +12,7 @@ public interface CartReceiptsCosmosClient {
 
     CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt);
 
-    Iterable<FeedResponse<CartForReceipt>> getFailedCarts(String continuationToken, int i, CartStatusType statusType);
+    Iterable<FeedResponse<CartForReceipt>> getFailedCarts(String continuationToken, int size);
+
+    Iterable<FeedResponse<CartForReceipt>> getInsertedCarts(String continuationToken, int size);
 }

@@ -38,7 +38,7 @@ public class RecoverFailedCartScheduled {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverFailedCartScheduled.class);
 
-    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("FAILED_AUTORECOVER_ENABLED", "true"));
+    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("FAILED_CART_AUTORECOVER_ENABLED", "true"));
 
     private final BizEventToReceiptService bizEventToReceiptService;
 
@@ -66,7 +66,7 @@ public class RecoverFailedCartScheduled {
      */
     @FunctionName("RecoverFailedCartScheduled")
     public void run(
-            @TimerTrigger(name = "timerInfo", schedule = "%RECOVER_FAILED_CRON%") String timerInfo,
+            @TimerTrigger(name = "timerInfo", schedule = "%RECOVER_FAILED_CART_CRON%") String timerInfo,
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",

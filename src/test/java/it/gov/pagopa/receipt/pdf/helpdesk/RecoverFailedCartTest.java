@@ -103,7 +103,7 @@ class RecoverFailedCartTest {
 
 
     @Test
-    void requestOnValidCartShouldResend() throws ReceiptNotFoundException, CartNotFoundException {
+    void requestOnValidCartShouldResend() throws CartNotFoundException {
 
         Response<SendMessageResult> queueResponse = mock(Response.class);
         when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
@@ -137,6 +137,90 @@ class RecoverFailedCartTest {
         verify(documentdb).setValue(cartForReceiptArgumentCaptor.capture());
         CartForReceipt captured = cartForReceiptArgumentCaptor.getValue();
         assertEquals(CartStatusType.SENT, captured.getStatus());
+    }
+
+    @Test
+    void requestOnUncompleteCartShouldntResend() throws CartNotFoundException {
+
+        Response<SendMessageResult> queueResponse = mock(Response.class);
+        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
+
+        CartForReceipt cart = generateCart();
+        cart.setCartPaymentId(Collections.emptySet());
+        when(cartReceiptsCosmosClient.getCartItem(EVENT_ID)).thenReturn(cart);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertNotNull(response.getBody());
+
+    }
+
+    @Test
+    void requestOnAlreadySentCartShouldntResend() throws CartNotFoundException {
+
+        Response<SendMessageResult> queueResponse = mock(Response.class);
+        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
+
+        CartForReceipt cart = generateCart();
+        cart.setStatus(CartStatusType.SENT);
+        when(cartReceiptsCosmosClient.getCartItem(EVENT_ID)).thenReturn(cart);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+        assertNotNull(response.getBody());
+
+    }
+
+    @Test
+    void requestWithMissingCartOnRequestIdShouldReturnNotFound() throws CartNotFoundException {
+        when(cartReceiptsCosmosClient.getCartItem(EVENT_ID)).thenThrow(CartNotFoundException.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
+        assertNotNull(response.getBody());
+    }
+
+    @Test
+    void requestWithMissingCartIdShouldReturnError() throws CartNotFoundException {
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, null, documentdb, contextMock));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertNotNull(response.getBody());
     }
 
     @Test
@@ -206,6 +290,8 @@ class RecoverFailedCartTest {
         assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
     }
 
+
+
     private BizEvent generateValidBizEvent(String totalNotice){
         BizEvent item = new BizEvent();
 
@@ -232,77 +318,6 @@ class RecoverFailedCartTest {
         return item;
     }
 
-    private BizEvent generateValidBizEventWithTDetails(String totalNotice){
-        BizEvent item = new BizEvent();
-
-        Debtor debtor = new Debtor();
-        debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
-
-        TransactionDetails transactionDetails = new TransactionDetails();
-        Transaction transaction = new Transaction();
-        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
-        transactionDetails.setTransaction(transaction);
-        transactionDetails.setUser(User.builder().fiscalCode(PAYER_FISCAL_CODE).build());
-
-        PaymentInfo paymentInfo = new PaymentInfo();
-        paymentInfo.setTotalNotice(totalNotice);
-
-        item.setEventStatus(BizEventStatusType.DONE);
-        item.setId(EVENT_ID);
-        item.setDebtor(debtor);
-        item.setTransactionDetails(transactionDetails);
-        item.setPaymentInfo(paymentInfo);
-
-        return item;
-    }
-
-    private Receipt createFailedReceipt() {
-        Receipt receipt = new Receipt();
-
-        receipt.setId("a valid id");
-        receipt.setEventId("a valid id");
-
-        receipt.setVersion("1");
-
-        receipt.setStatus(ReceiptStatusType.FAILED);
-        EventData eventData = new EventData();
-        eventData.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
-        eventData.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
-        receipt.setEventData(eventData);
-
-        CartItem item = new CartItem();
-        List<CartItem> cartItems = Collections.singletonList(item);
-        eventData.setCart(cartItems);
-
-        return receipt;
-    }
-
-    private BizEvent generateAnonymDebtorBizEvent(){
-        BizEvent item = new BizEvent();
-
-        Payer payer = new Payer();
-        payer.setEntityUniqueIdentifierValue(PAYER_FISCAL_CODE);
-        Debtor debtor = new Debtor();
-        debtor.setEntityUniqueIdentifierValue("ANONIMO");
-
-        TransactionDetails transactionDetails = new TransactionDetails();
-        Transaction transaction = new Transaction();
-        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
-        transactionDetails.setTransaction(transaction);
-
-        PaymentInfo paymentInfo = new PaymentInfo();
-        paymentInfo.setTotalNotice("1");
-
-        item.setEventStatus(BizEventStatusType.DONE);
-        item.setId(EVENT_ID);
-        item.setPayer(payer);
-        item.setDebtor(debtor);
-        item.setTransactionDetails(transactionDetails);
-        item.setPaymentInfo(paymentInfo);
-
-        return item;
-    }
-
     private CartForReceipt generateCart() {
         CartForReceipt cart = new CartForReceipt();
         cart.setId(1L);
@@ -313,9 +328,4 @@ class RecoverFailedCartTest {
         return cart;
     }
 
-    private BizEvent generateNotDoneBizEvent(){
-        BizEvent item = new BizEvent();
-        item.setEventStatus(BizEventStatusType.NA);
-        return item;
-    }
 }
