@@ -63,7 +63,7 @@ public class RecoverFailedCart {
      *
      * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
-    @FunctionName("RecoverFailedReceipt")
+    @FunctionName("RecoverFailedCart")
     public HttpResponseMessage run (
             @HttpTrigger(name = "RecoverFailedCartTrigger",
                     methods = {HttpMethod.POST},
