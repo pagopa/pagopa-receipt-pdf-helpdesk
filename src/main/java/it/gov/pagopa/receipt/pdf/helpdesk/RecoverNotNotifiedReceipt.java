@@ -11,8 +11,10 @@ import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
@@ -85,8 +87,18 @@ public class RecoverNotNotifiedReceipt {
 
         Receipt receipt;
         try {
-            receipt = this.receiptCosmosService.getReceipt(eventId);
-        } catch (ReceiptNotFoundException e) {
+
+            boolean isCart = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
+                    "isCart", "false"));
+
+            if (isCart) {
+                receipt = this.receiptCosmosService.getReceipt(
+                        (String) receiptCosmosService.getCart(eventId).getCartPaymentId().toArray()[0]);
+            } else {
+                receipt = this.receiptCosmosService.getReceipt(eventId);
+            }
+
+        } catch (ReceiptNotFoundException | CartNotFoundException e) {
             String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
             return request

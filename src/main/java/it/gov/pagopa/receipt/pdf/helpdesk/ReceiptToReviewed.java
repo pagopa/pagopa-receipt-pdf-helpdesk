@@ -6,6 +6,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptErrorStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import org.slf4j.Logger;
@@ -68,8 +69,18 @@ public class ReceiptToReviewed {
         ReceiptError receiptError;
 
         try {
-            receiptError = receiptCosmosClient.getReceiptError(eventId);
-        } catch (NoSuchElementException | ReceiptNotFoundException e) {
+
+            boolean isCart = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
+                    "isCart", "false"));
+
+            if (isCart) {
+                receiptError = this.receiptCosmosClient.getReceiptError(
+                        (String) receiptCosmosClient.getCartDocument(eventId).getCartPaymentId().toArray()[0]);
+            } else {
+                receiptError = receiptCosmosClient.getReceiptError(eventId);
+            }
+
+        } catch (NoSuchElementException | ReceiptNotFoundException | CartNotFoundException e) {
             responseMsg = String.format("No receiptError has been found with bizEventId %s", eventId);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
             return request

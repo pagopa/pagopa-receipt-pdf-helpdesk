@@ -61,9 +61,20 @@ public class BizEventToReceiptUtils {
             bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
         }
 
-        if (isBizEventInvalid(bizEvent, context, logger)) {
+        if (isCart) {
+            Integer intTotalNotice = Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice());
+            if (!intTotalNotice.equals(listCart.size())) {
+                return null;
+            }
+            for (BizEvent event : listCart) {
+                if (isBizEventInvalid(event, context, logger)) {
+                    return null;
+                }
+            }
+        } else if (isBizEventInvalid(bizEvent, context, logger)) {
             return null;
         }
+
 
         if (receipt == null) {
             try {
