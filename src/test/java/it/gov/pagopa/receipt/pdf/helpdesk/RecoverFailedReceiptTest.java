@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
 import com.azure.core.http.rest.Response;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpRequestMessage;
@@ -29,11 +30,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
@@ -46,14 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RecoverFailedReceiptTest {
@@ -202,6 +192,45 @@ class RecoverFailedReceiptTest {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt captured = receiptCaptor.getValue();
+        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
+        assertEquals(EVENT_ID, captured.getEventId());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
+    }
+
+    @Test
+    void requestOnValidCartAndFailedReceiptShouldResend() throws BizEventNotFoundException, ReceiptNotFoundException {
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(createFailedReceipt());
+
+        Response<SendMessageResult> queueResponse = mock(Response.class);
+        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
+
+        FeedResponse feedResponseMock = mock(FeedResponse.class);
+        List<BizEvent> receiptList = Collections.singletonList(generateValidBizEvent("1"));
+        when(feedResponseMock.getResults()).thenReturn(receiptList);
+        doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
+                .getAllBizEventDocument(Mockito.eq("a valid id"), any(), any());
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        when(requestMock.getQueryParameters()).thenReturn(Collections.singletonMap("isCart","true"));
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));

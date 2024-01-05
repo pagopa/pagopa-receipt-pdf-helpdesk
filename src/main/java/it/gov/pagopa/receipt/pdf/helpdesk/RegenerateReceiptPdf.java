@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.GenerateReceiptUtils.*;
@@ -85,7 +87,18 @@ public class RegenerateReceiptPdf {
 
             try {
 
-                BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
+                Boolean isCart = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
+                        "isCart", "false"));
+
+                BizEvent bizEvent;
+                List<BizEvent> listBizEvent = null;
+
+                if (isCart) {
+                    listBizEvent = bizEventToReceiptService.getCartBizEvents(eventId);
+                    bizEvent = listBizEvent.get(0);
+                } else {
+                    bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
+                }
 
                 //Retrieve receipt's data from CosmosDB
                 Receipt receipt = getReceipt(context, bizEvent, receiptCosmosClient, logger);
@@ -107,7 +120,8 @@ public class RegenerateReceiptPdf {
 
                         if (receipt.getEventData().getDebtorFiscalCode() == null ||
                                 receipt.getEventData().getPayerFiscalCode() == null) {
-                            BizEventToReceiptUtils.tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
+                            BizEventToReceiptUtils.tokenizeReceipt(bizEventToReceiptService, isCart ?
+                                    listBizEvent : Collections.singletonList(bizEvent), receipt);
                             documentdb.setValue(receipt);
                         }
 
@@ -117,7 +131,8 @@ public class RegenerateReceiptPdf {
                             documentdb.setValue(receipt);
                         }
 
-                        pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, bizEvent, workingDirPath);
+                        pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, isCart ?
+                                listBizEvent : Collections.singletonList(bizEvent), workingDirPath);
 
                         //Verify PDF generation success
                         boolean success = true;

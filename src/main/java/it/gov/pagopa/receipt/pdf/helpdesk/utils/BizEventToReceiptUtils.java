@@ -64,6 +64,7 @@ public class BizEventToReceiptUtils {
         if (isBizEventInvalid(bizEvent, context, logger)) {
             return null;
         }
+
         if (receipt == null) {
             try {
                 receipt = receiptCosmosService.getReceipt(eventId);
@@ -101,7 +102,7 @@ public class BizEventToReceiptUtils {
                         receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
         )) {
             if (receipt.getEventData() == null || receipt.getEventData().getDebtorFiscalCode() == null) {
-                tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
+                tokenizeReceipt(bizEventToReceiptService, isCart ? listCart : Collections.singletonList(bizEvent), receipt);
             }
             receipt.setStatus(ReceiptStatusType.INSERTED);
             bizEventToReceiptService.handleSendMessageToQueue(isCart ? listCart :
@@ -262,28 +263,36 @@ public class BizEventToReceiptUtils {
         return false;
     }
 
-    public static void tokenizeReceipt(BizEventToReceiptService service, BizEvent bizEvent, Receipt receipt)
+    public static void tokenizeReceipt(BizEventToReceiptService service, List<BizEvent> bizEvents, Receipt receipt)
             throws PDVTokenizerException, JsonProcessingException {
+        BizEvent firstEvent = bizEvents.get(0);
         if (receipt.getEventData() == null) {
             EventData eventData = new EventData();
             receipt.setEventData(eventData);
             eventData.setTransactionCreationDate(
-                    service.getTransactionCreationDate(bizEvent));
-            eventData.setAmount(bizEvent.getPaymentInfo() != null ?
-                    bizEvent.getPaymentInfo().getAmount() : null);
+                    service.getTransactionCreationDate(firstEvent));
 
-            createCart(bizEvent, eventData);
+            AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+            List<CartItem> cartItems = new ArrayList<>();
+            bizEvents.forEach(bizEvent -> {
+                BigDecimal amountExtracted = getAmount(bizEvent);
+                amount.updateAndGet(v -> v.add(amountExtracted));
+                cartItems.add(
+                        CartItem.builder()
+                                .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                                .subject(getItemSubject(bizEvent))
+                                .build());            });
+
+            if (!amount.get().equals(BigDecimal.ZERO)) {
+                eventData.setAmount(amount.get().toString());
+            }
+
+            eventData.setCart(cartItems);
+
         }
-        service.tokenizeFiscalCodes(bizEvent, receipt, receipt.getEventData());
+        service.tokenizeFiscalCodes(firstEvent, receipt, receipt.getEventData());
     }
 
-    private static void createCart(BizEvent bizEvent, EventData eventData) {
-        CartItem item = new CartItem();
-        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
-        item.setSubject(getItemSubject(bizEvent));
-        List<CartItem> cartItems = Collections.singletonList(item);
-        eventData.setCart(cartItems);
-    }
 
     /**
      * Retrieve RemittanceInformation from BizEvent

@@ -95,7 +95,6 @@ public class RecoverFailedReceipt {
                     .build();
         }
 
-        // Get IsCart
         Boolean isCart = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
                 "isCart", "false"));
 
