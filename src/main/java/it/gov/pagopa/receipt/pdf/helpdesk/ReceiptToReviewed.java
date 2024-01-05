@@ -69,18 +69,8 @@ public class ReceiptToReviewed {
         ReceiptError receiptError;
 
         try {
-
-            boolean isCart = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
-                    "isCart", "false"));
-
-            if (isCart) {
-                receiptError = this.receiptCosmosClient.getReceiptError(
-                        (String) receiptCosmosClient.getCartDocument(eventId).getCartPaymentId().toArray()[0]);
-            } else {
-                receiptError = receiptCosmosClient.getReceiptError(eventId);
-            }
-
-        } catch (NoSuchElementException | ReceiptNotFoundException | CartNotFoundException e) {
+            receiptError = receiptCosmosClient.getReceiptError(eventId);
+        } catch (NoSuchElementException | ReceiptNotFoundException e) {
             responseMsg = String.format("No receiptError has been found with bizEventId %s", eventId);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
             return request

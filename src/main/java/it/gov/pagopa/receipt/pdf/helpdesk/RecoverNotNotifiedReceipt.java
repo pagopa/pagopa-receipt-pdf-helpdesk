@@ -87,18 +87,8 @@ public class RecoverNotNotifiedReceipt {
 
         Receipt receipt;
         try {
-
-            boolean isCart = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
-                    "isCart", "false"));
-
-            if (isCart) {
-                receipt = this.receiptCosmosService.getReceipt(
-                        (String) receiptCosmosService.getCart(eventId).getCartPaymentId().toArray()[0]);
-            } else {
-                receipt = this.receiptCosmosService.getReceipt(eventId);
-            }
-
-        } catch (ReceiptNotFoundException | CartNotFoundException e) {
+            receipt = this.receiptCosmosService.getReceipt(eventId);
+        } catch (ReceiptNotFoundException e) {
             String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
             return request
