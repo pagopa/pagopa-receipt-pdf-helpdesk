@@ -281,7 +281,8 @@ public class BizEventToReceiptUtils {
                         CartItem.builder()
                                 .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
                                 .subject(getItemSubject(bizEvent))
-                                .build());            });
+                                .build());
+            });
 
             if (!amount.get().equals(BigDecimal.ZERO)) {
                 eventData.setAmount(amount.get().toString());

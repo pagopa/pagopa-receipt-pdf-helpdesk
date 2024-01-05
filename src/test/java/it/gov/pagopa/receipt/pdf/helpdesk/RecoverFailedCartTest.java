@@ -305,6 +305,7 @@ class RecoverFailedCartTest {
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
+        paymentInfo.setAmount("102.30");
 
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);
