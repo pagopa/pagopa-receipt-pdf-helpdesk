@@ -25,16 +25,6 @@ public class GenerateReceiptUtils {
 
     private static final String WORKING_DIRECTORY_PATH = System.getenv().getOrDefault("WORKING_DIRECTORY_PATH", "");
 
-    public static BizEvent getBizEventFromMessage(ExecutionContext context, String bizEventMessage) throws BizEventNotValidException {
-        try {
-            return ObjectMapperUtils.mapString(bizEventMessage, BizEvent.class);
-        } catch (JsonProcessingException e) {
-            String errorMsg = String.format("[%s] Error parsing the message coming from the queue",
-                    context.getFunctionName());
-            throw new BizEventNotValidException(errorMsg, e);
-        }
-    }
-
     public static Path createWorkingDirectory() throws IOException {
         File workingDirectory = new File(WORKING_DIRECTORY_PATH);
         if (!workingDirectory.exists()) {

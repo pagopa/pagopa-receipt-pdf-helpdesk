@@ -95,9 +95,12 @@ public class RecoverFailedReceipt {
                     .build();
         }
 
+        Boolean isCart = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
+                "isCart", "false"));
+
         try {
             Receipt receipt = BizEventToReceiptUtils.getEvent(eventId, context, this.bizEventToReceiptService,
-                    this.bizEventCosmosClient, this.receiptCosmosService, null, logger);
+                    this.bizEventCosmosClient, this.receiptCosmosService, null, logger, isCart);
 
             documentdb.setValue(receipt);
             String responseMsg = String.format("Receipt with eventId %s recovered", eventId);

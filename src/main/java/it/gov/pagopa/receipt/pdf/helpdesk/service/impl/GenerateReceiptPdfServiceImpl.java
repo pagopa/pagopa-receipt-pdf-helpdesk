@@ -28,6 +28,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 
 import static org.apache.http.HttpStatus.SC_OK;
@@ -58,7 +59,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
      * {@inheritDoc}
      */
     @Override
-    public PdfGeneration generateReceipts(Receipt receipt, BizEvent bizEvent, Path workingDirPath) {
+    public PdfGeneration generateReceipts(Receipt receipt, List<BizEvent> listOfBizEvents, Path workingDirPath) {
         PdfGeneration pdfGeneration = new PdfGeneration();
 
         String debtorCF = receipt.getEventData().getDebtorFiscalCode();
@@ -69,13 +70,13 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
             if (payerCF.equals(debtorCF)) {
                 pdfGeneration.setGenerateOnlyDebtor(true);
                 //Generate debtor's complete PDF
-                PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttach().getName(), false, workingDirPath);
+                PdfMetadata generationResult = generateAndSavePDFReceipt(listOfBizEvents, receipt, receipt.getMdAttach().getName(), false, workingDirPath);
                 pdfGeneration.setDebtorMetadata(generationResult);
                 return pdfGeneration;
             }
 
             //Generate payer's complete PDF
-            PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttachPayer().getName(), false, workingDirPath);
+            PdfMetadata generationResult = generateAndSavePDFReceipt(listOfBizEvents, receipt, receipt.getMdAttachPayer().getName(), false, workingDirPath);
             pdfGeneration.setPayerMetadata(generationResult);
 
         } else {
@@ -84,7 +85,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 
         //Generate debtor's partial PDF
        if (!"ANONIMO".equals(debtorCF)) {
-           PdfMetadata generationResult = generateAndSavePDFReceipt(bizEvent, receipt, receipt.getMdAttach().getName(), true, workingDirPath);
+           PdfMetadata generationResult = generateAndSavePDFReceipt(listOfBizEvents, receipt, receipt.getMdAttach().getName(), true, workingDirPath);
            pdfGeneration.setDebtorMetadata(generationResult);
         }
 
@@ -132,13 +133,13 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         return result;
     }
 
-    private PdfMetadata generateAndSavePDFReceipt(BizEvent bizEvent, Receipt receipt, String blobName, boolean isGeneratingDebtor, Path workingDirPath) {
+    private PdfMetadata generateAndSavePDFReceipt(List<BizEvent> listOfBizEvents, Receipt receipt, String blobName, boolean isGeneratingDebtor, Path workingDirPath) {
         try {
-            ReceiptPDFTemplate template = buildTemplateService.buildTemplate(bizEvent, isGeneratingDebtor, receipt);
+            ReceiptPDFTemplate template = buildTemplateService.buildTemplate(listOfBizEvents, isGeneratingDebtor, receipt);
             PdfEngineResponse pdfEngineResponse = generatePDFReceipt(template, workingDirPath);
             return saveToBlobStorage(pdfEngineResponse, blobName);
         } catch (PDFReceiptGenerationException e) {
-            logger.error("An error occurred when generating or saving the PDF receipt for biz-event {}. Error: {}", bizEvent.getId(), e.getMessage(), e);
+            logger.error("An error occurred when generating or saving the PDF receipt with eventId {}. Error: {}", receipt.getEventId(), e.getMessage(), e);
             return PdfMetadata.builder().statusCode(e.getStatusCode()).errorMessage(e.getMessage()).build();
         }
     }

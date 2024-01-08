@@ -3,7 +3,11 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 import com.azure.cosmos.models.FeedResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
@@ -14,17 +18,23 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStat
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverCartResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import org.slf4j.Logger;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl.getAmount;
 
 public class BizEventToReceiptUtils {
 
@@ -37,19 +47,62 @@ public class BizEventToReceiptUtils {
             BizEventCosmosClient bizEventCosmosClient,
             ReceiptCosmosService receiptCosmosService,
             Receipt receipt,
-            Logger logger
+            Logger logger,
+            Boolean isCart
     ) throws BizEventNotFoundException, PDVTokenizerException, JsonProcessingException {
-        BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
 
-        if (isBizEventInvalid(bizEvent, context, logger)) {
+        List<BizEvent> listCart = null;
+        BizEvent bizEvent;
+
+        if (isCart) {
+            listCart = bizEventToReceiptService.getCartBizEvents(eventId);
+            bizEvent = listCart.get(0);
+        } else {
+            bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
+        }
+
+        if (isCart) {
+            Integer intTotalNotice = Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice());
+            if (!intTotalNotice.equals(listCart.size())) {
+                return null;
+            }
+            for (BizEvent event : listCart) {
+                if (isBizEventInvalid(event, context, logger)) {
+                    return null;
+                }
+            }
+        } else if (isBizEventInvalid(bizEvent, context, logger)) {
             return null;
         }
+
+
         if (receipt == null) {
             try {
                 receipt = receiptCosmosService.getReceipt(eventId);
             } catch (ReceiptNotFoundException e) {
                 receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
                         bizEventToReceiptService, logger);
+                EventData eventData = receipt.getEventData();
+                if (isCart) {
+                    AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+                    List<CartItem> cartItems = new ArrayList<>();
+                    listCart.forEach(event -> {
+                        BigDecimal amountExtracted = getAmount(bizEvent);
+                        amount.updateAndGet(v -> v.add(amountExtracted));
+                        cartItems.add(
+                                CartItem.builder()
+                                        .payeeName(bizEvent.getCreditor() != null ?
+                                                bizEvent.getCreditor().getCompanyName() : null)
+                                        .subject(getItemSubject(bizEvent))
+                                        .build());
+                    });
+
+                    if (!amount.get().equals(BigDecimal.ZERO)) {
+                        eventData.setAmount(amount.get().toString());
+                    }
+
+                    eventData.setCart(cartItems);
+                }
                 receipt.setStatus(ReceiptStatusType.FAILED);
             }
         }
@@ -60,10 +113,11 @@ public class BizEventToReceiptUtils {
                         receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
         )) {
             if (receipt.getEventData() == null || receipt.getEventData().getDebtorFiscalCode() == null) {
-                tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
+                tokenizeReceipt(bizEventToReceiptService, isCart ? listCart : Collections.singletonList(bizEvent), receipt);
             }
             receipt.setStatus(ReceiptStatusType.INSERTED);
-            bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
+            bizEventToReceiptService.handleSendMessageToQueue(isCart ? listCart :
+                    Collections.singletonList(bizEvent), receipt);
             if (receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT) {
                 receipt.setInsertedAt(System.currentTimeMillis());
                 receipt.setReasonErr(null);
@@ -92,7 +146,8 @@ public class BizEventToReceiptUtils {
                 for (Receipt receipt : page.getResults()) {
                     try {
                         Receipt restored = getEvent(receipt.getEventId(), context, bizEventToReceiptService,
-                                bizEventCosmosClient, receiptCosmosService, receipt, logger);
+                                bizEventCosmosClient, receiptCosmosService, receipt, logger, receipt.getIsCart() != null ?
+                                receipt.getIsCart() : false);
                         receiptList.add(restored);
                     } catch (Exception e) {
                         logger.error(e.getMessage(), e);
@@ -135,10 +190,17 @@ public class BizEventToReceiptUtils {
 
         eventData.setTransactionCreationDate(
                 service.getTransactionCreationDate(bizEvent));
-        eventData.setAmount(bizEvent.getPaymentInfo() != null ?
-                bizEvent.getPaymentInfo().getAmount() : null);
+        eventData.setAmount(
+                bizEvent.getTransactionDetails() != null && bizEvent
+                        .getTransactionDetails().getTransaction() != null ?
+                        String.valueOf(bizEvent.getTransactionDetails().getTransaction().getGrandTotal()) :
+                        bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : null
+        );
 
-        List<CartItem> cartItems = getCartItems(bizEvent);
+        CartItem item = new CartItem();
+        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
+        item.setSubject(getItemSubject(bizEvent));
+        List<CartItem> cartItems = Collections.singletonList(item);
         eventData.setCart(cartItems);
 
         receipt.setEventData(eventData);
@@ -212,28 +274,37 @@ public class BizEventToReceiptUtils {
         return false;
     }
 
-    public static void tokenizeReceipt(BizEventToReceiptService service, BizEvent bizEvent, Receipt receipt)
+    public static void tokenizeReceipt(BizEventToReceiptService service, List<BizEvent> bizEvents, Receipt receipt)
             throws PDVTokenizerException, JsonProcessingException {
+        BizEvent firstEvent = bizEvents.get(0);
         if (receipt.getEventData() == null) {
             EventData eventData = new EventData();
             receipt.setEventData(eventData);
             eventData.setTransactionCreationDate(
-                    service.getTransactionCreationDate(bizEvent));
-            eventData.setAmount(bizEvent.getPaymentInfo() != null ?
-                    bizEvent.getPaymentInfo().getAmount() : null);
+                    service.getTransactionCreationDate(firstEvent));
 
-            createCart(bizEvent, eventData);
+            AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+            List<CartItem> cartItems = new ArrayList<>();
+            bizEvents.forEach(bizEvent -> {
+                BigDecimal amountExtracted = getAmount(bizEvent);
+                amount.updateAndGet(v -> v.add(amountExtracted));
+                cartItems.add(
+                        CartItem.builder()
+                                .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                                .subject(getItemSubject(bizEvent))
+                                .build());
+            });
+
+            if (!amount.get().equals(BigDecimal.ZERO)) {
+                eventData.setAmount(amount.get().toString());
+            }
+
+            eventData.setCart(cartItems);
+
         }
-        service.tokenizeFiscalCodes(bizEvent, receipt, receipt.getEventData());
+        service.tokenizeFiscalCodes(firstEvent, receipt, receipt.getEventData());
     }
 
-    private static void createCart(BizEvent bizEvent, EventData eventData) {
-        CartItem item = new CartItem();
-        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
-        item.setSubject(getItemSubject(bizEvent));
-        List<CartItem> cartItems = Collections.singletonList(item);
-        eventData.setCart(cartItems);
-    }
 
     /**
      * Retrieve RemittanceInformation from BizEvent
@@ -241,7 +312,7 @@ public class BizEventToReceiptUtils {
      * @param bizEvent BizEvent from which retrieve the data
      * @return the remittance information
      */
-    private static String getItemSubject(BizEvent bizEvent) {
+    public static String getItemSubject(BizEvent bizEvent) {
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getRemittanceInformation() != null) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
@@ -275,6 +346,68 @@ public class BizEventToReceiptUtils {
             }
         }
         return remittanceInformation;
+    }
+
+    public static boolean isReceiptStatusValid(Receipt receipt) {
+        return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
+    }
+
+    public static MassiveRecoverCartResult massiveRecoverCartByStatus(
+            ExecutionContext context, BizEventToReceiptService bizEventToReceiptService,
+            CartReceiptsCosmosClient cartReceiptsCosmosClient,
+            Logger logger, CartStatusType statusType) {
+        int errorCounter = 0;
+        List<CartForReceipt> cartItems = new ArrayList<>();
+        String continuationToken = null;
+        if (statusType == null) {
+            throw new IllegalArgumentException("at least one status must be specified");
+        }
+        do {
+            Iterable<FeedResponse<CartForReceipt>> feedResponseIterator = null;
+
+            if (statusType.equals(CartStatusType.FAILED)) {
+                feedResponseIterator = cartReceiptsCosmosClient.getFailedCarts(continuationToken, 100);
+            }
+            if (statusType.equals(CartStatusType.INSERTED)) {
+                feedResponseIterator = cartReceiptsCosmosClient.getInsertedCarts(continuationToken, 100);
+            }
+
+            assert feedResponseIterator != null;
+            for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
+                for (CartForReceipt cart : page.getResults()) {
+                    try {
+                        List<BizEvent> bizEventList = bizEventToReceiptService.getCartBizEvents(cart.getId());
+                        Receipt receipt = bizEventToReceiptService.createCartReceipt(bizEventList);
+
+                        if (!isReceiptStatusValid(receipt)) {
+                            logger.error("[{}] Failed to process cart with id {}: fail to tokenize fiscal codes",
+                                    context.getFunctionName(), cart.getId());
+                            throw new Exception("receipt status not valid");
+                        }
+
+                        // Add receipt to items to be saved on CosmosDB
+                        bizEventToReceiptService.handleSaveReceipt(receipt);
+
+                        if (!isReceiptStatusValid(receipt)) {
+                            throw new Exception("receipt not valid");
+                        }
+
+                        // Send biz event as message to queue (to be processed from the other function)
+                        bizEventToReceiptService.handleSendMessageToQueue(bizEventList, receipt);
+                        cart.setStatus(CartStatusType.SENT);
+                        cartItems.add(cart);
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                        errorCounter++;
+                    }
+                }
+                continuationToken = page.getContinuationToken();
+            }
+        } while (continuationToken != null);
+        return MassiveRecoverCartResult.builder()
+                .cartItems(cartItems)
+                .errorCounter(errorCounter)
+                .build();
     }
 
     private BizEventToReceiptUtils() {}

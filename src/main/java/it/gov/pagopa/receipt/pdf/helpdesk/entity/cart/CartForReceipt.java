@@ -13,7 +13,6 @@ import java.util.Set;
 @Builder
 @Data
 public class CartForReceipt {
-
     private String id;
     private Set<String> cartPaymentId;
     private Integer totalNotice;

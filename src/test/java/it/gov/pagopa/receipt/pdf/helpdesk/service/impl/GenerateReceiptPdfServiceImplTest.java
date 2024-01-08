@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.service.impl.GenerateReceiptPdfServiceImpl.ALREADY_CREATED;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -99,7 +100,7 @@ class GenerateReceiptPdfServiceImplTest {
         doReturn(new ReceiptPDFTemplate())
                 .when(buildTemplateServiceMock).buildTemplate(any(), anyBoolean(), any());
 
-        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, bizEventOnly,Path.of("/tmp"));
+        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, Collections.singletonList(bizEventOnly),Path.of("/tmp"));
 
         assertNotNull(pdfGeneration);
         assertTrue(pdfGeneration.isGenerateOnlyDebtor());
@@ -127,7 +128,7 @@ class GenerateReceiptPdfServiceImplTest {
         doReturn(new ReceiptPDFTemplate())
                 .when(buildTemplateServiceMock).buildTemplate(any(), anyBoolean(), any());
 
-        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, bizEventOnly,Path.of("/tmp"));
+        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, Collections.singletonList(bizEventOnly),Path.of("/tmp"));
 
         assertNotNull(pdfGeneration);
         assertTrue(pdfGeneration.isGenerateOnlyDebtor());
@@ -157,7 +158,8 @@ class GenerateReceiptPdfServiceImplTest {
         doReturn(new ReceiptPDFTemplate())
                 .when(buildTemplateServiceMock).buildTemplate(any(), anyBoolean(), any());
 
-        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, bizEventOnly,Path.of("/tmp"));
+        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, Collections.singletonList(bizEventOnly),Path.of("/tmp"));
+
 
         assertNotNull(pdfGeneration);
         assertFalse(pdfGeneration.isGenerateOnlyDebtor());
@@ -187,7 +189,7 @@ class GenerateReceiptPdfServiceImplTest {
         doReturn(new ReceiptPDFTemplate())
                 .when(buildTemplateServiceMock).buildTemplate(any(), anyBoolean(), any());
 
-        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, bizEventOnly,Path.of("/tmp"));
+        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, Collections.singletonList(bizEventOnly),Path.of("/tmp"));
 
         assertNotNull(pdfGeneration);
         assertTrue(pdfGeneration.isGenerateOnlyDebtor());
@@ -211,7 +213,7 @@ class GenerateReceiptPdfServiceImplTest {
         doThrow(new TemplateDataMappingException("error message", ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode()))
                 .when(buildTemplateServiceMock).buildTemplate(any(), anyBoolean(), any());
 
-        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, bizEventOnly,Path.of("/tmp"));
+        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, Collections.singletonList(bizEventOnly),Path.of("/tmp"));
 
         assertNotNull(pdfGeneration);
         assertTrue(pdfGeneration.isGenerateOnlyDebtor());
@@ -238,7 +240,7 @@ class GenerateReceiptPdfServiceImplTest {
         doReturn(new ReceiptPDFTemplate())
                 .when(buildTemplateServiceMock).buildTemplate(any(), anyBoolean(), any());
 
-        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, bizEventOnly,Path.of("/tmp"));
+        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, Collections.singletonList(bizEventOnly),Path.of("/tmp"));
 
         assertNotNull(pdfGeneration);
         assertTrue(pdfGeneration.isGenerateOnlyDebtor());
@@ -266,7 +268,7 @@ class GenerateReceiptPdfServiceImplTest {
         doReturn(new ReceiptPDFTemplate())
                 .when(buildTemplateServiceMock).buildTemplate(any(), anyBoolean(), any());
 
-        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, bizEventOnly,Path.of("/tmp"));
+        PdfGeneration pdfGeneration = sut.generateReceipts(receiptOnly, Collections.singletonList(bizEventOnly),Path.of("/tmp"));
 
         assertNotNull(pdfGeneration);
         assertTrue(pdfGeneration.isGenerateOnlyDebtor());

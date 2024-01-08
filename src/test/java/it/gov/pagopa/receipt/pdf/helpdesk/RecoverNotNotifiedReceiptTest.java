@@ -5,9 +5,12 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
@@ -24,8 +27,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -81,6 +83,39 @@ class RecoverNotNotifiedReceiptTest {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(documentReceipts).setValue(receiptCaptor.capture());
+
+        assertEquals(1, receiptCaptor.getValue().size());
+        Receipt captured = receiptCaptor.getValue().get(0);
+        assertEquals(ReceiptStatusType.GENERATED, captured.getStatus());
+        assertEquals(EVENT_ID, captured.getEventId());
+        assertEquals(0, captured.getNotificationNumRetry());
+        assertNull(captured.getReasonErr());
+        assertNull(captured.getReasonErrPayer());
+    }
+
+    @Test
+    void recoverNotNotifiedCartReceiptSuccess() throws ReceiptNotFoundException, CartNotFoundException {
+        Receipt receipt = buildReceipt();
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        when(requestMock.getQueryParameters()).thenReturn(Collections.singletonMap("isCart","true"));
+
+        when(receiptCosmosServiceMock.getCart(any())).thenReturn(generateCart());
 
         // test execution
         HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
@@ -216,5 +251,15 @@ class RecoverNotNotifiedReceiptTest {
                 .generatedAt(0)
                 .notifiedAt(0)
                 .build();
+    }
+
+    private CartForReceipt generateCart() {
+        CartForReceipt cart = new CartForReceipt();
+        cart.setId("1");
+        cart.setStatus(CartStatusType.FAILED);
+        cart.setTotalNotice(1);
+        cart.setCartPaymentId(new HashSet<>(new ArrayList<>(
+                List.of(new String[]{"eventId"}))));
+        return cart;
     }
 }
