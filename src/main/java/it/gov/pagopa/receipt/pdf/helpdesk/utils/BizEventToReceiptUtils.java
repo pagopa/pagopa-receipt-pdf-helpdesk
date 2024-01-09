@@ -26,6 +26,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -408,6 +409,12 @@ public class BizEventToReceiptUtils {
                 .cartItems(cartItems)
                 .errorCounter(errorCounter)
                 .build();
+    }
+
+    public static BigDecimal formatAmount(long grandTotal) {
+        BigDecimal amount = new BigDecimal(grandTotal);
+        BigDecimal divider = new BigDecimal(100);
+        return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
     }
 
     private BizEventToReceiptUtils() {}

@@ -113,10 +113,6 @@ class RecoverNotNotifiedReceiptTest {
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
 
-        when(requestMock.getQueryParameters()).thenReturn(Collections.singletonMap("isCart","true"));
-
-        when(receiptCosmosServiceMock.getCart(any())).thenReturn(generateCart());
-
         // test execution
         HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
 
