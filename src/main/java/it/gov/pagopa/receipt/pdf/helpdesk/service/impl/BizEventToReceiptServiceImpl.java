@@ -27,10 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.formatAmount;
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getItemSubject;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
@@ -261,7 +263,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     public static BigDecimal getAmount(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null
                 && bizEvent.getTransactionDetails().getTransaction().getGrandTotal() != 0) {
-            return new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+            return formatAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
         }
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
             return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
