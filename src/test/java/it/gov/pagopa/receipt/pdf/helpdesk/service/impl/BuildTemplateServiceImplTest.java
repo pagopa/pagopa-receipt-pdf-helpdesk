@@ -40,6 +40,8 @@ class BuildTemplateServiceImplTest {
     public static final String FORMATTED_AMOUNT = "7.000,00";
     public static final String FORMATTED_FEE = "77,70";
     public static final String FORMATTED_GRAND_TOTAL = "7.077,70";
+
+    public static final String FORMATTED_GRAND_TOTAL_SUM = "35.388,50";
     public static final String REMITTANCE_INFORMATION = "TARI 2021";
     public static final String IUR = "IUR";
     public static final String BRAND = "MASTER";
@@ -1663,7 +1665,7 @@ class BuildTemplateServiceImplTest {
         TemplateDataMappingException e = assertThrows(TemplateDataMappingException.class, () -> buildTemplateService.buildTemplate(bizEventList, GENERATED_BY_PAYER, Receipt.builder().id(RECEIPT_ID).eventId(BIZ_EVENT_ID).build()));
 
         assertEquals(ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode(), e.getStatusCode());
-        assertEquals(String.format(TemplateDataField.ERROR_MAPPING_MESSAGE, RECEIPT,TemplateDataField.TRANSACTION_AMOUNT, RECEIPT,RECEIPT_ID), e.getMessage());
+        assertEquals(String.format(TemplateDataField.ERROR_MAPPING_MESSAGE, BIZ_EVENT,TemplateDataField.TRANSACTION_AMOUNT, RECEIPT,RECEIPT_ID), e.getMessage());
     }
 
     @Test
@@ -2202,7 +2204,7 @@ class BuildTemplateServiceImplTest {
                     CartItem.builder().subject(REMITTANCE_INFORMATION + i).build()
             );
         }
-        Receipt receipt = Receipt.builder().eventId(String.valueOf(ID_TRANSACTION)).eventData(EventData.builder().amount(FORMATTED_GRAND_TOTAL).cart(cartItemList).build()).build();
+        Receipt receipt = Receipt.builder().eventId(ID_TRANSACTION).eventData(EventData.builder().amount(FORMATTED_GRAND_TOTAL_SUM).cart(cartItemList).build()).build();
 
         AtomicReference<ReceiptPDFTemplate> atomicReference = new AtomicReference<>();
         assertDoesNotThrow(() -> atomicReference.set(buildTemplateService.buildTemplate(bizEventList, GENERATED_BY_DEBTOR, receipt)));
@@ -2210,11 +2212,11 @@ class BuildTemplateServiceImplTest {
         ReceiptPDFTemplate receiptPdfTemplate = atomicReference.get();
 
         assertNotNull(receiptPdfTemplate);
-        assertEquals(String.valueOf(ID_TRANSACTION), receiptPdfTemplate.getServiceCustomerId());
+        assertEquals(ID_TRANSACTION, receiptPdfTemplate.getServiceCustomerId());
 
         it.gov.pagopa.receipt.pdf.helpdesk.model.template.Transaction transaction = receiptPdfTemplate.getTransaction();
         assertEquals(DATE_TIME_TIMESTAMP_FORMATTED_DST_WINTER, transaction.getTimestamp());
-        assertEquals(FORMATTED_GRAND_TOTAL, transaction.getAmount());
+        assertEquals(FORMATTED_GRAND_TOTAL_SUM, transaction.getAmount());
         assertEquals(PSP_LOGO, transaction.getPsp().getLogo());
         assertEquals(FORMATTED_FEE, transaction.getPsp().getFee().getAmount());
         assertEquals(PSP_NAME, transaction.getPsp().getName());

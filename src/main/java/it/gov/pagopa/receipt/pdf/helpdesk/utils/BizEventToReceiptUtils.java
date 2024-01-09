@@ -35,8 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl.getAmount;
-
 public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
@@ -409,6 +407,17 @@ public class BizEventToReceiptUtils {
                 .cartItems(cartItems)
                 .errorCounter(errorCounter)
                 .build();
+    }
+
+    public static BigDecimal getAmount(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null
+                && bizEvent.getTransactionDetails().getTransaction().getGrandTotal() != 0) {
+            return formatAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+        }
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
+            return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
+        }
+        return BigDecimal.ZERO;
     }
 
     public static BigDecimal formatAmount(long grandTotal) {
