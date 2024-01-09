@@ -67,7 +67,7 @@ public class RecoverFailedCart {
     public HttpResponseMessage run (
             @HttpTrigger(name = "RecoverFailedCartTrigger",
                     methods = {HttpMethod.POST},
-                    route = "cart/{cart-id}/recover-failed",
+                    route = "carts/{cart-id}/recover-failed",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("cart-id") String cartId,
