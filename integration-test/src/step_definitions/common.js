@@ -9,10 +9,29 @@ function getRandomInt(min, max) {
 	min = Math.ceil(min);
 	max = Math.floor(max);
 	return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
-  }
-  
+}
 
-function createEvent(id, status, orgCode, iuv) {
+function makeid(length) {
+	let result = '';
+	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	const charactersLength = characters.length;
+	let counter = 0;
+	while (counter < length) {
+		result += characters.charAt(Math.floor(Math.random() * charactersLength));
+		counter += 1;
+	}
+	return result;
+}
+
+function createEventCart(id, transactionId, status, totalNotice) {
+	return createEvent(id, status, transactionId, totalNotice);
+}
+
+function createEventWithIUVAndOrgCode(id, status, orgCode, iuv) {
+	return createEvent(id, status, "123456", "1", orgCode, iuv);
+}
+
+function createEvent(id, status, transactionId, totalNotice, orgCode, iuv) {
 	let json_event = {
 		"id": id,
 		"version": "2",
@@ -77,7 +96,7 @@ function createEvent(id, status, orgCode, iuv) {
 			"paymentToken": "9851395f09544a04b288202299193ca6",
 			"amount": "10.0",
 			"fee": "2.0",
-			"totalNotice": "1",
+			"totalNotice": totalNotice || "1",
 			"paymentMethod": "creditCard",
 			"touchpoint": "app",
 			"remittanceInformation": "TARI 2021",
@@ -111,7 +130,7 @@ function createEvent(id, status, orgCode, iuv) {
 			},
 			"transaction": {
 				"idTransaction": "123456",
-				"transactionId": "123456",
+				"transactionId": transactionId || "123456",
 				"grandTotal": 0,
 				"amount": 0,
 				"fee": 0
@@ -129,7 +148,7 @@ function createEvent(id, status, orgCode, iuv) {
 }
 
 function createReceipt(id, status) {
-    currentDate = new Date();
+	currentDate = new Date();
 	let receipt =
 	{
 		"eventId": id,
@@ -182,6 +201,15 @@ function createReceiptMessage(eventId, messageId) {
 	}
 }
 
+function createCart(id, bizEventIds, status) {
+	return {
+		"id": id,
+		"cartPaymentId": bizEventIds,
+		"totalNotice": 2,
+		"status": status
+	}
+}
+
 module.exports = {
 	TOKENIZED_FISCAL_CODE,
 	createEvent,
@@ -189,5 +217,9 @@ module.exports = {
 	createReceipt,
 	createReceiptError,
 	createReceiptMessage,
-	getRandomInt
+	getRandomInt,
+	createCart,
+	makeid,
+	createEventCart,
+	createEventWithIUVAndOrgCode
 }

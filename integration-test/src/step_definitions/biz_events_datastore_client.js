@@ -1,5 +1,5 @@
 const { CosmosClient } = require("@azure/cosmos");
-const { createEvent } = require("./common");
+const { createEvent, createEventCart, createEventWithIUVAndOrgCode } = require("./common");
 
 const cosmos_db_conn_string = process.env.BIZEVENTS_COSMOS_CONN_STRING;
 const databaseId = process.env.BIZ_EVENT_COSMOS_DB_NAME;  // es. db
@@ -17,8 +17,26 @@ async function getDocumentByIdFromBizEventsDatastore(id) {
         .fetchAll();
 }
 
-async function createDocumentInBizEventsDatastore(id, status, orgCode, iuv) {
-    let event = createEvent(id, status, orgCode, iuv);
+async function createDocumentInBizEventsDatastore(id, status) {
+    let event = createEvent(id, status);
+    try {
+        return await container.items.create(event);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function createDocumentInBizEventsDatastoreWithIUVAndOrgCode(id, status, orgCode, iuv) {
+    let event = createEventWithIUVAndOrgCode(id, status, orgCode, iuv);
+    try {
+        return await container.items.create(event);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function createDocumentInBizEventsDatastoreIsCartEvent(id, transactionId, status, totalNotice) {
+    let event = createEventCart(id, transactionId, status, totalNotice);
     try {
         return await container.items.create(event);
     } catch (err) {
@@ -52,5 +70,10 @@ async function deleteAllTestBizEvents() {
 }
 
 module.exports = {
-    getDocumentByIdFromBizEventsDatastore, createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore, deleteAllTestBizEvents
+    getDocumentByIdFromBizEventsDatastore, 
+    createDocumentInBizEventsDatastore, 
+    createDocumentInBizEventsDatastoreIsCartEvent,
+    createDocumentInBizEventsDatastoreWithIUVAndOrgCode,
+    deleteDocumentFromBizEventsDatastore,
+    deleteAllTestBizEvents
 }
