@@ -3,7 +3,6 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 import com.azure.cosmos.models.FeedResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
@@ -20,7 +19,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverCartResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
-import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import org.slf4j.Logger;
@@ -191,12 +189,8 @@ public class BizEventToReceiptUtils {
 
         eventData.setTransactionCreationDate(
                 service.getTransactionCreationDate(bizEvent));
-        eventData.setAmount(
-                bizEvent.getTransactionDetails() != null && bizEvent
-                        .getTransactionDetails().getTransaction() != null ?
-                        String.valueOf(bizEvent.getTransactionDetails().getTransaction().getGrandTotal()) :
-                        bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : null
-        );
+        BigDecimal amount = getAmount(bizEvent);
+        eventData.setAmount(!amount.equals(BigDecimal.ZERO) ? amount.toString() : null);
 
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
