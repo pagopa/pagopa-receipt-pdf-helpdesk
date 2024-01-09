@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.entity.cart;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReasonError;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,5 +18,7 @@ public class CartForReceipt {
     private Set<String> cartPaymentId;
     private Integer totalNotice;
     private CartStatusType status;
+    @JsonProperty("inserted_at")
+    private long insertedAt;
     private ReasonError reasonError;
 }

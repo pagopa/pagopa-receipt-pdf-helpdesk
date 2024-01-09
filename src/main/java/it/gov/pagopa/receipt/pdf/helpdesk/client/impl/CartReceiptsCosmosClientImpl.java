@@ -98,7 +98,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE (c.status = '%s') AND c._ts >= %s",
+        String query = String.format("SELECT * FROM c WHERE (c.status = '%s') AND c.inserted_at >= %s",
                 CartStatusType.FAILED,
                 OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
                         Long.parseLong(numDaysCartNotSent)).toInstant().toEpochMilli());
@@ -115,8 +115,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
 
         //Build query
-        String query =  String.format("SELECT * FROM c WHERE (c.status = '%s' AND c._ts >= %s " +
-                        "AND ( %s - c._ts) >= %s)",
+        String query =  String.format("SELECT * FROM c WHERE (c.status = '%s' AND c.inserted_at >= %s " +
+                        "AND ( %s - c.inserted_at) >= %s)",
                 ReceiptStatusType.INSERTED,
                 OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
                         Long.parseLong(numDaysCartNotSent)).toInstant().toEpochMilli(),
