@@ -1,16 +1,18 @@
 const { CosmosClient } = require("@azure/cosmos");
-const { createReceipt, createReceiptError, createReceiptMessage } = require("./common");
+const { createReceipt, createReceiptError, createReceiptMessage, createCart } = require("./common");
 
 const cosmos_db_conn_string = process.env.RECEIPTS_COSMOS_CONN_STRING || "";
 const databaseId = process.env.RECEIPT_COSMOS_DB_NAME;
 const receiptContainerId = process.env.RECEIPT_COSMOS_DB_CONTAINER_NAME;
 const receiptErrorContainerId = process.env.RECEIPT_ERROR_COSMOS_DB_CONTAINER_NAME;
 const receiptMessageContainerId = process.env.RECEIPT_MESSAGE_COSMOS_DB_CONTAINER_NAME;
+const cartContainerId = process.env.CART_COSMOS_DB_CONTAINER_NAME;
 
 const client = new CosmosClient(cosmos_db_conn_string);
 const receiptContainer = client.database(databaseId).container(receiptContainerId);
 const receiptErrorContainer = client.database(databaseId).container(receiptErrorContainerId);
 const receiptMessageContainer = client.database(databaseId).container(receiptMessageContainerId);
+const cartContainer = client.database(databaseId).container(cartContainerId);
 
 //RECEIPT
 async function createDocumentInReceiptsDatastore(id, status) {
@@ -122,6 +124,34 @@ async function updateReceiptToFailed(id) {
     }
 }
 
+// CART
+async function createDocumentInCartDatastore(id, bizEventIds, status) {
+    let cart = createCart(id, bizEventIds, status);
+    try {
+        return await cartContainer.items.create(cart);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function deleteDocumentFromCartDatastore(id) {
+    try {
+        return await cartContainer.item(id, id).delete();
+    } catch (error) {
+        if (error.code !== 404) {
+            console.log(error)
+        }
+    }
+}
+
+async function getDocumentFromCartDatastoreById(id) {
+    return await receiptErrorContainer.items
+        .query({
+            query: "SELECT * from c WHERE c.id=@cartId",
+            parameters: [{ name: "@cartId", value: id }]
+        })
+        .fetchNext();
+}
 async function deleteAllTestReceipts() {
     let response = await receiptContainer.items.query({
         query: 'SELECT * from c WHERE c.id LIKE @id',
@@ -183,5 +213,9 @@ module.exports = {
     deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     createDocumentInReceiptErrorDatastore,
     getDocumentFromReceiptsErrorDatastoreByBizEventId,
-    deleteAllTestReceiptsError
+    deleteAllTestReceiptsError,
+
+    createDocumentInCartDatastore,
+    deleteDocumentFromCartDatastore,
+    getDocumentFromCartDatastoreById
 }

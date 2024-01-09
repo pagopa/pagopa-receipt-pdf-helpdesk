@@ -1,8 +1,12 @@
 const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 let fs = require('fs');
-const { sleep } = require("./common");
-const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
+const { sleep, makeid, createCart } = require("./common");
+const { 
+    createDocumentInBizEventsDatastore, 
+    createDocumentInBizEventsDatastoreIsCartEvent,
+    createDocumentInBizEventsDatastoreWithIUVAndOrgCode,
+    deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
 const {
     deleteDocumentFromReceiptsDatastore,
     createDocumentInReceiptsDatastore,
@@ -13,7 +17,10 @@ const {
     getDocumentFromReceiptsDatastoreByEventId,
     deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     deleteDocumentFromReceiptMessageDatastore,
-    createDocumentInReceiptIoMessageDatastore
+    createDocumentInReceiptIoMessageDatastore,
+    createDocumentInCartDatastore,
+    deleteDocumentFromCartDatastore,
+    getDocumentFromCartDatastoreById
 } = require("./receipts_datastore_client");
 const {
     getReceipt,
@@ -26,7 +33,9 @@ const {
     postRecoverFailedReceiptMassive,
     postRecoverNotNotifiedReceipt,
     postRecoverNotNotifiedReceiptMassive,
-    postRegenerateReceiptPdf
+    postRegenerateReceiptPdf,
+    postRecoverFailedCart,
+    postRecoverFailedCartMassive
 } = require("./api_helpdesk_client");
 const { uploadBlobFromLocalPath, deleteBlob, receiptPDFExist } = require("./blob_storage_client");
 
@@ -42,6 +51,9 @@ let receiptError = null;
 let receiptMessage = null;
 let receiptPdfFileName = null;
 let listOfReceipts = [];
+let bizEventIds = [];
+let cart = null;
+let cartList = [];
 
 // After each Scenario
 After(async function () {
@@ -63,6 +75,20 @@ After(async function () {
             await deleteDocumentFromBizEventsDatastore(receipt.eventId);
         }
     }
+    if (cart != null) {
+        for (let id of cart.cartPaymentId) {
+            await deleteDocumentFromBizEventsDatastore(id);
+        }
+        await deleteDocumentFromCartDatastore(cart.id);
+    }
+    if(cartList.length > 0){
+        for(let cart of cartList){
+            for (let id of cart.cartPaymentId) {
+                await deleteDocumentFromBizEventsDatastore(id);
+            }
+            await deleteDocumentFromCartDatastore(cart.id);
+        }
+    }
 
     eventId = null;
     responseAPI = null;
@@ -70,6 +96,9 @@ After(async function () {
     receiptError = null;
     receiptPdfFileName = null;
     listOfReceipts = [];
+    bizEventIds = [];
+    cart = null;
+    cartList = [];
 });
 
 //Given
@@ -87,7 +116,7 @@ Given('a biz event with id {string} and status {string} and organizationFiscalCo
     // prior cancellation to avoid dirty cases
     await deleteDocumentFromBizEventsDatastore(eventId);
 
-    let bizEventStoreResponse = await createDocumentInBizEventsDatastore(id, status, orgCode, iuv);
+    let bizEventStoreResponse = await createDocumentInBizEventsDatastoreWithIUVAndOrgCode(id, status, orgCode, iuv);
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
   });
 
@@ -190,7 +219,7 @@ When('regenerateReceiptPdf API is called with bizEventId {string} as query param
 
 //Then
 Then('the api response has a {int} Http status', function (expectedStatus) {
-    assert.strictEqual(responseAPI.status, expectedStatus);
+        assert.strictEqual(responseAPI.status, expectedStatus);
 });
 
 Then('the receipt has eventId {string}', function (targetId) {
@@ -271,5 +300,78 @@ Then("the receipt-message has messageId {string}", async function (id) {
 });
 
 
+Given('a biz event with transactionId {string} and status {string} stored on biz-events datastore', async function (transactionId, status) {
+    let id = transactionId + makeid(5);
+    
+    let bizEventStoreResponse = await createDocumentInBizEventsDatastoreIsCartEvent(id, transactionId, status, "2");
+    assert.strictEqual(bizEventStoreResponse.statusCode, 201);
+    bizEventIds.push(id);
+});
 
+Given('a cart with id {string} and status {string} stored into cart datastore', async function (id, status) {
+    // prior cancellation to avoid dirty cases
+    await deleteDocumentFromCartDatastore(id);
 
+    let cartStoreResponse = await createDocumentInCartDatastore(id, bizEventIds, status);
+    assert.strictEqual(cartStoreResponse.statusCode, 201);
+    cart = cartStoreResponse.resource;
+});
+
+When("recoverFailedCart API is called with cartId {string}", async function (id) {
+    responseAPI = await postRecoverFailedCart(id);
+});
+
+Then("the cart with id {string} is retrieved from datastore", async function (id) {
+    let responseCosmos = await getDocumentFromCartDatastoreById(id);
+    assert.strictEqual(responseCosmos.resources.length > 0, true);
+});
+
+Then('the cart has not status {string}', function (targetStatus) {
+    assert.notStrictEqual(cart.status, targetStatus);
+});
+
+Given("a list of {int} carts in status {string} stored into cart datastore starting from id {string}", async function (numberOfCarts, status, startingId) {
+    cartList = [];
+    for (let i = 0; i < numberOfCarts; i++) {
+        let nextTransactionId = startingId + i;
+
+        let id = nextTransactionId + makeid(5);
+        let id2 = nextTransactionId + makeid(5);
+        let cartStoreResponse = await createDocumentInCartDatastore(nextTransactionId, [id, id2], status);
+        assert.strictEqual(cartStoreResponse.statusCode, 201);
+        cartList.push(cartStoreResponse.resource);
+    }
+});
+
+Given("a list of {int} biz events in status {string} stored into biz-events datastore", async function (numberOfEvents, status) {
+    assert.strictEqual(numberOfEvents / 2, cartList.length);
+    for (let cart of cartList) {
+        let transactionId = cart.id;
+        for (let bizEventId of cart.cartPaymentId) {
+            let bizEventStoreResponse = await createDocumentInBizEventsDatastoreIsCartEvent(bizEventId, transactionId, status, "2");
+            assert.strictEqual(bizEventStoreResponse.statusCode, 201);
+        }
+    }
+});
+
+When("recoverFailedCartMassive API is called with status {string} as query param", async function (status) {
+    responseAPI = await postRecoverFailedCartMassive(status);
+});
+
+Then('the list of cart is retrieved from datastore and no cart in the list has status {string}', async function (status) {
+    for (let cart of cartList) {
+        let responseCosmos = await getDocumentFromCartDatastoreById(cart.id);
+        assert.strictEqual(responseCosmos.resources.length > 0, true);
+        assert.notStrictEqual(responseCosmos.resources[0].status, status);
+    }
+})
+
+Then('the list of receipt is retrieved from datastore and no receipt in the list has status {string}', async function (status) {
+    listOfReceipts = [];
+    for (let cart of cartList) {
+        let responseCosmos = await getDocumentFromReceiptsDatastoreByEventId(cart.id);
+        assert.strictEqual(responseCosmos.resources.length > 0, true);
+        assert.notStrictEqual(responseCosmos.resources[0].status, status);
+        listOfReceipts.push(responseCosmos.resource[0]);
+    }
+})
