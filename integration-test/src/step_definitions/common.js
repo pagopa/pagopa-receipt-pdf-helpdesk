@@ -11,7 +11,7 @@ function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
 }
 
-function makeid(length) {
+function makeId(length) {
 	let result = '';
 	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 	const charactersLength = characters.length;
@@ -148,7 +148,7 @@ function createEvent(id, status, transactionId, totalNotice, orgCode, iuv) {
 }
 
 function createReceipt(id, status) {
-	currentDate = new Date();
+	let currentDate = new Date();
 	let receipt =
 	{
 		"eventId": id,
@@ -202,12 +202,13 @@ function createReceiptMessage(eventId, messageId) {
 }
 
 function createCart(id, bizEventIds, status) {
+    let currentDate = new Date();
 	return {
 		"id": id,
 		"cartPaymentId": bizEventIds,
 		"totalNotice": 2,
 		"status": status,
-		"_ts": currentDate.getTime() - 360000,
+		"inserted_at": currentDate.getTime() - 360000,
 	}
 }
 
@@ -220,7 +221,7 @@ module.exports = {
 	createReceiptMessage,
 	getRandomInt,
 	createCart,
-	makeid,
+	makeId,
 	createEventCart,
 	createEventWithIUVAndOrgCode
 }

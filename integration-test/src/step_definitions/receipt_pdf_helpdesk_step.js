@@ -1,7 +1,7 @@
 const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 let fs = require('fs');
-const { sleep, makeid, createCart } = require("./common");
+const { sleep, makeId } = require("./common");
 const { 
     createDocumentInBizEventsDatastore, 
     createDocumentInBizEventsDatastoreIsCartEvent,
@@ -301,7 +301,7 @@ Then("the receipt-message has messageId {string}", async function (id) {
 
 
 Given('a biz event with transactionId {string} and status {string} stored on biz-events datastore', async function (transactionId, status) {
-    let id = transactionId + makeid(5);
+    let id = transactionId + makeId(5);
     
     let bizEventStoreResponse = await createDocumentInBizEventsDatastoreIsCartEvent(id, transactionId, status, "2");
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
@@ -335,8 +335,8 @@ Given("a list of {int} carts in status {string} stored into cart datastore start
     for (let i = 0; i < numberOfCarts; i++) {
         let nextTransactionId = startingId + i;
 
-        let id = nextTransactionId + makeid(5);
-        let id2 = nextTransactionId + makeid(5);
+        let id = nextTransactionId + makeId(5);
+        let id2 = nextTransactionId + makeId(5);
         let cartStoreResponse = await createDocumentInCartDatastore(nextTransactionId, [id, id2], status);
         assert.strictEqual(cartStoreResponse.statusCode, 201);
         cartList.push(cartStoreResponse.resource);
