@@ -206,7 +206,8 @@ function createCart(id, bizEventIds, status) {
 		"id": id,
 		"cartPaymentId": bizEventIds,
 		"totalNotice": 2,
-		"status": status
+		"status": status,
+		"_ts": currentDate.getTime() - 360000,
 	}
 }
 
