@@ -145,7 +145,7 @@ async function deleteDocumentFromCartDatastore(id) {
 }
 
 async function getDocumentFromCartDatastoreById(id) {
-    return await receiptErrorContainer.items
+    return await cartContainer.items
         .query({
             query: "SELECT * from c WHERE c.id=@cartId",
             parameters: [{ name: "@cartId", value: id }]
