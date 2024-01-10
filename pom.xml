@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-helpdesk</artifactId>
-    <version>0.9.2-2-PRDP-291-add-integration-tests-for-cart-api</version>
+    <version>0.9.3</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-helpdesk</name>
