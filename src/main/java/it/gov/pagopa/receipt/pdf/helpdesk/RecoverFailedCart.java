@@ -1,26 +1,27 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.microsoft.azure.functions.*;
-import com.microsoft.azure.functions.annotation.*;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.AuthorizationLevel;
+import com.microsoft.azure.functions.annotation.BindingName;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
-import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.ReceiptCosmosServiceImpl;
-import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,14 +68,14 @@ public class RecoverFailedCart {
     public HttpResponseMessage run (
             @HttpTrigger(name = "RecoverFailedCartTrigger",
                     methods = {HttpMethod.POST},
-                    route = "cart/{cart-id}/recover-failed",
+                    route = "carts/{cart-id}/recover-failed",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("cart-id") String cartId,
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "cart-for-receipt",
+                    collectionName = "cart-for-receipts",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<CartForReceipt> cartForReceiptDocumentdb,
             final ExecutionContext context) {

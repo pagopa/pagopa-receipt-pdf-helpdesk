@@ -1,8 +1,11 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -23,11 +26,8 @@ public class Receipt {
     private ReasonError reasonErr;
     private ReasonError reasonErrPayer;
     private int notificationNumRetry;
-    @JsonProperty("inserted_at")
-    private long insertedAt;
-    @JsonProperty("generated_at")
-    private long generatedAt;
-    @JsonProperty("notified_at")
-    private long notifiedAt;
+    private long inserted_at;
+    private long generated_at;
+    private long notified_at;
     private Boolean isCart;
 }

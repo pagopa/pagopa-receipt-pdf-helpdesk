@@ -151,6 +151,32 @@ async function postRegenerateReceiptPdf(eventId) {
 		});
 }
 
+async function postRecoverFailedCart(cartId) {
+	let endpoint = process.env.RECOVER_FAILED_CART_ENDPOINT || "carts/{cart-id}/recover-failed";
+	endpoint = endpoint.replace("{cart-id}", cartId);
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
+async function postRecoverFailedCartMassive(status) {
+	let endpoint = process.env.RECOVER_FAILED_CART_MASSIVE_ENDPOINT || "carts/recover-failed?status={STATUS}";
+	endpoint = endpoint.replace("{STATUS}", status);
+
+	return await axios.post(helpdesk_url + endpoint, {})
+		.then(res => {
+			return res;
+		})
+		.catch(error => {
+			return error.response;
+		});
+}
+
 module.exports = {
 	getReceipt,
 	getReceiptByOrganizationFiscalCodeAndIUV,
@@ -162,5 +188,7 @@ module.exports = {
 	postRecoverFailedReceiptMassive,
 	postRecoverNotNotifiedReceipt,
 	postRecoverNotNotifiedReceiptMassive,
-	postRegenerateReceiptPdf
+	postRegenerateReceiptPdf,
+	postRecoverFailedCart,
+	postRecoverFailedCartMassive
 }

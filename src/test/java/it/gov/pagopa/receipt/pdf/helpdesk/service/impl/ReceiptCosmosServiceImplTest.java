@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 
 import com.azure.cosmos.models.FeedResponse;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
@@ -29,14 +30,16 @@ import static org.mockito.Mockito.when;
 class ReceiptCosmosServiceImplTest {
 
     private ReceiptCosmosClient receiptCosmosClientMock;
+    private CartReceiptsCosmosClient cartReceiptsCosmosClientMock;
 
     private ReceiptCosmosService sut;
 
     @BeforeEach
     void setUp() {
         receiptCosmosClientMock = mock(ReceiptCosmosClient.class);
+        cartReceiptsCosmosClientMock = mock(CartReceiptsCosmosClient.class);
 
-        sut = spy(new ReceiptCosmosServiceImpl(receiptCosmosClientMock));
+        sut = spy(new ReceiptCosmosServiceImpl(receiptCosmosClientMock, cartReceiptsCosmosClientMock));
     }
 
     @Test
@@ -204,7 +207,7 @@ class ReceiptCosmosServiceImplTest {
 
     @Test
     void getCartSuccess() throws CartNotFoundException {
-        when(receiptCosmosClientMock.getCartDocument(anyString())).thenReturn(new CartForReceipt());
+        when(cartReceiptsCosmosClientMock.getCartItem(anyString())).thenReturn(new CartForReceipt());
 
         CartForReceipt cart = assertDoesNotThrow(() -> sut.getCart(anyString()));
 
@@ -213,14 +216,14 @@ class ReceiptCosmosServiceImplTest {
 
     @Test
     void getCartFailClientThrowsCartNotFoundException() throws CartNotFoundException {
-        when(receiptCosmosClientMock.getCartDocument(anyString())).thenThrow(CartNotFoundException.class);
+        when(cartReceiptsCosmosClientMock.getCartItem(anyString())).thenThrow(CartNotFoundException.class);
 
         assertThrows(CartNotFoundException.class, () -> sut.getCart(anyString()));
     }
 
     @Test
     void getCartFailClientReturnNull() throws CartNotFoundException {
-        when(receiptCosmosClientMock.getCartDocument(anyString())).thenReturn(null);
+        when(cartReceiptsCosmosClientMock.getCartItem(anyString())).thenReturn(null);
 
         assertThrows(CartNotFoundException.class, () -> sut.getCart(anyString()));
     }

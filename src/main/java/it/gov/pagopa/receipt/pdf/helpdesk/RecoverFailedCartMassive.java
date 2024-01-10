@@ -1,6 +1,11 @@
 package it.gov.pagopa.receipt.pdf.helpdesk;
 
-import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
@@ -18,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.massiveRecoverCartByStatus;
@@ -65,7 +69,7 @@ public class RecoverFailedCartMassive {
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "cart-for-receipt",
+                    collectionName = "cart-for-receipts",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<CartForReceipt>> cartForReceiptDocumentdb,
             final ExecutionContext context) {
