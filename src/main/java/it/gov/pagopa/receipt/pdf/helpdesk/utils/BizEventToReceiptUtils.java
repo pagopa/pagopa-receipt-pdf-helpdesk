@@ -3,7 +3,6 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 import com.azure.cosmos.models.FeedResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
@@ -20,12 +19,12 @@ import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverCartResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
-import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,8 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl.getAmount;
 
 public class BizEventToReceiptUtils {
 
@@ -190,12 +187,8 @@ public class BizEventToReceiptUtils {
 
         eventData.setTransactionCreationDate(
                 service.getTransactionCreationDate(bizEvent));
-        eventData.setAmount(
-                bizEvent.getTransactionDetails() != null && bizEvent
-                        .getTransactionDetails().getTransaction() != null ?
-                        String.valueOf(bizEvent.getTransactionDetails().getTransaction().getGrandTotal()) :
-                        bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : null
-        );
+        BigDecimal amount = getAmount(bizEvent);
+        eventData.setAmount(!amount.equals(BigDecimal.ZERO) ? amount.toString() : null);
 
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
@@ -408,6 +401,23 @@ public class BizEventToReceiptUtils {
                 .cartItems(cartItems)
                 .errorCounter(errorCounter)
                 .build();
+    }
+
+    public static BigDecimal getAmount(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null
+                && bizEvent.getTransactionDetails().getTransaction().getGrandTotal() != 0) {
+            return formatAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+        }
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
+            return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public static BigDecimal formatAmount(long grandTotal) {
+        BigDecimal amount = new BigDecimal(grandTotal);
+        BigDecimal divider = new BigDecimal(100);
+        return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
     }
 
     private BizEventToReceiptUtils() {}

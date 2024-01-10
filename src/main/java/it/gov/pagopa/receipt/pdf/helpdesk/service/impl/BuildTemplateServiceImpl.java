@@ -2,12 +2,14 @@ package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PdfJsonMappingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.TemplateDataMappingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.template.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BuildTemplateService;
+import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.ObjectMapperUtils;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.TemplateDataField;
 
@@ -21,6 +23,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,7 +80,7 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
                 .serviceCustomerId(getServiceCustomerId(receipt))
                 .transaction(Transaction.builder()
                         .timestamp(getTimestamp(bizEvent))
-                        .amount(getAmount(receipt))
+                        .amount(getAmount(listOfBizEvents))
                         .psp(getPsp(bizEvent))
                         .rrn(getRnn(bizEvent))
                         .paymentMethod(PaymentMethod.builder()
@@ -159,13 +162,16 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
         }
         throw new TemplateDataMappingException(formatErrorMessage(TemplateDataField.TRANSACTION_TIMESTAMP, event.getId(), true), ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode());
     }
-
-    private String getAmount(Receipt receipt) throws TemplateDataMappingException {
-        if(receipt.getEventData() != null &&
-                receipt.getEventData().getAmount() != null){
-            return receipt.getEventData().getAmount();
-        }
-        throw new TemplateDataMappingException(formatErrorMessage(TemplateDataField.TRANSACTION_AMOUNT, receipt.getId(), false), ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode());
+    private String getAmount(List<BizEvent> bizEvents) {
+        AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+        bizEvents.forEach(bizEvent -> {
+            BigDecimal amountExtracted = BizEventToReceiptUtils.getAmount(bizEvent);
+            amount.updateAndGet(v -> v.add(amountExtracted));
+        });
+        NumberFormat numberFormat = NumberFormat.getInstance(Locale.ITALY);
+        numberFormat.setMaximumFractionDigits(2);
+        numberFormat.setMinimumFractionDigits(2);
+        return numberFormat.format(amount.get());
     }
 
     private String getRnn(BizEvent event) throws TemplateDataMappingException {

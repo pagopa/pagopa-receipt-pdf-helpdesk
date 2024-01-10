@@ -82,10 +82,6 @@ class ReceiptToReviewedTest {
                 .build();
         when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
 
-        when(request.getQueryParameters()).thenReturn(Collections.singletonMap("isCart","true"));
-
-        when(receiptCosmosClient.getCartDocument(any())).thenReturn(generateCart());
-
         function =  spy(new ReceiptToReviewed(receiptCosmosClient));
 
         // test execution

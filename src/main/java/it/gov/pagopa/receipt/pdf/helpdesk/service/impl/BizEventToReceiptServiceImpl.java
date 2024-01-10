@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getAmount;
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getItemSubject;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
@@ -256,17 +257,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
         receipt.setEventData(eventData);
         return receipt;
-    }
-
-    public static BigDecimal getAmount(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null
-                && bizEvent.getTransactionDetails().getTransaction().getGrandTotal() != 0) {
-            return new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
-        }
-        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
-            return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
-        }
-        return BigDecimal.ZERO;
     }
 
 }
