@@ -89,6 +89,9 @@ After(async function () {
             await deleteDocumentFromCartDatastore(cart.id);
         }
     }
+    if (receipt != null) {
+        await deleteDocumentFromReceiptsDatastore(receipt.id);
+    }
 
     eventId = null;
     responseAPI = null;
