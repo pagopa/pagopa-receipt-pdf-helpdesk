@@ -234,9 +234,9 @@ class RegenerateReceiptPdfTest {
                 .eventId("biz-event-id")
                 .status(receiptStatusType)
                 .numRetry(numRetry)
-                .generatedAt(ORIGINAL_GENERATED_AT)
-                .insertedAt(0L)
-                .notifiedAt(0L)
+                .generated_at(ORIGINAL_GENERATED_AT)
+                .inserted_at(0L)
+                .notified_at(0L)
                 .build();
     }
 }

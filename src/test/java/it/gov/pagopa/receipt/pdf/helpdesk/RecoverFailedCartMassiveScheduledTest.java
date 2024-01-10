@@ -205,9 +205,9 @@ class RecoverFailedCartMassiveScheduledTest {
                         .build())
                 .numRetry(0)
                 .notificationNumRetry(6)
-                .insertedAt(0)
-                .generatedAt(0)
-                .notifiedAt(0)
+                .inserted_at(0)
+                .generated_at(0)
+                .notified_at(0)
                 .build();
     }
 

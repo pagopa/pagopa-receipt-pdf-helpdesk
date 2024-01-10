@@ -57,7 +57,7 @@ microservice-chart:
       memory: "768Mi"
       cpu: "300m"
     limits:
-      memory: "768Mi"
+      memory: "1.5Gi"
       cpu: "500m"
   autoscaling:
     enable: true
@@ -119,8 +119,8 @@ microservice-chart:
     FAILED_AUTORECOVER_ENABLED: "true"
     NOT_NOTIFIED_AUTORECOVER_ENABLED: "true"
     FAILED_CART_AUTORECOVER_ENABLED: "false"
-    RECOVER_FAILED_MASSIVE_MAX_DAYS: "0"
-    RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "0"
+    RECOVER_FAILED_MASSIVE_MAX_DAYS: "1"
+    RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "1"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_RECORDS: "200"
   envConfigMapExternals:
     template-maps:
