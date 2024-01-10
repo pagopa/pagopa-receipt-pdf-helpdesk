@@ -116,7 +116,7 @@ public class BizEventToReceiptUtils {
             bizEventToReceiptService.handleSendMessageToQueue(isCart ? listCart :
                     Collections.singletonList(bizEvent), receipt);
             if (receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT) {
-                receipt.setInsertedAt(System.currentTimeMillis());
+                receipt.setInserted_at(System.currentTimeMillis());
                 receipt.setReasonErr(null);
                 receipt.setReasonErrPayer(null);
             }

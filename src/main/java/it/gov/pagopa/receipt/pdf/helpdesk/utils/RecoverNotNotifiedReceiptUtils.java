@@ -13,7 +13,7 @@ public class RecoverNotNotifiedReceiptUtils {
     public static Receipt restoreReceipt(Receipt receipt) {
         receipt.setStatus(ReceiptStatusType.GENERATED);
         receipt.setNotificationNumRetry(0);
-        receipt.setNotifiedAt(0);
+        receipt.setNotified_at(0);
 
         if (receipt.getReasonErr() != null) {
             receipt.setReasonErr(null);
