@@ -18,7 +18,6 @@ public class CartForReceipt {
     private Set<String> cartPaymentId;
     private Integer totalNotice;
     private CartStatusType status;
-    @JsonProperty("inserted_at")
-    private long insertedAt;
+    private long inserted_at;
     private ReasonError reasonError;
 }
