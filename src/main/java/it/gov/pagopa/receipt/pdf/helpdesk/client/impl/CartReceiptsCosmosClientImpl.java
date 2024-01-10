@@ -1,6 +1,10 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.client.impl;
 
-import com.azure.cosmos.*;
+import com.azure.cosmos.ConsistencyLevel;
+import com.azure.cosmos.CosmosClient;
+import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.cosmos.CosmosContainer;
+import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
@@ -10,7 +14,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.CartNotFoundException;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -19,12 +22,11 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     private static CartReceiptsCosmosClientImpl instance;
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
-    private final String cartForReceiptContainerName = System.getenv("CART_FOR_RECEIPT_CONTAINER_NAME");
+    private final String cartForReceiptContainerName = System.getenv("COSMOS_RECEIPT_CART_CONTAINER_NAME");
 
     private final String millisDiff = System.getenv("MAX_DATE_DIFF_CART_MILLIS");
 
     private final String numDaysCartNotSent = System.getenv().getOrDefault("RECOVER_CART_MASSIVE_MAX_DAYS", "0");
-
 
     private final CosmosClient cosmosClient;
 
@@ -52,20 +54,15 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     /**
-     * Retrieve receipt document from CosmosDB database
-     *
-     * @param eventId Biz-event id
-     * @return receipt document
-     * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
+     * {@inheritDoc}
      */
     @Override
-    public CartForReceipt getCartItem(String eventId) throws CartNotFoundException {
+    public CartForReceipt getCartItem(String cartId) throws CartNotFoundException {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
 
         //Build query
-        String query = "SELECT * FROM c WHERE c.id = " + "'" + eventId + "'";
+        String query = String.format("SELECT * FROM c WHERE c.id = '%s'", cartId);
 
         //Query the container
         CosmosPagedIterable<CartForReceipt> queryResponse = cosmosContainer
@@ -73,10 +70,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
-        } else {
-            throw new CartNotFoundException("Document not found in the defined container");
         }
-
+        throw new CartNotFoundException("Document not found in the defined container");
     }
 
     /**

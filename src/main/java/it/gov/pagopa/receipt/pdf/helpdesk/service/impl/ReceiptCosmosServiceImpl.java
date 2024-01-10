@@ -1,7 +1,9 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 
 import com.azure.cosmos.models.FeedResponse;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
+import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
@@ -15,13 +17,16 @@ import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
 public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
 
     private final ReceiptCosmosClient receiptCosmosClient;
+    private final CartReceiptsCosmosClient cartReceiptsCosmosClient;
 
     public ReceiptCosmosServiceImpl() {
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+        this.cartReceiptsCosmosClient = CartReceiptsCosmosClientImpl.getInstance();
     }
 
-    ReceiptCosmosServiceImpl(ReceiptCosmosClient receiptCosmosClient) {
+    ReceiptCosmosServiceImpl(ReceiptCosmosClient receiptCosmosClient, CartReceiptsCosmosClient cartReceiptsCosmosClient) {
         this.receiptCosmosClient = receiptCosmosClient;
+        this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
     }
 
     /**
@@ -109,7 +114,7 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
     public CartForReceipt getCart(String cartId) throws CartNotFoundException {
         CartForReceipt cartForReceipt;
         try {
-            cartForReceipt = this.receiptCosmosClient.getCartDocument(cartId);
+            cartForReceipt = this.cartReceiptsCosmosClient.getCartItem(cartId);
         } catch (CartNotFoundException e) {
             String errorMsg = String.format("Receipt not found with the biz-event id %s", cartId);
             throw new CartNotFoundException(errorMsg, e);
