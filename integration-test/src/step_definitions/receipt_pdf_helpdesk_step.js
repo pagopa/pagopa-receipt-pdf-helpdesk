@@ -79,6 +79,7 @@ After(async function () {
         for (let id of cart.cartPaymentId) {
             await deleteDocumentFromBizEventsDatastore(id);
         }
+        await deleteMultipleDocumentsFromReceiptsDatastoreByEventId(cart.id);
         await deleteDocumentFromCartDatastore(cart.id);
     }
     if(cartList.length > 0){
@@ -86,6 +87,7 @@ After(async function () {
             for (let id of cart.cartPaymentId) {
                 await deleteDocumentFromBizEventsDatastore(id);
             }
+            await deleteMultipleDocumentsFromReceiptsDatastoreByEventId(cart.id);
             await deleteDocumentFromCartDatastore(cart.id);
         }
     }
