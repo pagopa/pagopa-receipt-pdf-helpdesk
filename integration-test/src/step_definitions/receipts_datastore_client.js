@@ -158,8 +158,15 @@ async function deleteAllTestReceipts() {
         parameters: [{ name: "@id", value: "%receipt-helpdesk-int-test%" }]
     }).fetchNext();
 
+    let response2 = await receiptContainer.items
+        .query({
+            query: "SELECT * from c WHERE c.eventId=@eventId",
+            parameters: [{ name: "@eventId", value: "%receipt-helpdesk-int-test%" }]
+        })
+        .fetchNext();
 
-    let receiptList = response.resources;
+
+    let receiptList = response.resources.concat(response2.resources);
     if (receiptList.length > 0) {
         receiptList.forEach((receipt) => {
             console.log("\n Deleting receipt with id " + id);

@@ -329,6 +329,7 @@ When("recoverFailedCart API is called with cartId {string}", async function (id)
 Then("the cart with id {string} is retrieved from datastore", async function (id) {
     let responseCosmos = await getDocumentFromCartDatastoreById(id);
     assert.strictEqual(responseCosmos.resources.length > 0, true);
+    cart = responseCosmos.resources[0];
 });
 
 Then('the cart has not status {string}', function (targetStatus) {
@@ -377,6 +378,6 @@ Then('the list of receipt is retrieved from datastore and no receipt in the list
         let responseCosmos = await getDocumentFromReceiptsDatastoreByEventId(cart.id);
         assert.strictEqual(responseCosmos.resources.length > 0, true);
         assert.notStrictEqual(responseCosmos.resources[0].status, status);
-        listOfReceipts.push(responseCosmos.resource[0]);
+        listOfReceipts.push(responseCosmos.resources[0]);
     }
 })
