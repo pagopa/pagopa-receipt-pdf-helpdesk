@@ -25,10 +25,7 @@ import org.slf4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,6 +33,12 @@ import java.util.regex.Pattern;
 public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
+
+    private static final List<String> listOrigin;
+
+    static {
+        listOrigin = Arrays.asList(System.getenv().getOrDefault("LIST_VALID_ORIGINS", "IO").split(","));
+    }
 
     public static Receipt getEvent(
             String eventId,
@@ -418,6 +421,17 @@ public class BizEventToReceiptUtils {
         BigDecimal amount = new BigDecimal(grandTotal);
         BigDecimal divider = new BigDecimal(100);
         return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
+    }
+
+    public static boolean isFromAuthenticatedOrigin(BizEvent bizEvent) {
+        return bizEvent.getTransactionDetails() != null &&
+                ((bizEvent.getTransactionDetails().getTransaction() != null &&
+                        bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
+                        listOrigin.contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())) ||
+                        (bizEvent.getTransactionDetails().getInfo() != null &&
+                                bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
+                                listOrigin.contains(bizEvent.getTransactionDetails().getInfo().getClientId())
+                        ));
     }
 
     private BizEventToReceiptUtils() {}

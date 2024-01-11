@@ -47,7 +47,6 @@ class BizEventToReceiptUtilsTest {
     @Test
     void createReceiptSuccessWithPaymentInfo() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class), mock(BizEventCosmosClientImpl.class), mock(ReceiptCosmosClientImpl.class));
@@ -57,14 +56,12 @@ class BizEventToReceiptUtilsTest {
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, receipt.getEventData().getPayerFiscalCode());
         assertEquals(REMITTANCE_INFORMATION_PAYMENT_INFO, receipt.getEventData().getCart().get(0).getSubject());
     }
 
     @Test
     void createReceiptSuccessWithoutPaymentInfoButWithTransferList() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class), mock(BizEventCosmosClientImpl.class), mock(ReceiptCosmosClientImpl.class));
@@ -74,14 +71,12 @@ class BizEventToReceiptUtilsTest {
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, receipt.getEventData().getPayerFiscalCode());
         assertEquals(REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED, receipt.getEventData().getCart().get(0).getSubject());
     }
 
     @Test
     void createReceiptSuccessWithoutRemittanceInformation() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, mock(ReceiptQueueClientImpl.class), mock(BizEventCosmosClientImpl.class), mock(ReceiptCosmosClientImpl.class));
@@ -91,7 +86,6 @@ class BizEventToReceiptUtilsTest {
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, receipt.getEventData().getPayerFiscalCode());
         assertNull(receipt.getEventData().getCart().get(0).getSubject());
     }
 
