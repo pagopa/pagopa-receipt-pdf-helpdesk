@@ -302,6 +302,7 @@ class RecoverFailedCartTest {
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transactionDetails.setTransaction(transaction);
+        transaction.setOrigin("IO");
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
