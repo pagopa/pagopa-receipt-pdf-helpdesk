@@ -55,12 +55,11 @@ public class RecoverFailedCart {
     /**
      * This function will be invoked when a Http Trigger occurs.
      * <p>
-     * It recovers the receipt with the specified biz event id that has the following status:
-     * - ({@link ReceiptStatusType#INSERTED})
-     * - ({@link ReceiptStatusType#FAILED})
-     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * It recovers the cart receipt with the specified cart id that has the following status:
+     * - ({@link CartStatusType#INSERTED})
+     * - ({@link CartStatusType#FAILED})
      * <p>
-     * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
+     * It creates the cart rekated receipt if not exist and send on queue the event in order to proceed with the receipt generation.
      *
      * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
