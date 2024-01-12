@@ -31,3 +31,10 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     Then the api response has a 200 Http status
     And the receipt-message has messageId "receipt-helpdesk-int-test-message-id-3"
     And the receipt-message has eventId "receipt-helpdesk-int-test-id-3"
+
+  Scenario: receiptToReviewed API retrieve a receipt error and updates its status to REVIEWED
+    Given a receipt-error with bizEventId "receipt-helpdesk-int-test-id-5" and status "TO_REVIEW" stored into receipt-error datastore
+    When receiptToReviewed API is called with bizEventId "receipt-helpdesk-int-test-id-5"
+    Then the api response has a 200 Http status
+    And the receipt-error with bizEventId "receipt-helpdesk-int-test-id-5" is recovered from datastore
+    And the receipt-error has not status "TO_REVIEW"
