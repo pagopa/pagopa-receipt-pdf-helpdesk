@@ -55,9 +55,9 @@ public class RecoverFailedCartScheduled {
      * <p>
      * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      */
-    @FunctionName("RecoverFailedCartScheduled")
+    @FunctionName("CartNotSentRecoverScheduled")
     public void run(
-            @TimerTrigger(name = "timerInfo", schedule = "%RECOVER_FAILED_CART_CRON%") String timerInfo,
+            @TimerTrigger(name = "timerInfoCart", schedule = "%RECOVER_FAILED_CART_CRON%") String timerInfo,
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",

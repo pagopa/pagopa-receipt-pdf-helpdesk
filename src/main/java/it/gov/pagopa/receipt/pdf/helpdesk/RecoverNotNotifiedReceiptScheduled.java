@@ -46,7 +46,7 @@ public class RecoverNotNotifiedReceiptScheduled {
     @FunctionName("RecoverNotNotifiedTimerTriggerProcessor")
     public void processRecoverNotNotifiedScheduledTrigger(
             @TimerTrigger(
-                    name = "timerInfo",
+                    name = "timerInfoNotNotified",
                     schedule = "%TRIGGER_NOTIFY_REC_SCHEDULE%"
             )
             String timerInfo,
