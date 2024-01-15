@@ -79,3 +79,11 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     And the cart has not status "FAILED"
     And the receipt with eventId "receipt-helpdesk-int-test-id-11" is recovered from datastore
     And the receipt has not status "FAILED"
+
+  Scenario: recoverFailedCartMassive API retrieve all the receipts in status FAILED and updates their status
+    Given a list of 5 carts in status "FAILED" stored into cart datastore starting from id "receipt-helpdesk-int-test-id-12"
+    And a list of 10 biz events in status "DONE" stored into biz-events datastore
+    When recoverFailedCartMassive API is called with status "FAILED" as query param
+    Then the api response has a 200 Http status
+    And the list of cart is retrieved from datastore and no cart in the list has status "FAILED"
+    And the list of receipt is retrieved from datastore and no receipt in the list has status "FAILED"
