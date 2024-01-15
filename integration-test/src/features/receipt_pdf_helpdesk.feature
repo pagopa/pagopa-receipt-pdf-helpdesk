@@ -38,3 +38,18 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     Then the api response has a 200 Http status
     And the receipt-error with bizEventId "receipt-helpdesk-int-test-id-5" is recovered from datastore
     And the receipt-error has not status "TO_REVIEW"
+
+  Scenario: recoverFailedReceipt API retrieve a receipt in status FAILED and updates its status
+    Given a receipt with eventId "receipt-helpdesk-int-test-id-6" and status "FAILED" stored into receipt datastore
+    And a biz event with id "receipt-helpdesk-int-test-id-6" and status "DONE" stored on biz-events datastore
+    When recoverFailedReceipt API is called with eventId "receipt-helpdesk-int-test-id-6"
+    Then the api response has a 200 Http status
+    And the receipt with eventId "receipt-helpdesk-int-test-id-6" is recovered from datastore
+    And the receipt has not status "FAILED"
+
+  Scenario: recoverFailedReceiptMassive API retrieve all the receipts in status FAILED and updates their status
+    Given a list of 5 receipts in status "FAILED" stored into receipt datastore starting from eventId "receipt-helpdesk-int-test-id-7"
+    And a list of 5 biz events in status "DONE" stored into biz-events datastore starting from eventId "receipt-helpdesk-int-test-id-7"
+    When recoverFailedReceiptMassive API is called with status "FAILED" as query param
+    Then the api response has a 200 Http status
+    And the list of receipt is recovered from datastore and no receipt in the list has status "FAILED"
