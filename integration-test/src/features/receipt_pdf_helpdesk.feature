@@ -68,3 +68,14 @@ Feature: All about payment events to recover managed by Azure functions receipt-
     When recoverNotNotifiedReceiptMassive API is called with status "IO_ERROR_TO_NOTIFY" as query param
     Then the api response has a 200 Http status
     And the list of receipt is recovered from datastore and no receipt in the list has status "IO_ERROR_TO_NOTIFY"
+
+  Scenario: recoverFailedCart API retrieve a cart in status FAILED and updates its status
+    Given a biz event with transactionId "receipt-helpdesk-int-test-id-11" and status "DONE" stored on biz-events datastore
+    And a biz event with transactionId "receipt-helpdesk-int-test-id-11" and status "DONE" stored on biz-events datastore
+    And a cart with id "receipt-helpdesk-int-test-id-11" and status "FAILED" stored into cart datastore
+    When recoverFailedCart API is called with cartId "receipt-helpdesk-int-test-id-11"
+    Then the api response has a 200 Http status
+    And the cart with id "receipt-helpdesk-int-test-id-11" is retrieved from datastore
+    And the cart has not status "FAILED"
+    And the receipt with eventId "receipt-helpdesk-int-test-id-11" is recovered from datastore
+    And the receipt has not status "FAILED"
