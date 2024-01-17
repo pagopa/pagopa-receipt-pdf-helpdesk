@@ -3,7 +3,7 @@ name: pagopareceiptpdfhelpdesk
 description: Microservice description
 type: application
 version: 0.148.0
-appVersion: 0.9.5-2-chore-add-test-logs
+appVersion: 0.9.5-2
 dependencies:
   - name: microservice-chart
     version: 2.4.0
