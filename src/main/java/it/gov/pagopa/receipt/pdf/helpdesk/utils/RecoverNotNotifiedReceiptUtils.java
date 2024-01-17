@@ -25,9 +25,12 @@ public class RecoverNotNotifiedReceiptUtils {
     }
 
     public static List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType, ReceiptCosmosService receiptCosmosService) {
+
+
         List<Receipt> receiptList = new ArrayList<>();
         String continuationToken = null;
         do {
+
             Iterable<FeedResponse<Receipt>> feedResponseIterator =
                     receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
 
@@ -37,8 +40,11 @@ public class RecoverNotNotifiedReceiptUtils {
                     receiptList.add(restoredReceipt);
                 }
                 continuationToken = page.getContinuationToken();
+
             }
         } while (continuationToken != null);
+
+
         return receiptList;
     }
 

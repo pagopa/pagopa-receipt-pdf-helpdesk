@@ -223,11 +223,16 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s OFFSET 0 LIMIT %s",
+        // String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s OFFSET 0 LIMIT %s",
+        //         ReceiptStatusType.IO_ERROR_TO_NOTIFY,
+        //         OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+        //                 Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli(),
+        //         recordsLimitRecoverNotNotified
+        // );
+        String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s",
                 ReceiptStatusType.IO_ERROR_TO_NOTIFY,
                 OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
-                        Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli(),
-                recordsLimitRecoverNotNotified
+                        Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli()
         );
 
         //Query the container
