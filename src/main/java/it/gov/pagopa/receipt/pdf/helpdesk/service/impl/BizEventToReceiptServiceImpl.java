@@ -20,7 +20,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.PdfJsonMappingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
@@ -259,7 +258,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         });
 
         if (!amount.get().equals(BigDecimal.ZERO)) {
-            eventData.setAmount(amount.get().toString());
+            eventData.setAmount(BizEventToReceiptUtils.formatAmount(amount.get().toString()));
         }
 
         eventData.setCart(cartItems);

@@ -2,7 +2,6 @@ package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PdfJsonMappingException;
@@ -168,10 +167,7 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
             BigDecimal amountExtracted = BizEventToReceiptUtils.getAmount(bizEvent);
             amount.updateAndGet(v -> v.add(amountExtracted));
         });
-        NumberFormat numberFormat = NumberFormat.getInstance(Locale.ITALY);
-        numberFormat.setMaximumFractionDigits(2);
-        numberFormat.setMinimumFractionDigits(2);
-        return numberFormat.format(amount.get());
+        return BizEventToReceiptUtils.formatAmount(amount.get().toString());
     }
 
     private String getRnn(BizEvent event) throws TemplateDataMappingException {
