@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.isFromAuthenticatedOrigin;
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.GenerateReceiptUtils.*;
 
 
@@ -119,7 +120,8 @@ public class RegenerateReceiptPdf {
                     try {
 
                         if (receipt.getEventData().getDebtorFiscalCode() == null ||
-                                receipt.getEventData().getPayerFiscalCode() == null) {
+                                (receipt.getEventData().getPayerFiscalCode() == null
+                                        && isFromAuthenticatedOrigin(bizEvent))) {
                             BizEventToReceiptUtils.tokenizeReceipt(bizEventToReceiptService, isCart ?
                                     listBizEvent : Collections.singletonList(bizEvent), receipt);
                             documentdb.setValue(receipt);

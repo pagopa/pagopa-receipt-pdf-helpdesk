@@ -101,8 +101,6 @@ class RecoverFailedReceiptTest {
     void requestOnValidBizEventShouldCreateRequest() {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
-                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         Response<SendMessageResult> queueResponse = mock(Response.class);
         when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
@@ -130,7 +128,6 @@ class RecoverFailedReceiptTest {
         Receipt captured = receiptCaptor.getValue();
         assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
         assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
@@ -141,8 +138,6 @@ class RecoverFailedReceiptTest {
     void requestOnValidCartShouldCreateRequest() {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
-                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         Response<SendMessageResult> queueResponse = mock(Response.class);
         when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
@@ -175,7 +170,6 @@ class RecoverFailedReceiptTest {
         Receipt captured = receiptCaptor.getValue();
         assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
         assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
@@ -300,8 +294,6 @@ class RecoverFailedReceiptTest {
     void requestOnValidBizEventAndFailedReceiptWithoutEventDataShouldUpdateWithToken() {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
-                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         Response<SendMessageResult> queueResponse = mock(Response.class);
         when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
@@ -331,7 +323,6 @@ class RecoverFailedReceiptTest {
         Receipt captured = receiptCaptor.getValue();
         assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
         assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
@@ -517,8 +508,6 @@ class RecoverFailedReceiptTest {
     void errorAddingMessageToQueue() {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
-                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         Response<SendMessageResult> queueResponse = mock(Response.class);
         when(queueResponse.getStatusCode()).thenReturn(HttpStatus.FORBIDDEN.value());
@@ -551,6 +540,7 @@ class RecoverFailedReceiptTest {
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transactionDetails.setTransaction(transaction);
+        transactionDetails.setOrigin("INFO");
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
@@ -572,6 +562,7 @@ class RecoverFailedReceiptTest {
         debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
 
         TransactionDetails transactionDetails = new TransactionDetails();
+        transactionDetails.setInfo(InfoTransaction.builder().clientId("IO").build());
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transactionDetails.setTransaction(transaction);
