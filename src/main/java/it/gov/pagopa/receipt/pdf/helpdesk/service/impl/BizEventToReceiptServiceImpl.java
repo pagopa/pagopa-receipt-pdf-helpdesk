@@ -23,6 +23,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PdfJsonMappingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.PDVTokenizerServiceRetryWrapper;
+import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private final BizEventCosmosClient bizEventCosmosClient;
 
     private final ReceiptCosmosClient receiptCosmosClient;
+
+    public static final String FISCAL_CODE_ANONYMOUS = "ANONIMO";
+
 
     public BizEventToReceiptServiceImpl() {
         this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
@@ -127,14 +131,13 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     @Override
     public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException {
         try {
-            if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
-                eventData.setDebtorFiscalCode("ANONIMO".equals(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
-                        bizEvent.getDebtor().getEntityUniqueIdentifierValue() :
-                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
-                                bizEvent.getDebtor().getEntityUniqueIdentifierValue())
-                );
-            }
-            if (bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null
+            eventData.setDebtorFiscalCode(
+                    bizEvent.getDebtor() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
+                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) :
+                            FISCAL_CODE_ANONYMOUS
+            );
+
+            if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())
                     && isFromAuthenticatedOrigin(bizEvent)) {
                 eventData.setPayerFiscalCode(
                         pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
@@ -142,6 +145,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 );
             } else if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null
                     && bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
+                    && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())
                     && isFromAuthenticatedOrigin(bizEvent)) {
                 eventData.setPayerFiscalCode(
                         pdvTokenizerService.generateTokenForFiscalCodeWithRetry(

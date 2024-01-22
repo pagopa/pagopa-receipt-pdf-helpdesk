@@ -27,9 +27,9 @@ class BuildTemplateServiceImplTest {
     public static final String DEBTOR_FULL_NAME_INVALID = "-- --";
     public static final String DEBTOR_FULL_NAME_SPECIAL_CHAR = "John,Doe:Megacorp;SRL::Avenue;Street/";
     public static final String DEBTOR_FULL_NAME_SPECIAL_CHAR_FORMATTED = "John Doe Megacorp SRL Avenue Street ";
-    public static final String DEBTOR_VALID_CF = "CF_DEBTOR";
+    public static final String DEBTOR_VALID_CF = "AAAAAA00A00A000D";
     public static final String PAYER_FULL_NAME = "John Doe PAYER";
-    public static final String PAYER_VALID_CF = "CF_PAYER";
+    public static final String PAYER_VALID_CF = "AAAAAA00A00A000P";
     public static final String HOLDER_FULL_NAME = "John Doe HOLDER";
     public static final String PAYMENT_TOKEN = "9a9bad2caf604b86a339476373c659b0";
     public static final String AMOUNT_WITHOUT_CENTS = "7000";
