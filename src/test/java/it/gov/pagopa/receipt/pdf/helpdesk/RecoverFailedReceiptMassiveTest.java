@@ -276,9 +276,9 @@ class RecoverFailedReceiptMassiveTest {
         BizEvent item = new BizEvent();
 
         Payer payer = new Payer();
-        payer.setEntityUniqueIdentifierValue("a valid payer CF");
+        payer.setEntityUniqueIdentifierValue("AAAAAA00A00A000P");
         Debtor debtor = new Debtor();
-        debtor.setEntityUniqueIdentifierValue("a valid debtor CF");
+        debtor.setEntityUniqueIdentifierValue("AAAAAA00A00A000D");
 
         TransactionDetails transactionDetails = new TransactionDetails();
         Transaction transaction = new Transaction();

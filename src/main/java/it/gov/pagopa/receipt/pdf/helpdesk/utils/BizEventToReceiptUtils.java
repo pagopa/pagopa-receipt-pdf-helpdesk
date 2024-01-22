@@ -233,10 +233,12 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
-        if (bizEvent.getDebtor().getEntityUniqueIdentifierValue() == null ||
-                (bizEvent.getDebtor().getEntityUniqueIdentifierValue().equals("ANONIMO") &&
-                        (bizEvent.getPayer() == null || bizEvent.getPayer().getEntityUniqueIdentifierValue() == null))) {
-            logger.debug("[{}] event with id {} discarded because debtor identifier is missing or ANONIMO",
+        if (
+                (bizEvent.getDebtor() == null || !isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue()))
+                        &&
+                        (bizEvent.getPayer() == null || !isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue()))
+        ) {
+            logger.debug("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
                     context.getFunctionName(), bizEvent.getId());
             return true;
         }
@@ -432,6 +434,17 @@ public class BizEventToReceiptUtils {
                                 bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
                                 listOrigin.contains(bizEvent.getTransactionDetails().getInfo().getClientId())
                         ));
+    }
+
+    public static boolean isValidFiscalCode(String fiscalCode) {
+        if (fiscalCode != null && !fiscalCode.isEmpty()) {
+            Pattern patternCF = Pattern.compile("^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$");
+            Pattern patternPIVA = Pattern.compile("/^[0-9]{11}$/");
+
+            return patternCF.matcher(fiscalCode).find() || patternPIVA.matcher(fiscalCode).find();
+        }
+
+        return false;
     }
 
     private BizEventToReceiptUtils() {}

@@ -48,8 +48,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RecoverFailedReceiptTest {
 
-    private final String PAYER_FISCAL_CODE = "a valid payer CF";
-    private final String DEBTOR_FISCAL_CODE = "a valid debtor CF";
+    private final String PAYER_FISCAL_CODE = "AAAAAA00A00A000D";
+    private final String DEBTOR_FISCAL_CODE = "AAAAAA00A00A000P";
     private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
     private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
     private final String EVENT_ID = "a valid id";
