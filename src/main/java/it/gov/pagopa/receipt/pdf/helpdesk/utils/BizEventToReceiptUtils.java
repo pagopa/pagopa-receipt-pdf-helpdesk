@@ -276,11 +276,13 @@ public class BizEventToReceiptUtils {
         if(bizEvent.getDebtor() != null && isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())){
             isValidDebtor = true;
         }
-        if(bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null && isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())){
-            isValidPayer = true;
-        }
-        if(bizEvent.getPayer() != null && isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())){
-            isValidPayer = true;
+        if(BizEventToReceiptUtils.isFromAuthenticatedOrigin(bizEvent)){
+            if(bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null && isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())){
+                isValidPayer = true;
+            }
+            if(bizEvent.getPayer() != null && isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())){
+                isValidPayer = true;
+            }
         }
 
         return isValidDebtor || isValidPayer;
