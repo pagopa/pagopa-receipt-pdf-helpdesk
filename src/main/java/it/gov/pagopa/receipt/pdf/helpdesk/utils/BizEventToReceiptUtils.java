@@ -148,7 +148,7 @@ public class BizEventToReceiptUtils {
                     try {
                         Receipt restored = getEvent(receipt.getEventId(), context, bizEventToReceiptService,
                                 bizEventCosmosClient, receiptCosmosService, receipt, logger, receipt.getIsCart() != null ?
-                                receipt.getIsCart() : false);
+                                        receipt.getIsCart() : false);
                         receiptList.add(restored);
                     } catch (Exception e) {
                         logger.error(e.getMessage(), e);
@@ -234,11 +234,7 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
-        if (
-                (bizEvent.getDebtor() == null || !isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue()))
-                        &&
-                        (bizEvent.getPayer() == null || !isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue()))
-        ) {
+        if (!hasValidFiscalCode(bizEvent)) {
             logger.debug("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
                     context.getFunctionName(), bizEvent.getId());
             return true;
@@ -271,6 +267,23 @@ public class BizEventToReceiptUtils {
         }
 
         return false;
+    }
+
+    private static boolean hasValidFiscalCode(BizEvent bizEvent) {
+        boolean isValidDebtor = false;
+        boolean isValidPayer = false;
+
+        if(bizEvent.getDebtor() != null && isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())){
+            isValidDebtor = true;
+        }
+        if(bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null && isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())){
+            isValidPayer = true;
+        }
+        if(bizEvent.getPayer() != null && isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())){
+            isValidPayer = true;
+        }
+
+        return isValidDebtor || isValidPayer;
     }
 
     public static void tokenizeReceipt(BizEventToReceiptService service, List<BizEvent> bizEvents, Receipt receipt)
@@ -456,5 +469,6 @@ public class BizEventToReceiptUtils {
         return false;
     }
 
-    private BizEventToReceiptUtils() {}
+    private BizEventToReceiptUtils() {
+    }
 }
