@@ -67,4 +67,7 @@ data "azurerm_storage_account" "receipts_sa" {
   resource_group_name = "pagopa-${var.env_short}-${local.location_short}-receipts-st-rg"
 }
 
-
+data "azurerm_user_assigned_identity" "identity_cd" {
+  name = "${local.product}-${local.domain}-01-github-cd-identity"
+  resource_group_name = "${local.product}-identity-rg"
+}
