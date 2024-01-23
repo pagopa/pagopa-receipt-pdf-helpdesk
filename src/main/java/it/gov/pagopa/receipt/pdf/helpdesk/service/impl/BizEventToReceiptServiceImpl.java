@@ -20,7 +20,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.PdfJsonMappingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
@@ -30,10 +29,16 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.*;
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getAmount;
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.getItemSubject;
+import static it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils.isFromAuthenticatedOrigin;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
@@ -137,20 +142,20 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                             FISCAL_CODE_ANONYMOUS
             );
 
-            if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())
-                    && isFromAuthenticatedOrigin(bizEvent)) {
-                eventData.setPayerFiscalCode(
-                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
-                                bizEvent.getPayer().getEntityUniqueIdentifierValue())
-                );
-            } else if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null
-                    && bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
-                    && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())
-                    && isFromAuthenticatedOrigin(bizEvent)) {
-                eventData.setPayerFiscalCode(
-                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
-                                bizEvent.getTransactionDetails().getUser().getFiscalCode())
-                );
+            if (isFromAuthenticatedOrigin(bizEvent)) {
+                if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null
+                        && bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
+                        && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())) {
+                    eventData.setPayerFiscalCode(
+                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+                                    bizEvent.getTransactionDetails().getUser().getFiscalCode())
+                    );
+                } else if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
+                    eventData.setPayerFiscalCode(
+                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+                                    bizEvent.getPayer().getEntityUniqueIdentifierValue())
+                    );
+                }
             }
         } catch (PDVTokenizerException e) {
             handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());
