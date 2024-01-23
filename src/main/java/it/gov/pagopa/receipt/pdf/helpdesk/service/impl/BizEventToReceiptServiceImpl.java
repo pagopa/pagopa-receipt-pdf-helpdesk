@@ -264,7 +264,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         });
 
         if (!amount.get().equals(BigDecimal.ZERO)) {
-            eventData.setAmount(amount.get().toString());
+            eventData.setAmount(BizEventToReceiptUtils.formatAmount(amount.get().toString()));
         }
 
         eventData.setCart(cartItems);

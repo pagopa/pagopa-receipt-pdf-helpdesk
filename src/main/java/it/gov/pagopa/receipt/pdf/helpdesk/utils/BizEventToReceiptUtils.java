@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -98,7 +99,7 @@ public class BizEventToReceiptUtils {
                     });
 
                     if (!amount.get().equals(BigDecimal.ZERO)) {
-                        eventData.setAmount(amount.get().toString());
+                        eventData.setAmount(formatAmount(amount.get().toString()));
                     }
 
                     eventData.setCart(cartItems);
@@ -191,7 +192,7 @@ public class BizEventToReceiptUtils {
         eventData.setTransactionCreationDate(
                 service.getTransactionCreationDate(bizEvent));
         BigDecimal amount = getAmount(bizEvent);
-        eventData.setAmount(!amount.equals(BigDecimal.ZERO) ? amount.toString() : null);
+        eventData.setAmount(!amount.equals(BigDecimal.ZERO) ? formatAmount(amount.toString()) : null);
 
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
@@ -294,7 +295,7 @@ public class BizEventToReceiptUtils {
             });
 
             if (!amount.get().equals(BigDecimal.ZERO)) {
-                eventData.setAmount(amount.get().toString());
+                eventData.setAmount(formatAmount(amount.get().toString()));
             }
 
             eventData.setCart(cartItems);
@@ -411,7 +412,7 @@ public class BizEventToReceiptUtils {
     public static BigDecimal getAmount(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null
                 && bizEvent.getTransactionDetails().getTransaction().getGrandTotal() != 0) {
-            return formatAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+            return formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
         }
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
             return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
@@ -419,10 +420,18 @@ public class BizEventToReceiptUtils {
         return BigDecimal.ZERO;
     }
 
-    public static BigDecimal formatAmount(long grandTotal) {
+    public static BigDecimal formatEuroCentAmount(long grandTotal) {
         BigDecimal amount = new BigDecimal(grandTotal);
         BigDecimal divider = new BigDecimal(100);
         return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
+    }
+
+    public static String formatAmount(String value) {
+        BigDecimal valueToFormat = new BigDecimal(value);
+        NumberFormat numberFormat = NumberFormat.getInstance(Locale.ITALY);
+        numberFormat.setMaximumFractionDigits(2);
+        numberFormat.setMinimumFractionDigits(2);
+        return numberFormat.format(valueToFormat);
     }
 
     public static boolean isFromAuthenticatedOrigin(BizEvent bizEvent) {
