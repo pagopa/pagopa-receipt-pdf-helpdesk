@@ -36,9 +36,11 @@ public class BizEventToReceiptUtils {
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
 
     private static final List<String> listOrigin;
+    private static final List<String> listUnwantedRemittanceInfo;
 
     static {
         listOrigin = Arrays.asList(System.getenv().getOrDefault("LIST_VALID_ORIGINS", "IO").split(","));
+        listUnwantedRemittanceInfo = Arrays.asList(System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(","));
     }
 
     public static Receipt getEvent(
@@ -327,7 +329,11 @@ public class BizEventToReceiptUtils {
      * @return the remittance information
      */
     public static String getItemSubject(BizEvent bizEvent) {
-        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getRemittanceInformation() != null) {
+        if (
+                bizEvent.getPaymentInfo() != null &&
+                        bizEvent.getPaymentInfo().getRemittanceInformation() != null &&
+                        !listUnwantedRemittanceInfo.contains(bizEvent.getPaymentInfo().getRemittanceInformation())
+        ) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
         List<Transfer> transferList = bizEvent.getTransferList();
