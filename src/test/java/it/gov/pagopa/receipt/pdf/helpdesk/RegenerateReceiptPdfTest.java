@@ -8,6 +8,7 @@ import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
@@ -17,18 +18,21 @@ import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.request.RegenerateReceiptRequest;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
-import it.gov.pagopa.receipt.pdf.helpdesk.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.util.HttpResponseMessageMock;
+import it.gov.pagopa.receipt.pdf.helpdesk.utils.BizEventToReceiptUtils;
 import it.gov.pagopa.receipt.pdf.helpdesk.utils.ObjectMapperUtils;
 import lombok.SneakyThrows;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -57,7 +61,6 @@ class RegenerateReceiptPdfTest {
     private BizEventCosmosClient bizEventCosmosClient;
     private ExecutionContext executionContextMock;
     private RegenerateReceiptPdf sut;
-
     @Spy
     private OutputBinding<Receipt> documentdb;
 
@@ -167,19 +170,26 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
     }
 
     @Test
     @SneakyThrows
-    void regeneratePDFErrorReceiptNotFound() {
+    void regeneratePDFReceiptNotFoundSuccess() {
+    	int numRetry = 0;
+        Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
 
         doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
-        doThrow(new ReceiptNotFoundException("KO")).when(receiptCosmosClientMock).getReceiptDocument(anyString());
-
-
+        when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenThrow(new ReceiptNotFoundException("KO")).thenReturn(receipt);
+        doReturn(new PdfGeneration()).when(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
+        doReturn(true).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
+        
+        Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+        MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
+        when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -188,9 +198,11 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_OK,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
+        
+        mockedStaticBizEventToReceiptUtils.close();
 
     }
 
@@ -215,7 +227,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
         verify(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
@@ -225,9 +237,31 @@ class RegenerateReceiptPdfTest {
 
     private Receipt buildReceiptWithStatus(ReceiptStatusType receiptStatusType, int numRetry) {
         return Receipt.builder()
+        		.id("id")
                 .eventData(EventData.builder()
                         .debtorFiscalCode("cd debtor")
                         .payerFiscalCode("cf payer")
+                        .build())
+                .mdAttach(ReceiptMetadata.builder().name("DEBTOR_NAME").url("DEBTOR_URL").build())
+                .mdAttachPayer(ReceiptMetadata.builder().name("PAYER_NAME").url("PAYER_URL").build())
+                .eventId("biz-event-id")
+                .status(receiptStatusType)
+                .numRetry(numRetry)
+                .generated_at(ORIGINAL_GENERATED_AT)
+                .inserted_at(0L)
+                .notified_at(0L)
+                .build();
+    }
+    
+    private Receipt buildNewCreatedReceiptWithStatus(ReceiptStatusType receiptStatusType, int numRetry) {
+    	CartItem ci = CartItem.builder().payeeName("payee").subject("TARI").build();
+        return Receipt.builder()
+        		.id("new_created_receipt_id")
+                .eventData(EventData.builder()
+                        .debtorFiscalCode("tokenizedDebtorFiscalCode")
+                        .payerFiscalCode("tokenizedPayerFiscalCode")
+                        .cart(List.of(ci))
+                        .transactionCreationDate(new Date().toString())
                         .build())
                 .mdAttach(ReceiptMetadata.builder().name("DEBTOR_NAME").url("DEBTOR_URL").build())
                 .mdAttachPayer(ReceiptMetadata.builder().name("PAYER_NAME").url("PAYER_URL").build())

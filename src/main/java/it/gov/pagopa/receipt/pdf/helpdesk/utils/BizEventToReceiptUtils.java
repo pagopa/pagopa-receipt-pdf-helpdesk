@@ -34,6 +34,9 @@ import java.util.regex.Pattern;
 public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
+    private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault(
+            "ECOMMERCE_FILTER_ENABLED", "true"));
+    private static final String ECOMMERCE = "CHECKOUT";
 
     private static final List<String> listOrigin;
     private static final List<String> listUnwantedRemittanceInfo;
@@ -210,8 +213,7 @@ public class BizEventToReceiptUtils {
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
         item.setSubject(getItemSubject(bizEvent));
-        List<CartItem> cartItems = Collections.singletonList(item);
-        return cartItems;
+        return Collections.singletonList(item);
     }
 
     /**
@@ -230,7 +232,7 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
-        if (!bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
+        if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus())) {
             logger.debug("[{}] event with id {} discarded because in status {}",
                     context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
             return true;
@@ -239,6 +241,16 @@ public class BizEventToReceiptUtils {
         if (!hasValidFiscalCode(bizEvent)) {
             logger.debug("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
                     context.getFunctionName(), bizEvent.getId());
+            return true;
+        }
+        
+        if (Boolean.TRUE.equals(ECOMMERCE_FILTER_ENABLED)
+                && bizEvent.getTransactionDetails() != null
+                && bizEvent.getTransactionDetails().getInfo() != null
+                && ECOMMERCE.equals(bizEvent.getTransactionDetails().getInfo().getClientId())
+        ) {
+            logger.debug("[{}] event with id {} discarded because from e-commerce {}",
+                    context.getFunctionName(), bizEvent.getId(), bizEvent.getTransactionDetails().getInfo().getClientId());
             return true;
         }
 
@@ -478,5 +490,27 @@ public class BizEventToReceiptUtils {
     }
 
     private BizEventToReceiptUtils() {
+    }
+    
+    public static Integer getTotalNotice(BizEvent bizEvent, ExecutionContext context, Logger logger) {
+    	if (bizEvent.getPaymentInfo() != null) {
+    		String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
+
+    		if (totalNotice != null) {
+    			int intTotalNotice;
+
+    			try {
+    				intTotalNotice = Integer.parseInt(totalNotice);
+    			} catch (NumberFormatException e) {
+    				logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
+    						context.getFunctionName(), bizEvent.getId(),
+    						totalNotice,
+    						e);
+    				throw e;
+    			}
+    			return intTotalNotice;
+    		}
+    	}
+    	return 1;
     }
 }
