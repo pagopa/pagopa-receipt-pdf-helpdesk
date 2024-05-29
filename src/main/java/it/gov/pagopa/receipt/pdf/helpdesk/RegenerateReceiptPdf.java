@@ -9,6 +9,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
@@ -24,7 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +43,12 @@ import static it.gov.pagopa.receipt.pdf.helpdesk.utils.GenerateReceiptUtils.*;
  */
 public class RegenerateReceiptPdf {
 
-    private final Logger logger = LoggerFactory.getLogger(RegenerateReceiptPdf.class);
+    private static final Logger logger = LoggerFactory.getLogger(RegenerateReceiptPdf.class);
+    
+    private static final String TEMPLATE_PREFIX = "pagopa-ricevuta";
+    private static final String PAYER_TEMPLATE_SUFFIX = "p";
+    private static final String DEBTOR_TEMPLATE_SUFFIX = "d";
+    
     private final BizEventCosmosClient bizEventCosmosClient;
     private final ReceiptCosmosClient receiptCosmosClient;
     private final GenerateReceiptPdfService generateReceiptPdfService;
@@ -295,16 +303,26 @@ public class RegenerateReceiptPdf {
     		Receipt receipt) {
 
     	boolean success = false;
-
+    	
+    	HttpResponseMessage errorResponse = request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+		.body(ProblemJson.builder()
+				.title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+				.detail("Receipt could not be updated with the new attachments")
+				.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+				.build())
+		.build();
+    	
     	//Verify receipt status
     	if (receipt.getEventData() != null
-    			&& isHasAllAttachments(receipt)
+    			/*&& isHasAllAttachments(receipt)*/
     			) {
 
     		logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
     				context.getFunctionName(),
     				receipt.getId(),
     				bizEvent.getId());
+    		
+    		RegenerateReceiptPdf.checkOrCreateAttachments(receipt);
 
     		//Generate and save PDF
     		PdfGeneration pdfGeneration;
@@ -321,8 +339,9 @@ public class RegenerateReceiptPdf {
     			success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
 
     		} catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                logger.error("[{}] IOException while generating the receipt with id {}: {}", 
+                		context.getFunctionName(), receipt.getId(), e.getMessage(), e);
+                errorResponse = request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ProblemJson.builder()
                                 .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
                                 .detail("Unexpected error while managing the receipt file")
@@ -330,8 +349,9 @@ public class RegenerateReceiptPdf {
                                 .build())
                         .build();
             } catch (Exception e) {
-    			logger.error(e.getMessage(), e);
-    			return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+            	logger.error("[{}] Generic Exception while generating the receipt with id {}: {}", 
+                		context.getFunctionName(), receipt.getId(), e.getMessage(), e);
+    			errorResponse = request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
     					.body(ProblemJson.builder()
     							.title(HttpStatus.INTERNAL_SERVER_ERROR.name())
     							.detail("Error during receipt generation: " + e.getMessage())
@@ -343,32 +363,36 @@ public class RegenerateReceiptPdf {
     		}
 
     	}
+    	
     	return success ?
     			request.createResponseBuilder(HttpStatus.OK)
     			.body("OK")
     			.build() :
-    			request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-    			.body(ProblemJson.builder()
-    					.title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-    					.detail("Receipt could not be updated with the new attachments")
-    					.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-    					.build())
-    			.build();
+    			errorResponse;
     }
     
-    private static boolean isHasAllAttachments(Receipt receipt) {
+    private static void checkOrCreateAttachments(Receipt receipt) {
         String debtorCF = receipt.getEventData().getDebtorFiscalCode();
         String payerCF = receipt.getEventData().getPayerFiscalCode();
-        boolean hasAllAttachments;
-        if (payerCF == null) {
-          hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
-        } else if (debtorCF.equals(payerCF)) {
-            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+        if (payerCF != null) {
+        	 if (payerCF.equals(debtorCF) && !receiptMetadataAlreadyExist(receipt.getMdAttach())) {
+        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
+                 String blobName = String.format("%s-%s-%s-%s", TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
+        		 receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
+        	 } else if (!receiptMetadataAlreadyExist(receipt.getMdAttachPayer())){
+        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
+                 String blobName = String.format("%s-%s-%s-%s", TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
+        		 receipt.setMdAttachPayer(ReceiptMetadata.builder().name(blobName).build());
+        	 }
         } else {
-            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null &&
-                    receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
+        	if (!receiptMetadataAlreadyExist(receipt.getMdAttach())) {
+        		String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
+                String blobName = String.format("%s-%s-%s-%s", TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), DEBTOR_TEMPLATE_SUFFIX);
+       		    receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
+        	}
         }
-        return hasAllAttachments;
+        
+        logger.info("[] checkOrCreateAttachments - debtorCF {}, payerCF {}, receipt {}", debtorCF, payerCF, receipt);
     }
     
 	private void updateReceiptInfo(OutputBinding<Receipt> documentdb, boolean isCart, BizEvent bizEvent,
@@ -443,6 +467,14 @@ public class RegenerateReceiptPdf {
         return request.createResponseBuilder(HttpStatus.OK)
     			.body(receipt)
     			.build();
+    }
+    
+    private static boolean receiptMetadataAlreadyExist(ReceiptMetadata receiptMetadata) {
+        return receiptMetadata != null
+                && receiptMetadata.getUrl() != null
+                && receiptMetadata.getName() != null
+                && !receiptMetadata.getUrl().isEmpty()
+                && !receiptMetadata.getName().isEmpty();
     }
 
 }
