@@ -371,6 +371,8 @@ public class RegenerateReceiptPdf {
         return hasAllAttachments;
     }
     
+    /*
+    
     private HttpResponseMessage generateAndSavePDF(HttpRequestMessage<Optional<String>> request, OutputBinding<Receipt> documentdb,
     		final ExecutionContext context, boolean isCart, BizEvent bizEvent, List<BizEvent> listBizEvent,
     		Receipt receipt) {
@@ -510,7 +512,7 @@ public class RegenerateReceiptPdf {
     			.body(receipt)
     			.build();
     }
-
+*/
 	private void updateReceiptInfo(OutputBinding<Receipt> documentdb, boolean isCart, BizEvent bizEvent,
 			List<BizEvent> listBizEvent, Receipt receipt) throws PDVTokenizerException, JsonProcessingException {
 		if (receipt.getEventData().getDebtorFiscalCode() == null ||
