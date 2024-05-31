@@ -418,7 +418,7 @@ public class BizEventToReceiptUtils {
                         }
 
                         // Add receipt to items to be saved on CosmosDB
-                        bizEventToReceiptService.handleSaveReceipt(receipt);
+                        bizEventToReceiptService.handleSaveReceipt(receipt, ReceiptStatusType.INSERTED);
 
                         if (!isReceiptStatusValid(receipt)) {
                             throw new Exception("receipt not valid");

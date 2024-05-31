@@ -170,14 +170,30 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public void handleSaveReceipt(Receipt receipt) {
+    public void handleSaveReceipt(Receipt receipt, ReceiptStatusType receiptStatus) {
         int statusCode;
+        
+        switch (receiptStatus!=null ? receiptStatus: ReceiptStatusType.INSERTED) {
+    	case INSERTED:
+    		receipt.setStatus(ReceiptStatusType.INSERTED);
+    		receipt.setInserted_at(System.currentTimeMillis());
+    		break;
+    	case GENERATED:
+    		receipt.setStatus(ReceiptStatusType.GENERATED);
+    		receipt.setGenerated_at(System.currentTimeMillis());
+    		receipt.setInserted_at(System.currentTimeMillis());
+    		break;
+    	case IO_NOTIFIED:
+    		receipt.setStatus(ReceiptStatusType.IO_NOTIFIED);
+    		receipt.setNotified_at(System.currentTimeMillis());
+    		receipt.setInserted_at(System.currentTimeMillis());
+    		break;
+    	default:
+    		break;
+    	}
 
         try {
-            receipt.setStatus(ReceiptStatusType.INSERTED);
-            receipt.setInserted_at(System.currentTimeMillis());
             CosmosItemResponse<Receipt> response = receiptCosmosClient.saveReceipts(receipt);
-
             statusCode = response.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();

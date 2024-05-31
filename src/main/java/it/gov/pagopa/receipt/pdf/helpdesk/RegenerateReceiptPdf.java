@@ -10,6 +10,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
@@ -313,15 +314,15 @@ public class RegenerateReceiptPdf {
 		.build();
     	
     	//Verify receipt status
-    	if (receipt.getEventData() != null
-    			/*&& isHasAllAttachments(receipt)*/
-    			) {
+    	if (receipt.getEventData() != null) {
 
     		logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
     				context.getFunctionName(),
     				receipt.getId(),
     				bizEvent.getId());
     		
+    		
+    		boolean isToUpdateMetadata = !isHasAllAttachments(receipt);
     		RegenerateReceiptPdf.checkOrCreateAttachments(receipt);
 
     		//Generate and save PDF
@@ -329,14 +330,14 @@ public class RegenerateReceiptPdf {
     		Path workingDirPath = Path.of("-");
     		try {
     			workingDirPath = createWorkingDirectory();
-    			
-    			this.updateReceiptInfo(documentdb, isCart, bizEvent, listBizEvent, receipt);
 
     			pdfGeneration = generateReceiptPdfService.generateReceipts(receipt, isCart ?
     					listBizEvent : Collections.singletonList(bizEvent), workingDirPath);
 
     			//Verify PDF generation success
     			success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
+    			
+    			this.updateReceiptInfo(documentdb, isCart, isToUpdateMetadata, bizEvent, listBizEvent, receipt);
 
     		} catch (IOException e) {
                 logger.error("[{}] IOException while generating the receipt with id {}: {}", 
@@ -372,22 +373,24 @@ public class RegenerateReceiptPdf {
     }
     
     private static void checkOrCreateAttachments(Receipt receipt) {
+    	final String blobNameFormat = "%s-%s-%s-%s";
+    	final String blobNameDateFormat = "yyMMdd";
         String debtorCF = receipt.getEventData().getDebtorFiscalCode();
         String payerCF = receipt.getEventData().getPayerFiscalCode();
         if (payerCF != null) {
-        	 if (payerCF.equals(debtorCF) && !receiptMetadataAlreadyExist(receipt.getMdAttach())) {
-        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
-                 String blobName = String.format("%s-%s-%s-%s", TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
+        	 if (payerCF.equals(debtorCF) && !receiptMetadataExist(receipt.getMdAttach())) {
+        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+                 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
         		 receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
-        	 } else if (!receiptMetadataAlreadyExist(receipt.getMdAttachPayer())){
-        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
-                 String blobName = String.format("%s-%s-%s-%s", TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
+        	 } else if (!receiptMetadataExist(receipt.getMdAttachPayer())){
+        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+                 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
         		 receipt.setMdAttachPayer(ReceiptMetadata.builder().name(blobName).build());
         	 }
         } else {
-        	if (!receiptMetadataAlreadyExist(receipt.getMdAttach())) {
-        		String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
-                String blobName = String.format("%s-%s-%s-%s", TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), DEBTOR_TEMPLATE_SUFFIX);
+        	if (!receiptMetadataExist(receipt.getMdAttach())) {
+        		String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+                String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), DEBTOR_TEMPLATE_SUFFIX);
        		    receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
         	}
         }
@@ -395,8 +398,9 @@ public class RegenerateReceiptPdf {
         logger.info("[] checkOrCreateAttachments - debtorCF {}, payerCF {}, receipt {}", debtorCF, payerCF, receipt);
     }
     
-	private void updateReceiptInfo(OutputBinding<Receipt> documentdb, boolean isCart, BizEvent bizEvent,
+	private void updateReceiptInfo(OutputBinding<Receipt> documentdb, boolean isCart, boolean isToUpdateMetadata, BizEvent bizEvent,
 			List<BizEvent> listBizEvent, Receipt receipt) throws PDVTokenizerException, JsonProcessingException {
+		
 		if (receipt.getEventData().getDebtorFiscalCode() == null ||
 				(receipt.getEventData().getPayerFiscalCode() == null
 				&& isFromAuthenticatedOrigin(bizEvent))) {
@@ -408,6 +412,14 @@ public class RegenerateReceiptPdf {
 		if (receipt.getEventData().getCart() == null || receipt.getEventData().getCart()
 				.isEmpty() || receipt.getEventData().getCart().get(0).getSubject() == null) {
 			receipt.getEventData().setCart(BizEventToReceiptUtils.getCartItems(bizEvent));
+			documentdb.setValue(receipt);
+		}
+		
+		if (isToUpdateMetadata) {
+			receipt.setReasonErr(null);
+			receipt.setNumRetry(0);
+			receipt.setStatus(ReceiptStatusType.IO_NOTIFIED);
+			receipt.setNotified_at(System.currentTimeMillis());
 			documentdb.setValue(receipt);
 		}
 	}
@@ -436,7 +448,7 @@ public class RegenerateReceiptPdf {
 
             if (BizEventToReceiptUtils.isReceiptStatusValid(receipt)) {
                 // Add receipt to items to be saved on CosmosDB
-                bizEventToReceiptService.handleSaveReceipt(receipt);
+                bizEventToReceiptService.handleSaveReceipt(receipt, ReceiptStatusType.IO_NOTIFIED);
             }
             
             if (!isReceiptStatusValid(receipt)) {
@@ -469,12 +481,27 @@ public class RegenerateReceiptPdf {
     			.build();
     }
     
-    private static boolean receiptMetadataAlreadyExist(ReceiptMetadata receiptMetadata) {
+    private static boolean receiptMetadataExist(ReceiptMetadata receiptMetadata) {
         return receiptMetadata != null
                 && receiptMetadata.getUrl() != null
                 && receiptMetadata.getName() != null
                 && !receiptMetadata.getUrl().isEmpty()
                 && !receiptMetadata.getName().isEmpty();
+    }
+    
+    private static boolean isHasAllAttachments(Receipt receipt) {
+        String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+        String payerCF = receipt.getEventData().getPayerFiscalCode();
+        boolean hasAllAttachments;
+        if (payerCF == null) {
+          hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+        } else if (debtorCF.equals(payerCF)) {
+            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null;
+        } else {
+            hasAllAttachments = receipt.getMdAttach() != null && receipt.getMdAttach().getUrl() != null &&
+                    receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
+        }
+        return hasAllAttachments;
     }
 
 }

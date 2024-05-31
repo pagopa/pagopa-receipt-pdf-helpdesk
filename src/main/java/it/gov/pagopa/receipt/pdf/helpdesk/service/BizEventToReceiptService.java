@@ -1,10 +1,10 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 
 import java.util.List;
@@ -38,7 +38,7 @@ public interface BizEventToReceiptService {
      */
     void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData)  throws JsonProcessingException, PDVTokenizerException;
 
-    void handleSaveReceipt(Receipt receipt);
+    void handleSaveReceipt(Receipt receipt, ReceiptStatusType regenerationStatus);
 
     /**
      * Retrieve all events that are associated to the cart with the specified id
