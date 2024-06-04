@@ -189,6 +189,8 @@ class RegenerateReceiptPdfTest {
         Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
         MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
         when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        when(BizEventToReceiptUtils.getTotalNotice(any(), any(), any())).thenReturn(1);
+        when(BizEventToReceiptUtils.isReceiptStatusValid(any())).thenReturn(true);
         
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
