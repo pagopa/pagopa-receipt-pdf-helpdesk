@@ -81,8 +81,17 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
                 logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
                 return false;
             }
+            
+            if (pdfGeneration.isGenerateOnlyDebtor()) {
+                if (debtorMetadata.getStatusCode() != SC_OK) {
+                    String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
+                    throw new ReceiptGenerationNotToRetryException(errMsg);
+                }
+                return result;
+            }
 
-            if (debtorMetadata.getStatusCode() == HttpStatus.SC_OK) {
+            if (debtorMetadata.getStatusCode() == HttpStatus.SC_OK && 
+            		(receipt.getMdAttach() == null || receipt.getMdAttach().getName() == null || receipt.getMdAttach().getUrl() == null)) {
                 ReceiptMetadata receiptMetadata = new ReceiptMetadata();
                 receiptMetadata.setName(debtorMetadata.getDocumentName());
                 receiptMetadata.setUrl(debtorMetadata.getDocumentUrl());
@@ -91,13 +100,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
             } 
         }
         
-        if (pdfGeneration.isGenerateOnlyDebtor()) {
-            if (debtorMetadata.getStatusCode() != SC_OK) {
-                String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
-                throw new ReceiptGenerationNotToRetryException(errMsg);
-            }
-            return result;
-        }
+        
 
 
         PdfMetadata payerMetadata = pdfGeneration.getPayerMetadata();
@@ -106,7 +109,8 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
             return false;
         }
 
-        if (payerMetadata.getStatusCode() == HttpStatus.SC_OK) {
+        if (payerMetadata.getStatusCode() == HttpStatus.SC_OK && 
+        		(receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getName() == null || receipt.getMdAttachPayer().getUrl() == null)) {
             ReceiptMetadata receiptMetadata = new ReceiptMetadata();
             receiptMetadata.setName(payerMetadata.getDocumentName());
             receiptMetadata.setUrl(payerMetadata.getDocumentUrl());
