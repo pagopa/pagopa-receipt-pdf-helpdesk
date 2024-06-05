@@ -1,11 +1,9 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotValidException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -24,6 +22,10 @@ public class GenerateReceiptUtils {
     private static final String PATTERN_FORMAT = "yyyy.MM.dd.HH.mm.ss";
 
     private static final String WORKING_DIRECTORY_PATH = System.getenv().getOrDefault("WORKING_DIRECTORY_PATH", "");
+    
+    private GenerateReceiptUtils() {
+    	
+    }
 
     public static Path createWorkingDirectory() throws IOException {
         File workingDirectory = new File(WORKING_DIRECTORY_PATH);

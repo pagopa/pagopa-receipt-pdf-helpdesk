@@ -138,7 +138,7 @@ public class RecoverFailedCart {
             }
 
             // Add receipt to items to be saved on CosmosDB
-            this.bizEventToReceiptService.handleSaveReceipt(receipt);
+            this.bizEventToReceiptService.handleSaveReceipt(receipt, ReceiptStatusType.INSERTED);
 
             if (!isReceiptStatusValid(receipt)) {
                 logger.error("[{}] Failed to process cart with id {}: fail to save receipt",

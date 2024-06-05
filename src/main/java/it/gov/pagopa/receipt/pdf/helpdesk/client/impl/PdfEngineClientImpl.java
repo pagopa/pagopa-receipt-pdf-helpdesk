@@ -123,7 +123,6 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         } catch (Exception e) {
             handleExceptionErrorMessage(pdfEngineResponse, e);
         }
-
         return pdfEngineResponse;
     }
 

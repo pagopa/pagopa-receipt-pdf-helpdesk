@@ -52,6 +52,17 @@ public class ObjectMapperUtils {
     public static <T> T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
         return objectMapper.readValue(string, outClass);
     }
+    
+    /**
+     * Maps {@code source} to {@code destination}.
+     *
+     * @param source      object to map from
+     * @param destination object to map to
+     */
+    public static <S, D> D map(final S source, D destination) {
+        modelMapper.map(source, destination);
+        return destination;
+    }
 
 
 }

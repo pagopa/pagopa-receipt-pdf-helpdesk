@@ -21,7 +21,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
-import static it.gov.pagopa.receipt.pdf.helpdesk.service.impl.GenerateReceiptPdfServiceImpl.ALREADY_CREATED;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -342,6 +340,41 @@ class GenerateReceiptPdfServiceImplTest {
         assertNull(receipt.getReasonErr());
         assertNull(receipt.getReasonErrPayer());
     }
+    
+    @Test
+    void verifyDebtorPayerWhenReceiptMetadataNullSuccess() throws ReceiptGenerationNotToRetryException {
+        Receipt receipt = buildReceiptForVerify(false, false);
+
+        PdfGeneration pdfGeneration = PdfGeneration.builder()
+                .debtorMetadata(PdfMetadata.builder()
+                        .statusCode(SC_OK)
+                        .documentName(DEBTOR_DOCUMENT_NAME)
+                        .documentUrl(DEBTOR_DOCUMENT_URL)
+                        .build())
+                .payerMetadata(PdfMetadata.builder()
+                        .statusCode(SC_OK)
+                        .documentName(PAYER_DOCUMENT_NAME)
+                        .documentUrl(PAYER_DOCUMENT_URL)
+                        .build())
+                .generateOnlyDebtor(false)
+                .build();
+
+        boolean result = sut.verifyAndUpdateReceipt(receipt, pdfGeneration);
+
+        assertTrue(result);
+        assertNotNull(receipt.getMdAttach());
+        assertNotNull(receipt.getMdAttach().getUrl());
+        assertNotNull(receipt.getMdAttach().getName());
+        assertEquals(DEBTOR_DOCUMENT_NAME, receipt.getMdAttach().getName());
+        assertEquals(DEBTOR_DOCUMENT_URL, receipt.getMdAttach().getUrl());
+        assertNotNull(receipt.getMdAttachPayer());
+        assertNotNull(receipt.getMdAttachPayer().getUrl());
+        assertNotNull(receipt.getMdAttachPayer().getName());
+        assertEquals(PAYER_DOCUMENT_NAME, receipt.getMdAttachPayer().getName());
+        assertEquals(PAYER_DOCUMENT_URL, receipt.getMdAttachPayer().getUrl());
+        assertNull(receipt.getReasonErr());
+        assertNull(receipt.getReasonErrPayer());
+    }
 
     @Test
     void verifyPayerNullOrSameDebtorPayerFailMetadataNull() throws ReceiptGenerationNotToRetryException {
@@ -451,6 +484,8 @@ class GenerateReceiptPdfServiceImplTest {
         assertNull(receipt.getReasonErr());
         assertNull(receipt.getReasonErrPayer());
     }
+    
+    
 
     @Test
     void verifyDifferentDebtorPayerFailDebtorGenerationInError() throws ReceiptGenerationNotToRetryException {
@@ -583,6 +618,7 @@ class GenerateReceiptPdfServiceImplTest {
     private Receipt buildReceiptForVerify(boolean debtorAlreadyCreated, boolean payerAlreadyCreated) {
         return Receipt.builder()
                 .id("id")
+                .eventData(EventData.builder().build())
                 .mdAttach(buildMetadata(debtorAlreadyCreated))
                 .mdAttachPayer(buildMetadata(payerAlreadyCreated))
                 .numRetry(0)
