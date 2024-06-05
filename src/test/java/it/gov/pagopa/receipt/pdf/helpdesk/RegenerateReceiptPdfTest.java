@@ -32,8 +32,11 @@ import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
+import org.modelmapper.ModelMapper;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -251,6 +254,37 @@ class RegenerateReceiptPdfTest {
         
         mockedStaticBizEventToReceiptUtils.close();
 
+    }
+    
+    @Test
+    @SneakyThrows
+    void regeneratePDFCartReceiptNotFoundException() { 
+        BizEvent bizEventCopy = ObjectMapperUtils.map(bizEvent, new BizEvent());
+        bizEventCopy.getPaymentInfo().setTotalNotice("2");
+        List<BizEvent> bizEventList = Arrays.asList(bizEventCopy);
+        
+        doReturn(bizEventList).when(bizEventToReceiptService).getCartBizEvents(anyString());
+        when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenThrow(new ReceiptNotFoundException("KO"));
+
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
+        when(request.getQueryParameters()).thenReturn(Collections.singletonMap("isCart", "true"));
+        
+        Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, 0);
+        MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
+        when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        when(BizEventToReceiptUtils.getTotalNotice(any(), any(), any())).thenReturn(2);
+        when(BizEventToReceiptUtils.isReceiptStatusValid(any())).thenReturn(true);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
+
+        // test execution
+        assertEquals(HttpStatus.SC_UNPROCESSABLE_ENTITY,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+        verify(receiptCosmosClientMock).getReceiptDocument(anyString());        
+        
+        mockedStaticBizEventToReceiptUtils.close();
     }
     
     @Test
