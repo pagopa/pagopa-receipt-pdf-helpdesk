@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
@@ -188,6 +190,21 @@ class BizEventToReceiptUtilsTest {
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
         assertNull(receipt.getEventData().getPayerFiscalCode());
         assertEquals(REMITTANCE_INFORMATION_PAYMENT_INFO, receipt.getEventData().getCart().get(0).getSubject());
+    }
+    
+    @Test
+    void eCommerceAndTotalNoticeTest() throws PDVTokenizerException, JsonProcessingException {
+    	environmentVariables.set("ECOMMERCE_FILTER_ENABLED", "true");
+    	BizEvent bizEvent = BizEvent.builder()
+    			.eventStatus(BizEventStatusType.DONE)
+    			.transactionDetails(TransactionDetails.builder().info(InfoTransaction.builder().clientId("CHECKOUT").build()).user(User.builder().fiscalCode(DEBTOR_FISCAL_CODE).build()).build())
+    			.debtor(Debtor.builder().entityUniqueIdentifierValue(DEBTOR_FISCAL_CODE).build())
+    			.paymentInfo(PaymentInfo.builder().totalNotice("1").build())
+    			.build();
+    	boolean result = BizEventToReceiptUtils.isBizEventInvalid(bizEvent, mock(ExecutionContext.class), logger);
+    	Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, mock(ExecutionContext.class), logger);
+    	assertEquals(true, result);
+        assertEquals(1, totalNotice);
     }
 
     private BizEvent generateValidBizEvent(boolean withoutRemittanceInformation, boolean withTransferList) {

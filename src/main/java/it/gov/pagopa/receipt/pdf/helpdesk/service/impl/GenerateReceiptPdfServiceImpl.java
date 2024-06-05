@@ -82,14 +82,6 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
                 return false;
             }
             
-            if (pdfGeneration.isGenerateOnlyDebtor()) {
-                if (debtorMetadata.getStatusCode() != SC_OK) {
-                    String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
-                    throw new ReceiptGenerationNotToRetryException(errMsg);
-                }
-                return result;
-            }
-
             if (debtorMetadata.getStatusCode() == HttpStatus.SC_OK && 
             		(receipt.getMdAttach() == null || receipt.getMdAttach().getName() == null || receipt.getMdAttach().getUrl() == null)) {
                 ReceiptMetadata receiptMetadata = new ReceiptMetadata();
@@ -98,11 +90,16 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 
                 receipt.setMdAttach(receiptMetadata);
             } 
+            
+            if (pdfGeneration.isGenerateOnlyDebtor()) {
+                if (debtorMetadata.getStatusCode() != SC_OK) {
+                    String errMsg = String.format("Debtor receipt generation fail with status %s", debtorMetadata.getStatusCode());
+                    throw new ReceiptGenerationNotToRetryException(errMsg);
+                }
+                return result;
+            }   
         }
         
-        
-
-
         PdfMetadata payerMetadata = pdfGeneration.getPayerMetadata();
         if (payerMetadata == null) {
             logger.error("Unexpected result for payer pdf receipt generation. Receipt id {}", receipt.getId());
