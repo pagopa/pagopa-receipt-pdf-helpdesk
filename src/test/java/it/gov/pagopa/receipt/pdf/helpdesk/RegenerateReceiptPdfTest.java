@@ -13,6 +13,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.request.RegenerateReceiptRequest;
@@ -174,7 +175,56 @@ class RegenerateReceiptPdfTest {
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
     }
+    
+    @Test
+    @SneakyThrows
+    void regeneratePDFErrorMissingBizEvent() {
 
+        when(bizEventCosmosClient.getBizEventDocument(anyString())).thenThrow(BizEventNotFoundException.class);
+        
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
+        
+        // test execution
+        assertEquals(HttpStatus.SC_BAD_REQUEST,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+    }
+
+    @Test
+    @SneakyThrows
+    void regeneratePDFReceiptNotFoundError() {
+    	int numRetry = 0;
+        Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+
+        doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
+        when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenThrow(new ReceiptNotFoundException("KO")).thenReturn(receipt);
+        
+        Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+        MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
+        when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        when(BizEventToReceiptUtils.getTotalNotice(any(), any(), any())).thenReturn(1);
+        // not valid receipt
+        when(BizEventToReceiptUtils.isReceiptStatusValid(any())).thenReturn(false);
+        
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
+
+        // test execution
+        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+
+        verify(receiptCosmosClientMock).getReceiptDocument(anyString());
+        
+        mockedStaticBizEventToReceiptUtils.close();
+
+    }
+    
     @Test
     @SneakyThrows
     void regeneratePDFReceiptNotFoundSuccess() {
