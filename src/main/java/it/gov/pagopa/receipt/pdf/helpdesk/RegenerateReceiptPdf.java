@@ -3,11 +3,14 @@ package it.gov.pagopa.receipt.pdf.helpdesk;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
+
+import io.micrometer.core.instrument.util.StringUtils;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
@@ -15,6 +18,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
@@ -193,7 +197,7 @@ public class RegenerateReceiptPdf {
     			//Verify PDF generation success
     			success = generateReceiptPdfService.verifyAndUpdateReceipt(receipt, pdfGeneration);
     			
-    			this.updateReceiptInfo(documentdb, isCart, isToUpdateMetadata, bizEvent, listBizEvent, receipt);
+    			this.updateReceiptInfo(documentdb, isCart, isToUpdateMetadata, bizEvent, listBizEvent, receipt, pdfGeneration);
 
     		} catch (IOException e) {
                 logger.error("[{}] IOException while generating the receipt with id {}: {}", 
@@ -253,7 +257,7 @@ public class RegenerateReceiptPdf {
     }
     
 	private void updateReceiptInfo(OutputBinding<Receipt> documentdb, boolean isCart, boolean isToUpdateMetadata, BizEvent bizEvent,
-			List<BizEvent> listBizEvent, Receipt receipt) throws PDVTokenizerException, JsonProcessingException {
+			List<BizEvent> listBizEvent, Receipt receipt, PdfGeneration pdfGeneration) throws PDVTokenizerException, JsonProcessingException {
 		
 		if (receipt.getEventData().getDebtorFiscalCode() == null ||
 				(receipt.getEventData().getPayerFiscalCode() == null
@@ -270,11 +274,28 @@ public class RegenerateReceiptPdf {
 		}
 		
 		if (isToUpdateMetadata) {
+			this.updateReceiptStatus(receipt, pdfGeneration);
+			documentdb.setValue(receipt);
+		}
+	}
+
+	private void updateReceiptStatus(Receipt receipt, PdfGeneration pdfGeneration) {
+		PdfMetadata debtorMetadata = pdfGeneration.getDebtorMetadata() != null ? pdfGeneration.getDebtorMetadata() : PdfMetadata.builder().build();
+		PdfMetadata payerMetadata = pdfGeneration.getPayerMetadata() != null ? pdfGeneration.getPayerMetadata() : PdfMetadata.builder().build();
+		boolean pdfSuccessfullyGen =  StringUtils.isEmpty(debtorMetadata.getErrorMessage()) && StringUtils.isEmpty(payerMetadata.getErrorMessage());
+		if (pdfSuccessfullyGen) {
 			receipt.setReasonErr(null);
+			receipt.setReasonErrPayer(null);
 			receipt.setNumRetry(0);
+			receipt.setNotificationNumRetry(0);
 			receipt.setStatus(ReceiptStatusType.IO_NOTIFIED);
 			receipt.setNotified_at(System.currentTimeMillis());
-			documentdb.setValue(receipt);
+		} else {
+			receipt.setReasonErr(StringUtils.isNotEmpty(debtorMetadata.getErrorMessage()) ? 
+					ReasonError.builder().code(debtorMetadata.getStatusCode()).message(debtorMetadata.getErrorMessage()).build() : null);
+			receipt.setReasonErrPayer(StringUtils.isNotEmpty(payerMetadata.getErrorMessage()) ? 
+					ReasonError.builder().code(payerMetadata.getStatusCode()).message(payerMetadata.getErrorMessage()).build() : null);
+			receipt.setStatus(ReceiptStatusType.FAILED);
 		}
 	}
     

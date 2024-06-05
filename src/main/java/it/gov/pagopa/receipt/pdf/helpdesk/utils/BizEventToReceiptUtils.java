@@ -232,7 +232,7 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
-        if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus())) {
+        if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus()) && !BizEventStatusType.INGESTED.equals(bizEvent.getEventStatus())) {
             logger.debug("[{}] event with id {} discarded because in status {}",
                     context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
             return true;

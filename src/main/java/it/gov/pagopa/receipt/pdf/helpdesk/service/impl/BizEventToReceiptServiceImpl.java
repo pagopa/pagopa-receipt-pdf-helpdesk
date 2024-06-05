@@ -185,7 +185,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     		break;
     	case IO_NOTIFIED:
     		receipt.setStatus(ReceiptStatusType.IO_NOTIFIED);
-    		receipt.setNotified_at(System.currentTimeMillis());
     		receipt.setInserted_at(System.currentTimeMillis());
     		break;
     	default:
