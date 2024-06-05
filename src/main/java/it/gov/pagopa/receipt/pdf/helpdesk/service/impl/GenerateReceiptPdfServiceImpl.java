@@ -76,20 +76,13 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         boolean result = true;
 
         if (receipt.getEventData() != null && !"ANONIMO".equals(receipt.getEventData().getDebtorFiscalCode())) {
+        	
+        	if (debtorMetadata == null) {
+    		    logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
+    		    return false;
+    		}
 
-            if (debtorMetadata == null) {
-                logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
-                return false;
-            }
-            
-            if (debtorMetadata.getStatusCode() == HttpStatus.SC_OK && 
-            		(receipt.getMdAttach() == null || receipt.getMdAttach().getName() == null || receipt.getMdAttach().getUrl() == null)) {
-                ReceiptMetadata receiptMetadata = new ReceiptMetadata();
-                receiptMetadata.setName(debtorMetadata.getDocumentName());
-                receiptMetadata.setUrl(debtorMetadata.getDocumentUrl());
-
-                receipt.setMdAttach(receiptMetadata);
-            } 
+            this.debtorMetadataManagement(receipt, debtorMetadata); 
             
             if (pdfGeneration.isGenerateOnlyDebtor()) {
                 if (debtorMetadata.getStatusCode() != SC_OK) {
@@ -106,14 +99,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
             return false;
         }
 
-        if (payerMetadata.getStatusCode() == HttpStatus.SC_OK && 
-        		(receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getName() == null || receipt.getMdAttachPayer().getUrl() == null)) {
-            ReceiptMetadata receiptMetadata = new ReceiptMetadata();
-            receiptMetadata.setName(payerMetadata.getDocumentName());
-            receiptMetadata.setUrl(payerMetadata.getDocumentUrl());
-
-            receipt.setMdAttachPayer(receiptMetadata);
-        } 
+        this.payerMetadataManagment(receipt, payerMetadata); 
 
         if (debtorMetadata.getStatusCode() != SC_OK
                 || payerMetadata.getStatusCode() != SC_OK) {
@@ -123,6 +109,28 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         }
         return result;
     }
+
+	private void debtorMetadataManagement(Receipt receipt, PdfMetadata debtorMetadata) {
+		if (debtorMetadata.getStatusCode() == HttpStatus.SC_OK && 
+				(receipt.getMdAttach() == null || receipt.getMdAttach().getName() == null || receipt.getMdAttach().getUrl() == null)) {
+		    ReceiptMetadata receiptMetadata = new ReceiptMetadata();
+		    receiptMetadata.setName(debtorMetadata.getDocumentName());
+		    receiptMetadata.setUrl(debtorMetadata.getDocumentUrl());
+
+		    receipt.setMdAttach(receiptMetadata);
+		}
+	}
+	
+	private void payerMetadataManagment(Receipt receipt, PdfMetadata payerMetadata) {
+		if (payerMetadata.getStatusCode() == HttpStatus.SC_OK && 
+        		(receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getName() == null || receipt.getMdAttachPayer().getUrl() == null)) {
+            ReceiptMetadata receiptMetadata = new ReceiptMetadata();
+            receiptMetadata.setName(payerMetadata.getDocumentName());
+            receiptMetadata.setUrl(payerMetadata.getDocumentUrl());
+
+            receipt.setMdAttachPayer(receiptMetadata);
+        }
+	}
     
     private PdfGeneration pdfGeneration(Receipt receipt, List<BizEvent> listOfBizEvents, Path workingDirPath,
     		String debtorCF, String payerCF) {

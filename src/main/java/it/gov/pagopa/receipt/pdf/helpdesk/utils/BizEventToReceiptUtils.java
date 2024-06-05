@@ -502,11 +502,11 @@ public class BizEventToReceiptUtils {
     			try {
     				intTotalNotice = Integer.parseInt(totalNotice);
     			} catch (NumberFormatException e) {
-    				logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
+    				String errorMsg = String.format("[%s] event with id %s discarded because has an invalid total notice value: %s",
     						context.getFunctionName(), bizEvent.getId(),
-    						totalNotice,
-    						e);
-    				throw e;
+    						totalNotice);
+    				logger.error(errorMsg,e);
+    				throw new NumberFormatException(errorMsg);
     			}
     			return intTotalNotice;
     		}

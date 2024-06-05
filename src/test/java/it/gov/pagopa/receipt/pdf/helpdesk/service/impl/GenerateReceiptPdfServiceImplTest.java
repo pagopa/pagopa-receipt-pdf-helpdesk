@@ -21,7 +21,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
