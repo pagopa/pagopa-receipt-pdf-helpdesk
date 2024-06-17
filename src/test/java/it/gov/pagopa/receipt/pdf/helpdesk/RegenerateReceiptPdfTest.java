@@ -290,7 +290,9 @@ class RegenerateReceiptPdfTest {
     @SneakyThrows
     void regeneratePDFReceiptFileGenerationError() {
     	int numRetry = 0;
-        Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+        Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry); 
+        receipt.setMdAttachPayer(null);
+        receipt.setMdAttach(null);
 
         doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
         when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenReturn(receipt);
