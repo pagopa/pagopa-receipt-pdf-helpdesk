@@ -86,6 +86,7 @@ class RegenerateReceiptPdfTest {
     void regeneratePDFSuccess() {
         int numRetry = 0;
         Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+        receipt.setMdAttachPayer(null);
 
         doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
         doReturn(receipt).when(receiptCosmosClientMock).getReceiptDocument(anyString());
