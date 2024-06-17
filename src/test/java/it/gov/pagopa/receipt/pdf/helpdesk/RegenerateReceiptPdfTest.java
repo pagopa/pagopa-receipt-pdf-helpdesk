@@ -16,6 +16,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStat
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfGeneration;
+import it.gov.pagopa.receipt.pdf.helpdesk.model.PdfMetadata;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.request.RegenerateReceiptRequest;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.GenerateReceiptPdfService;
@@ -283,6 +284,32 @@ class RegenerateReceiptPdfTest {
         
         mockedStaticBizEventToReceiptUtils.close();
 
+    }
+    
+    @Test
+    @SneakyThrows
+    void regeneratePDFReceiptNotFoundFileGenerationError() {
+    	int numRetry = 0;
+        Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+
+        doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
+        when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenThrow(new ReceiptNotFoundException("KO")).thenReturn(receipt);
+        doReturn(PdfGeneration.builder().debtorMetadata(PdfMetadata.builder().errorMessage("error pdf").statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR).build()).build())
+        .when(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
+        doReturn(true).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
+        
+        
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
+
+        // test execution
+        assertEquals(HttpStatus.SC_OK,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+
+        verify(receiptCosmosClientMock).getReceiptDocument(anyString());
     }
     
     @Test
