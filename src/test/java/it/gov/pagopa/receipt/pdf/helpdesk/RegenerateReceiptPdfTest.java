@@ -288,15 +288,15 @@ class RegenerateReceiptPdfTest {
     
     @Test
     @SneakyThrows
-    void regeneratePDFReceiptNotFoundFileGenerationError() {
+    void regeneratePDFReceiptFileGenerationError() {
     	int numRetry = 0;
         Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
 
         doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
-        when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenThrow(new ReceiptNotFoundException("KO")).thenReturn(receipt);
+        when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenReturn(receipt);
         doReturn(PdfGeneration.builder().debtorMetadata(PdfMetadata.builder().errorMessage("error pdf").statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR).build()).build())
         .when(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
-        doReturn(true).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
+        doReturn(false).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
         
         
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
@@ -307,7 +307,7 @@ class RegenerateReceiptPdfTest {
         }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
 
         // test execution
-        assertEquals(HttpStatus.SC_OK,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+        assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
 
         verify(receiptCosmosClientMock).getReceiptDocument(anyString());
     }
