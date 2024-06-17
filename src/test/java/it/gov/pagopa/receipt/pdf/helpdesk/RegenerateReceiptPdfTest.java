@@ -110,6 +110,35 @@ class RegenerateReceiptPdfTest {
     
     @Test
     @SneakyThrows
+    void regeneratePDFSameDebtorAndPayerSuccess() {
+        int numRetry = 0;
+        Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+        receipt.getEventData().setDebtorFiscalCode("same cf debtor and payer");
+        receipt.getEventData().setPayerFiscalCode("same cf debtor and payer");
+        receipt.getMdAttach().setUrl(null);
+
+        doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
+        doReturn(receipt).when(receiptCosmosClientMock).getReceiptDocument(anyString());
+        doReturn(new PdfGeneration()).when(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
+        doReturn(true).when(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
+
+        HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            com.microsoft.azure.functions.HttpStatus status = (com.microsoft.azure.functions.HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(com.microsoft.azure.functions.HttpStatus.class));
+
+        // test execution
+        assertEquals(200,assertDoesNotThrow(() -> sut.run(request, "1", documentdb, executionContextMock)).getStatusCode());
+
+        verify(receiptCosmosClientMock).getReceiptDocument(anyString());
+        verify(generateReceiptPdfServiceMock).generateReceipts(any(), any(), any());
+        verify(generateReceiptPdfServiceMock).verifyAndUpdateReceipt(any(), any());
+    }
+    
+    @Test
+    @SneakyThrows
     void regeneratePDFIOException() {
         int numRetry = 0;
         Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
@@ -228,9 +257,6 @@ class RegenerateReceiptPdfTest {
     void regeneratePDFReceiptNotFoundSuccess() {
     	int numRetry = 0;
         Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
-        receipt.getEventData().setDebtorFiscalCode("same cf debtor and payer");
-        receipt.getEventData().setPayerFiscalCode("same cf debtor and payer");
-        receipt.getMdAttach().setUrl(null);
 
         doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
         when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenThrow(new ReceiptNotFoundException("KO")).thenReturn(receipt);
