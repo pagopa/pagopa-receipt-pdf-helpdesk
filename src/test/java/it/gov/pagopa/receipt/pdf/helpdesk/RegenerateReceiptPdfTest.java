@@ -228,6 +228,9 @@ class RegenerateReceiptPdfTest {
     void regeneratePDFReceiptNotFoundSuccess() {
     	int numRetry = 0;
         Receipt receipt = buildReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
+        receipt.getEventData().setDebtorFiscalCode("same cf debtor and payer");
+        receipt.getEventData().setPayerFiscalCode("same cf debtor and payer");
+        receipt.getMdAttach().setUrl(null);
 
         doReturn(bizEvent).when(bizEventCosmosClient).getBizEventDocument(anyString());
         when(receiptCosmosClientMock.getReceiptDocument(anyString())).thenThrow(new ReceiptNotFoundException("KO")).thenReturn(receipt);
