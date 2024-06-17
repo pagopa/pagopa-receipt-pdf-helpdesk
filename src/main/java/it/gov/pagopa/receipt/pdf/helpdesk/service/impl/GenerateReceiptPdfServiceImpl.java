@@ -26,6 +26,8 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.micrometer.core.instrument.util.StringUtils;
+
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.net.URL;
@@ -77,7 +79,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 
         if (receipt.getEventData() != null && !"ANONIMO".equals(receipt.getEventData().getDebtorFiscalCode())) {
         	
-        	if (debtorMetadata == null) {
+        	if (debtorMetadata == null || StringUtils.isNotEmpty(debtorMetadata.getErrorMessage())) {
     		    logger.error("Unexpected result for debtor pdf receipt generation. Receipt id {}", receipt.getId());
     		    return false;
     		}
@@ -94,7 +96,7 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
         }
         
         PdfMetadata payerMetadata = pdfGeneration.getPayerMetadata();
-        if (payerMetadata == null) {
+        if (payerMetadata == null || StringUtils.isNotEmpty(payerMetadata.getErrorMessage())) {
             logger.error("Unexpected result for payer pdf receipt generation. Receipt id {}", receipt.getId());
             return false;
         }

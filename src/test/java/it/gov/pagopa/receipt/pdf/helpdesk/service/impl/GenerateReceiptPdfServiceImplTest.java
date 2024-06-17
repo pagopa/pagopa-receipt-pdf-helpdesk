@@ -426,7 +426,6 @@ class GenerateReceiptPdfServiceImplTest {
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
                         .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-                        .errorMessage(ERROR_MESSAGE)
                         .build())
                 .generateOnlyDebtor(true)
                 .build();
@@ -443,7 +442,6 @@ class GenerateReceiptPdfServiceImplTest {
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
                         .statusCode(ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode())
-                        .errorMessage(ERROR_MESSAGE)
                         .build())
                 .generateOnlyDebtor(true)
                 .build();
@@ -494,7 +492,6 @@ class GenerateReceiptPdfServiceImplTest {
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
                         .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-                        .errorMessage(ERROR_MESSAGE)
                         .build())
                 .payerMetadata(PdfMetadata.builder()
                         .statusCode(SC_OK)
@@ -505,6 +502,27 @@ class GenerateReceiptPdfServiceImplTest {
                 .build();
 
         assertThrows(ReceiptGenerationNotToRetryException.class, () -> sut.verifyAndUpdateReceipt(receipt, pdfGeneration));
+
+    }
+    
+    @Test
+    void verifyDifferentDebtorPayerFailDebtorGenerationInErrorWithMessage() throws ReceiptGenerationNotToRetryException {
+        Receipt receipt = buildReceiptForVerify(false, false);
+
+        PdfGeneration pdfGeneration = PdfGeneration.builder()
+                .debtorMetadata(PdfMetadata.builder()
+                        .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                        .errorMessage(ERROR_MESSAGE)
+                        .build())
+                .payerMetadata(PdfMetadata.builder()
+                        .statusCode(SC_OK)
+                        .documentName(PAYER_DOCUMENT_NAME)
+                        .documentUrl(PAYER_DOCUMENT_URL)
+                        .build())
+                .generateOnlyDebtor(false)
+                .build();
+
+        assertEquals(false, sut.verifyAndUpdateReceipt(receipt, pdfGeneration));
 
     }
 
@@ -520,7 +538,6 @@ class GenerateReceiptPdfServiceImplTest {
                         .build())
                 .payerMetadata(PdfMetadata.builder()
                         .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-                        .errorMessage(ERROR_MESSAGE)
                         .build())
                 .generateOnlyDebtor(false)
                 .build();
@@ -528,12 +545,50 @@ class GenerateReceiptPdfServiceImplTest {
         assertThrows(ReceiptGenerationNotToRetryException.class, () -> sut.verifyAndUpdateReceipt(receipt, pdfGeneration));
 
     }
+    
+    @Test
+    void verifyDifferentDebtorPayerFailPayerGenerationInErrorWithMessage() throws ReceiptGenerationNotToRetryException {
+        Receipt receipt = buildReceiptForVerify(true, true);
+
+        PdfGeneration pdfGeneration = PdfGeneration.builder()
+                .debtorMetadata(PdfMetadata.builder()
+                        .statusCode(SC_OK)
+                        .documentName(DEBTOR_DOCUMENT_NAME)
+                        .documentUrl(DEBTOR_DOCUMENT_URL)
+                        .build())
+                .payerMetadata(PdfMetadata.builder()
+                        .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                        .errorMessage(ERROR_MESSAGE)
+                        .build())
+                .generateOnlyDebtor(false)
+                .build();
+
+        assertEquals(false, sut.verifyAndUpdateReceipt(receipt, pdfGeneration));
+
+    }
 
     @Test
     void verifyDifferentDebtorPayerFailGenerationInErrorForBoth() throws ReceiptGenerationNotToRetryException {
         Receipt receipt = buildReceiptForVerify(true, true);
 
-        String errorMessagePayer = "error message payer";
+        PdfGeneration pdfGeneration = PdfGeneration.builder()
+                .debtorMetadata(PdfMetadata.builder()
+                        .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                        .build())
+                .payerMetadata(PdfMetadata.builder()
+                        .statusCode(HttpStatus.SC_BAD_REQUEST)
+                        .build())
+                .generateOnlyDebtor(false)
+                .build();
+
+        assertThrows(ReceiptGenerationNotToRetryException.class, () -> sut.verifyAndUpdateReceipt(receipt, pdfGeneration));
+
+    }
+    
+    @Test
+    void verifyDifferentDebtorPayerFailGenerationInErrorForBothWithMessage() throws ReceiptGenerationNotToRetryException {
+        Receipt receipt = buildReceiptForVerify(true, true);
+
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
                         .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
@@ -541,12 +596,12 @@ class GenerateReceiptPdfServiceImplTest {
                         .build())
                 .payerMetadata(PdfMetadata.builder()
                         .statusCode(HttpStatus.SC_BAD_REQUEST)
-                        .errorMessage(errorMessagePayer)
+                        .errorMessage(ERROR_MESSAGE)
                         .build())
                 .generateOnlyDebtor(false)
                 .build();
 
-        assertThrows(ReceiptGenerationNotToRetryException.class, () -> sut.verifyAndUpdateReceipt(receipt, pdfGeneration));
+        assertEquals(false, sut.verifyAndUpdateReceipt(receipt, pdfGeneration));
 
     }
 
@@ -577,15 +632,12 @@ class GenerateReceiptPdfServiceImplTest {
     void verifyDifferentDebtorPayerFailThrowsReceiptGenerationNotToRetryException() {
         Receipt receipt = buildReceiptForVerify(true, true);
 
-        String errorMessagePayer = "error message payer";
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
                         .statusCode(ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode())
-                        .errorMessage(ERROR_MESSAGE)
                         .build())
                 .payerMetadata(PdfMetadata.builder()
                         .statusCode(HttpStatus.SC_BAD_REQUEST)
-                        .errorMessage(errorMessagePayer)
                         .build())
                 .generateOnlyDebtor(false)
                 .build();
@@ -598,15 +650,12 @@ class GenerateReceiptPdfServiceImplTest {
     void verifyDifferentDebtorPayerFailBothThrowsReceiptGenerationNotToRetryException() {
         Receipt receipt = buildReceiptForVerify(true, true);
 
-        String errorMessagePayer = "error message payer";
         PdfGeneration pdfGeneration = PdfGeneration.builder()
                 .debtorMetadata(PdfMetadata.builder()
                         .statusCode(ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode())
-                        .errorMessage(ERROR_MESSAGE)
                         .build())
                 .payerMetadata(PdfMetadata.builder()
                         .statusCode(ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode())
-                        .errorMessage(errorMessagePayer)
                         .build())
                 .generateOnlyDebtor(false)
                 .build();
