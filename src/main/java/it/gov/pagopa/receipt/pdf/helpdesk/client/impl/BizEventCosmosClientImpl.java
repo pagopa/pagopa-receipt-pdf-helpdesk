@@ -54,7 +54,7 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.eventStatus = '%s' and c.id = '%s'", BizEventStatusType.DONE, eventId);
+        String query = String.format("SELECT * FROM c WHERE c.eventStatus IN ('%s','%s') AND c.id = '%s'", BizEventStatusType.DONE, BizEventStatusType.INGESTED, eventId);
 
         //Query the container
         CosmosPagedIterable<BizEvent> queryResponse = cosmosContainer
