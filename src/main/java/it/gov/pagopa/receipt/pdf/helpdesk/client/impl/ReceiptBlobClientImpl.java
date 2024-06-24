@@ -76,9 +76,10 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
         //Create the container and return a container client object
         BlobContainerClient blobContainerClient = this.blobServiceClient.getBlobContainerClient(containerName);
+        String fileNamePdf = fileName + FILE_EXTENSION;
 
         //Get a reference to a blob
-        BlobClient blobClient = blobContainerClient.getBlobClient(fileName);
+        BlobClient blobClient = blobContainerClient.getBlobClient(fileNamePdf);
 
         //Upload the blob
         Response<BlockBlobItem> blockBlobItemResponse = blobClient.uploadWithResponse(

@@ -242,10 +242,17 @@ public class RegenerateReceiptPdf {
         		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
                  String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
         		 receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
-        	 } else if (!receiptMetadataExist(receipt.getMdAttachPayer())){
-        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
-                 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
-        		 receipt.setMdAttachPayer(ReceiptMetadata.builder().name(blobName).build());
+        	 } else { 
+        		 if (!receiptMetadataExist(receipt.getMdAttachPayer())){
+        			 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+        			 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
+        			 receipt.setMdAttachPayer(ReceiptMetadata.builder().name(blobName).build());
+        		 }
+        		 if (!receiptMetadataExist(receipt.getMdAttach())) {
+             		String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+                    String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), DEBTOR_TEMPLATE_SUFFIX);
+            		receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
+             	}
         	 }
         } else {
         	if (!receiptMetadataExist(receipt.getMdAttach())) {
