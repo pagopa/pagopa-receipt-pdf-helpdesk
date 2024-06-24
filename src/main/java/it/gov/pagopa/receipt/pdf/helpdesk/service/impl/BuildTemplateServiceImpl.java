@@ -238,7 +238,7 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
         if (event.getPayer() != null && event.getPayer().getFullName() != null) {
             return event.getPayer().getFullName();
         }
-        throw new TemplateDataMappingException(formatErrorMessage(TemplateDataField.USER_DATA_FULL_NAME, event.getId(), true), ReasonErrorCode.ERROR_TEMPLATE_PDF.getCode());
+        return "";
     }
 
     private String getUserTaxCode(BizEvent event) throws TemplateDataMappingException {
