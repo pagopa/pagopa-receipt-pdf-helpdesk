@@ -35,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -386,6 +387,8 @@ class RecoverFailedReceiptTest {
         verifyNoInteractions(queueClientMock);
     }
 
+
+
     @Test
     void generateAnonymousDebtorBizEvent() throws BizEventNotFoundException {
         BizEvent bizEvent = generateAnonymDebtorBizEvent();
@@ -431,27 +434,6 @@ class RecoverFailedReceiptTest {
     }
 
     @Test
-    void runDiscardedWithCartEvent() throws BizEventNotFoundException {
-        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID)).thenReturn(generateValidBizEvent("2"));
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verifyNoInteractions(receiptCosmosServiceMock);
-        verifyNoInteractions(queueClientMock);
-    }
-
-    @Test
     void runDiscardedWithCartEventWithInvalidTotalNotice() throws BizEventNotFoundException {
         when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
                 .thenReturn(generateValidBizEvent("invalid string"));
@@ -471,6 +453,30 @@ class RecoverFailedReceiptTest {
 
         verifyNoInteractions(receiptCosmosServiceMock);
         verifyNoInteractions(queueClientMock);
+    }
+
+    @Test
+    void runDiscardedWithInvalidCartAmounts() throws BizEventNotFoundException {
+        BizEvent bizEvent = generateValidBizEvent(null);
+        bizEvent.getTransactionDetails().getTransaction().setAmount(10);
+        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
+                .thenReturn(bizEvent);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verifyNoInteractions(receiptCosmosServiceMock);
+        verifyNoInteractions(queueClientMock);
+
     }
 
     @Test
@@ -539,11 +545,13 @@ class RecoverFailedReceiptTest {
         TransactionDetails transactionDetails = new TransactionDetails();
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transaction.setAmount(10000);
         transactionDetails.setTransaction(transaction);
         transactionDetails.setOrigin("INFO");
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
+        paymentInfo.setAmount("100.0");
 
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);
