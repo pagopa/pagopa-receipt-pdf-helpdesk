@@ -124,6 +124,7 @@ microservice-chart:
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "0"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_RECORDS: "200"
     ECOMMERCE_FILTER_ENABLED: "true"
+    UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
   envConfigMapExternals:
     template-maps:
       BRAND_LOGO_MAP: brand-logo-map

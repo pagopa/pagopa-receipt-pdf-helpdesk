@@ -254,6 +254,14 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
+        if (!isCartMod1(bizEvent)) {
+            logger.debug("[{}] event with id {} contain either an invalid amount value," +
+                            " or it is a legacy cart element",
+                    context.getFunctionName(), bizEvent.getId());
+            return true;
+        }
+
+
         if (bizEvent.getPaymentInfo() != null) {
             String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
 
@@ -513,4 +521,21 @@ public class BizEventToReceiptUtils {
     	}
     	return 1;
     }
+
+    /**
+     * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
+     * @param bizEvent bizEvent to validate
+     * @return flag to determine if it is a manageable cart, or otherwise, will return false if
+     * it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
+     */
+    public static boolean isCartMod1(BizEvent bizEvent) {
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
+            return bizEvent.getTransactionDetails() != null &&
+                    new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
+                                    formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
+                            .floatValue() == 0;
+        }
+        return true;
+    }
+
 }
