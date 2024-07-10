@@ -254,7 +254,7 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
-        if (!isCartOrHasValidAmount(bizEvent)) {
+        if (!isCartMod1(bizEvent)) {
             logger.debug("[{}] event with id {} contain either an invalid amount value," +
                             " or it is a legacy cart element",
                     context.getFunctionName(), bizEvent.getId());
@@ -522,7 +522,7 @@ public class BizEventToReceiptUtils {
     	return 1;
     }
 
-    public static boolean isCartOrHasValidAmount(BizEvent bizEvent) {
+    public static boolean isCartMod1(BizEvent bizEvent) {
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
             return bizEvent.getTransactionDetails() != null &&
                     new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
