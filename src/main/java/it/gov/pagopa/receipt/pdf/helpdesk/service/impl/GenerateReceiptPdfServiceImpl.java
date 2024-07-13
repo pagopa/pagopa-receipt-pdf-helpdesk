@@ -26,6 +26,7 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import io.micrometer.core.instrument.util.StringUtils;
 
 import java.io.BufferedInputStream;
@@ -34,6 +35,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.apache.http.HttpStatus.SC_OK;
 
@@ -103,10 +105,9 @@ public class GenerateReceiptPdfServiceImpl implements GenerateReceiptPdfService 
 
         this.payerMetadataManagment(receipt, payerMetadata); 
 
-        if (debtorMetadata.getStatusCode() != SC_OK
-                || payerMetadata.getStatusCode() != SC_OK) {
+        if ((debtorMetadata != null && debtorMetadata.getStatusCode() != SC_OK) || payerMetadata.getStatusCode() != SC_OK) {
             String errMsg = String.format("Receipt generation fail for debtor (status: %s) and/or payer (status: %s)",
-                    debtorMetadata.getStatusCode(), payerMetadata.getStatusCode());
+            		Optional.ofNullable(debtorMetadata).map(d -> d.getStatusCode()).orElse(null), payerMetadata.getStatusCode());
             throw new ReceiptGenerationNotToRetryException(errMsg);
         }
         return result;

@@ -15,6 +15,7 @@ import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptBlobClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.BlobStorageClientException;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.response.BlobStorageResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
         //Create the container and return a container client object
         BlobContainerClient blobContainerClient = this.blobServiceClient.getBlobContainerClient(containerName);
-        String fileNamePdf = fileName + FILE_EXTENSION;
+        String fileNamePdf = fileName.substring(fileName.lastIndexOf(".") + 1).equalsIgnoreCase(FILE_EXTENSION) ? fileName : fileName + FILE_EXTENSION;
 
         //Get a reference to a blob
         BlobClient blobClient = blobContainerClient.getBlobClient(fileNamePdf);

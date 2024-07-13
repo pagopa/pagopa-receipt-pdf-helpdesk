@@ -238,30 +238,35 @@ public class RegenerateReceiptPdf {
         String debtorCF = receipt.getEventData().getDebtorFiscalCode();
         String payerCF = receipt.getEventData().getPayerFiscalCode();
         if (payerCF != null) {
-        	 if (payerCF.equals(debtorCF) && !receiptMetadataExist(receipt.getMdAttach())) {
-        		 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
-                 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
-        		 receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
-        	 } else { 
-        		 if (!receiptMetadataExist(receipt.getMdAttachPayer())){
-        			 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
-        			 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
-        			 receipt.setMdAttachPayer(ReceiptMetadata.builder().name(blobName).build());
-        		 }
-        		 if (!receiptMetadataExist(receipt.getMdAttach())) {
-             		String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
-                    String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), DEBTOR_TEMPLATE_SUFFIX);
-            		receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
-             	}
-        	 }
+        	 createPayerAndDebtorMdAttach(receipt, blobNameFormat, blobNameDateFormat, debtorCF, payerCF);
         } else {
-        	if (!receiptMetadataExist(receipt.getMdAttach())) {
+        	if (!"ANONIMO".equals(debtorCF) && !receiptMetadataExist(receipt.getMdAttach())) {
         		String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
                 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), DEBTOR_TEMPLATE_SUFFIX);
        		    receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
         	}
         }
     }
+
+	private static void createPayerAndDebtorMdAttach(Receipt receipt, final String blobNameFormat,
+			final String blobNameDateFormat, String debtorCF, String payerCF) {
+		if (payerCF.equals(debtorCF) && !receiptMetadataExist(receipt.getMdAttach())) {
+			 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+		     String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
+			 receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
+		 } else { 
+			 if (!receiptMetadataExist(receipt.getMdAttachPayer())){
+				 String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+				 String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), PAYER_TEMPLATE_SUFFIX);
+				 receipt.setMdAttachPayer(ReceiptMetadata.builder().name(blobName).build());
+			 }
+			 if (!"ANONIMO".equals(debtorCF) && !receiptMetadataExist(receipt.getMdAttach())) {
+		 		String dateFormatted = LocalDate.now().format(DateTimeFormatter.ofPattern(blobNameDateFormat));
+		        String blobName = String.format(blobNameFormat, TEMPLATE_PREFIX, dateFormatted, receipt.getEventId(), DEBTOR_TEMPLATE_SUFFIX);
+				receipt.setMdAttach(ReceiptMetadata.builder().name(blobName).build());
+		 	}
+		 }
+	}
     
 	private void updateReceiptInfo(OutputBinding<Receipt> documentdb, boolean isCart, boolean isToUpdateMetadata, BizEvent bizEvent,
 			List<BizEvent> listBizEvent, Receipt receipt, PdfGeneration pdfGeneration) throws PDVTokenizerException, JsonProcessingException {
