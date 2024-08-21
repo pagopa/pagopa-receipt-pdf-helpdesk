@@ -68,8 +68,8 @@ public class RecoverFailedReceiptScheduled {
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context
     ) {

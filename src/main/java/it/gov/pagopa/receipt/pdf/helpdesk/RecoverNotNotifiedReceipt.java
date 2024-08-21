@@ -68,8 +68,8 @@ public class RecoverNotNotifiedReceipt {
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentReceipts,
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
