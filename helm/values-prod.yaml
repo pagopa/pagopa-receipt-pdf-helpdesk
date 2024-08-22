@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-helpdesk
-    tag: "0.10.1"
+    tag: "0.11.0"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -123,7 +123,7 @@ microservice-chart:
     RECOVER_FAILED_MASSIVE_MAX_DAYS: "1"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "1"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_RECORDS: "200"
-    ECOMMERCE_FILTER_ENABLED: "true"
+    ECOMMERCE_FILTER_ENABLED: "false"
     UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
   envConfigMapExternals:
     template-maps:
