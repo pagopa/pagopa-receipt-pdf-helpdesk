@@ -94,8 +94,8 @@ public class RegenerateReceiptPdf {
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+					containerName = "receipts",
+					connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<Receipt> documentdb,
             final ExecutionContext context) {
 

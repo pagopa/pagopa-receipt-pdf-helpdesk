@@ -61,8 +61,8 @@ public class RecoverFailedCartScheduled {
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "cart-for-receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "cart-for-receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<CartForReceipt>> cartForReceiptDocumentdb,
             final ExecutionContext context
     ) {

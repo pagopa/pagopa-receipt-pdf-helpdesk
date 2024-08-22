@@ -74,8 +74,8 @@ public class RecoverFailedCart {
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "cart-for-receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "cart-for-receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<CartForReceipt> cartForReceiptDocumentdb,
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());

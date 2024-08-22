@@ -48,8 +48,8 @@ public class ReceiptToReviewed {
             @CosmosDBOutput(
                     name = "ReceiptErrorDatastore",
                     databaseName = "db",
-                    collectionName = "receipts-message-errors",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "receipts-message-errors",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<ReceiptError> documentdb,
             final ExecutionContext context) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
