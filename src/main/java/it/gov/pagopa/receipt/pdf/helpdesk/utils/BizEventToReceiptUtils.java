@@ -228,18 +228,18 @@ public class BizEventToReceiptUtils {
     public static boolean isBizEventInvalid(BizEvent bizEvent, ExecutionContext context, Logger logger) {
 
         if (bizEvent == null) {
-            logger.debug("[{}] event is null", context.getFunctionName());
+            logger.error("[{}] event is null", context.getFunctionName());
             return true;
         }
 
         if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus()) && !BizEventStatusType.INGESTED.equals(bizEvent.getEventStatus())) {
-            logger.debug("[{}] event with id {} discarded because in status {}",
+            logger.error("[{}] event with id {} discarded because in status {}",
                     context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
             return true;
         }
 
         if (!hasValidFiscalCode(bizEvent)) {
-            logger.debug("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
+            logger.error("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
                     context.getFunctionName(), bizEvent.getId());
             return true;
         }
@@ -249,13 +249,13 @@ public class BizEventToReceiptUtils {
                 && bizEvent.getTransactionDetails().getInfo() != null
                 && ECOMMERCE.equals(bizEvent.getTransactionDetails().getInfo().getClientId())
         ) {
-            logger.debug("[{}] event with id {} discarded because from e-commerce {}",
+            logger.error("[{}] event with id {} discarded because from e-commerce {}",
                     context.getFunctionName(), bizEvent.getId(), bizEvent.getTransactionDetails().getInfo().getClientId());
             return true;
         }
 
         if (!isCartMod1(bizEvent)) {
-            logger.debug("[{}] event with id {} contain either an invalid amount value," +
+            logger.error("[{}] event with id {} contain either an invalid amount value," +
                             " or it is a legacy cart element",
                     context.getFunctionName(), bizEvent.getId());
             return true;
@@ -280,7 +280,7 @@ public class BizEventToReceiptUtils {
                 }
 
                 if (intTotalNotice > 1) {
-                    logger.debug("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
+                    logger.error("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
                             context.getFunctionName(), bizEvent.getId(),
                             intTotalNotice);
                     return true;

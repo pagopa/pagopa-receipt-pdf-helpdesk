@@ -123,7 +123,7 @@ microservice-chart:
     RECOVER_FAILED_MASSIVE_MAX_DAYS: "0"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "0"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_RECORDS: "200"
-    ECOMMERCE_FILTER_ENABLED: "true"
+    ECOMMERCE_FILTER_ENABLED: "false"
     UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
   envConfigMapExternals:
     template-maps:
