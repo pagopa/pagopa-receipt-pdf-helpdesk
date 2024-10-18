@@ -176,7 +176,7 @@ public class RegenerateReceiptPdf {
     	//Verify receipt status
     	if (receipt.getEventData() != null) {
 
-    		logger.info("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
+    		logger.debug("[{}] Generating pdf for Receipt with id {} and bizEvent with id {}",
     				context.getFunctionName(),
     				receipt.getId(),
     				bizEvent.getId());
@@ -330,7 +330,7 @@ public class RegenerateReceiptPdf {
 
         if (totalNotice == 1) {
 
-            logger.info("[{}] function called at {} for event with id {} and status {} and isCart {}",
+            logger.debug("[{}] function called at {} for event with id {} and status {} and isCart {}",
                     context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus(), totalNotice > 1);
 
             if (BizEventToReceiptUtils.isReceiptStatusValid(receipt)) {
