@@ -210,7 +210,7 @@ class BizEventToReceiptUtilsTest {
     }
     
     @Test
-    void invalidBizEventPartOfPaymentCartTest() throws PDVTokenizerException, IOException {
+    void invalidBizEventPartOfPaymentCartTest() throws IOException {
     	environmentVariables.set("ECOMMERCE_FILTER_ENABLED", "true");
     	
     	BizEvent bizEvent = ObjectMapperUtils.readModelFromFile("biz-events/bizEvent.json", BizEvent.class);
