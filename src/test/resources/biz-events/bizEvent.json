@@ -1,0 +1,112 @@
+{
+    "id": "tst2.235987018021263550-5036-5682-6785-876-0",
+    "version": "2",
+    "complete": "true",
+    "missingInfo": [],
+    "debtorPosition": {
+        "modelType": "1",
+        "iuv": "960000000094659945"
+    },
+    "creditor": {
+        "idPA": "01199250158",
+        "idBrokerPA": "01199250158",
+        "idStation": "01199250158_02",
+        "companyName": "Comune di Milano",
+        "officeName": "Comune di Milano office Name"
+    },
+    "psp": {
+        "idPsp": "BPPNIT2PXXX",
+        "idBrokerPsp": "03339200374",
+        "idChannel": "03339200374_01",
+        "psp": "Worldline Merchant Services Italia S.p.A."
+    },
+    "debtor": {
+        "fullName": "JOHN DOE",
+        "entityUniqueIdentifierType": "F",
+        "entityUniqueIdentifierValue": "PPPPPP01P30P736P"
+    },
+    "paymentInfo": {
+        "paymentDateTime": "2024-10-08T07:18:29Z",
+        "paymentToken": "223F665500001336354",
+        "amount": "750.38",
+        "fee": "0.0",
+        "totalNotice": "2",
+        "paymentMethod": "PO",
+        "remittanceInformation": "pagamento"
+    },
+    "transferList": [
+        {
+            "fiscalCodePA": "01199250158",
+            "companyName": "Comune di Milano",
+            "amount": "750.38",
+            "transferCategory": "9/0301105TS/3/CB617RP",
+            "remittanceInformation": "/RFB/9600000000/TXT/CB617RP-Mag2022/Apr2023--EC Lorem-E. 261,92 (san 4,91 int 0,95)"
+        }
+    ],
+    "transactionDetails": {
+        "origin": "PaymentManager",
+        "user": {
+            "fiscalCode": "PPPPPP01P30P736P",
+            "userId": "677676786",
+            "userStatus": "11",
+            "userStatusDescription": "REGISTERED_SPID",
+            "name": "JOHN",
+            "surname": "DOE"
+        },
+        "transaction": {
+            "idTransaction": "987334554",
+            "transactionId": "987334554",
+            "grandTotal": 75067,
+            "amount": 75038,
+            "fee": 29,
+            "transactionStatus": "Confermato",
+            "accountingStatus": "Contabilizzato",
+            "rrn": "223560110624",
+            "authorizationCode": "00",
+            "creationDate": "2024-10-08T07:18:29Z",
+            "numAut": "250863",
+            "accountCode": "0037r972892475982475842",
+            "psp": {
+                "idChannel": "05963231005_01_ONUS",
+                "businessName": "Worldline Merchant Services Italia S.p.A.",
+                "serviceName": "Pagamento con Carte"
+            },
+            "origin": "IO"
+        },
+        "wallet": {
+            "idWallet": "125714007",
+            "enableableFunctions": [
+                "pagoPA",
+                "BPD",
+                "FA"
+            ],
+            "pagoPa": true,
+            "onboardingChannel": "IO",
+            "favourite": false,
+            "createDate": "2024-10-08T07:18:29Z",
+            "info": {
+                "type": "CardInfo",
+                "blurredNumber": "0403",
+                "holder": "JOHN DOE",
+                "expireMonth": "06",
+                "expireYear": "2026",
+                "brand": "MASTERCARD",
+                "hashPan": "e88aadfd9f40e1482615fd3c8c44f05c53f93aed1bcea69e82b3e5e27668f822"
+            }
+        },
+        "info": {
+            "brand": "MASTERCARD",
+            "brandLogo": "https://checkout.pagopa.it/assets/creditcard/mastercard.png",
+            "clientId": "CHECKOUT_FAKE",
+            "paymentMethodName": "CARDS",
+            "type": "CP"
+        }
+    },
+    "timestamp": 1728371909181,
+    "properties": {
+        "Postman-Token": "1503a131-972d-402a-aea2-d03c82ad4d79"
+    },
+    "eventStatus": "DONE",
+    "eventRetryEnrichmentCount": 0,
+    "eventTriggeredBySchedule": false
+}
