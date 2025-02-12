@@ -2,6 +2,13 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Objects;
+
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 
@@ -62,6 +69,20 @@ public class ObjectMapperUtils {
     public static <S, D> D map(final S source, D destination) {
         modelMapper.map(source, destination);
         return destination;
+    }
+    
+    /**
+     * Maps file to object of defined Class
+     *
+     * @param relativePath relative file path
+     * @param outClass     class to be mapped to
+     */
+    public static <T> T readModelFromFile(String relativePath, Class<T> clazz) throws IOException {
+        ClassLoader classLoader = ObjectMapperUtils.class.getClassLoader();
+        File file = new File(Objects.requireNonNull(classLoader.getResource(relativePath)).getPath());
+        var content = Files.readString(file.toPath());
+        objectMapper.registerModule(new JavaTimeModule());
+        return objectMapper.readValue(content, clazz);
     }
 
 
