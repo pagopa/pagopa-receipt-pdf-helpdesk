@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -46,7 +45,7 @@ class ReceiptBlobClientImplTest {
     }
 
     @Test
-    void runOk() throws IOException {
+    void runOk() {
         BlobServiceClient mockServiceClient = mock(BlobServiceClient.class);
         BlobContainerClient mockContainer = mock(BlobContainerClient.class);
         BlobClient mockClient = mock(BlobClient.class);
@@ -78,7 +77,7 @@ class ReceiptBlobClientImplTest {
     }
 
     @Test
-    void runKo() throws IOException {
+    void runKo() {
         BlobServiceClient mockServiceClient = mock(BlobServiceClient.class);
         BlobContainerClient mockContainer = mock(BlobContainerClient.class);
         BlobClient mockClient = mock(BlobClient.class);
