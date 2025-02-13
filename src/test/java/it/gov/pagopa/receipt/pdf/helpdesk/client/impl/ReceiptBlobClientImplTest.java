@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -46,7 +45,7 @@ class ReceiptBlobClientImplTest {
     }
 
     @Test
-    void runOk() throws IOException {
+    void runOk() {
         BlobServiceClient mockServiceClient = mock(BlobServiceClient.class);
         BlobContainerClient mockContainer = mock(BlobContainerClient.class);
         BlobClient mockClient = mock(BlobClient.class);
@@ -58,10 +57,10 @@ class ReceiptBlobClientImplTest {
         when(mockClient.uploadWithResponse(any(), eq(null), eq(null))).thenReturn(
                 mockBlockItem
         );
-        String VALID_BLOB_NAME = "a valid blob name";
-        String VALID_BLOB_URL = "a valid blob url";
-        when(mockClient.getBlobName()).thenReturn(VALID_BLOB_NAME);
-        when(mockClient.getBlobUrl()).thenReturn(VALID_BLOB_URL);
+        String validBlobName = "a valid blob name";
+        String validBlobUrl = "a valid blob url";
+        when(mockClient.getBlobName()).thenReturn(validBlobName);
+        when(mockClient.getBlobUrl()).thenReturn(validBlobUrl);
 
         when(mockContainer.getBlobClient(any())).thenReturn(mockClient);
 
@@ -72,13 +71,13 @@ class ReceiptBlobClientImplTest {
         BlobStorageResponse response = receiptBlobClient.savePdfToBlobStorage(InputStream.nullInputStream(), "filename");
 
         assertEquals(HttpStatus.CREATED.value(), response.getStatusCode());
-        assertEquals(VALID_BLOB_NAME, response.getDocumentName());
-        assertEquals(VALID_BLOB_URL, response.getDocumentUrl());
+        assertEquals(validBlobName, response.getDocumentName());
+        assertEquals(validBlobUrl, response.getDocumentUrl());
 
     }
 
     @Test
-    void runKo() throws IOException {
+    void runKo() {
         BlobServiceClient mockServiceClient = mock(BlobServiceClient.class);
         BlobContainerClient mockContainer = mock(BlobContainerClient.class);
         BlobClient mockClient = mock(BlobClient.class);
