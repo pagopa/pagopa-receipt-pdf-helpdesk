@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static it.gov.pagopa.receipt.pdf.helpdesk.utils.RecoverNotNotifiedReceiptUtils.receiptMassiveRestore;
@@ -21,7 +22,7 @@ public class RecoverNotNotifiedReceiptScheduled {
 
     private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("NOT_NOTIFIED_AUTORECOVER_ENABLED", "true"));
 
-    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptMassive.class);
+    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptScheduled.class);
 
     private final ReceiptCosmosService receiptCosmosService;
 
@@ -62,8 +63,9 @@ public class RecoverNotNotifiedReceiptScheduled {
 
             logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-            List<Receipt> receiptList = receiptMassiveRestore(ReceiptStatusType.IO_ERROR_TO_NOTIFY, receiptCosmosService);
-            receiptList.addAll(receiptMassiveRestore(ReceiptStatusType.GENERATED, receiptCosmosService));
+            List<Receipt> receiptList = new ArrayList<>();
+            receiptList.addAll(process(context, ReceiptStatusType.IO_ERROR_TO_NOTIFY));
+            receiptList.addAll(process(context, ReceiptStatusType.GENERATED));
 
             if (receiptList.isEmpty()) {
                 logger.info("[{}] No Receipt to notify", context.getFunctionName());
@@ -73,6 +75,13 @@ public class RecoverNotNotifiedReceiptScheduled {
 
         }
 
+    }
+
+    private List<Receipt> process(ExecutionContext context, ReceiptStatusType statusType) {
+        List<Receipt> receiptList = receiptMassiveRestore(statusType, receiptCosmosService);
+        logger.info("[{}] Recovered {} receipts for status {} with ids: {}",
+                context.getFunctionName(), receiptList.size(), statusType, receiptList);
+        return receiptList;
     }
 
 }
