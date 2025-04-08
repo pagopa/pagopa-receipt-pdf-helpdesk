@@ -93,8 +93,9 @@ public class RecoverFailedReceiptScheduled {
                 logger.error("[{}] Error recovering {} failed receipts for status {}",
                         context.getFunctionName(), recoverResult.getErrorCounter(), statusType);
             }
+            List<String> idList = recoverResult.getReceiptList().parallelStream().map(Receipt::getId).toList();
             logger.info("[{}] Recovered {} receipts for status {} with ids: {}",
-                    context.getFunctionName(), recoverResult.getReceiptList().size(), statusType, recoverResult.getReceiptList());
+                    context.getFunctionName(), recoverResult.getReceiptList().size(), statusType, idList);
             return recoverResult.getReceiptList();
         } catch (NoSuchElementException e) {
             logger.error("[{}] Unexpected error during recover of failed receipt for status {}",

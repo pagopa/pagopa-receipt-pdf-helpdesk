@@ -79,8 +79,10 @@ public class RecoverNotNotifiedReceiptScheduled {
 
     private List<Receipt> process(ExecutionContext context, ReceiptStatusType statusType) {
         List<Receipt> receiptList = receiptMassiveRestore(statusType, receiptCosmosService);
+
+        List<String> idList = receiptList.parallelStream().map(Receipt::getId).toList();
         logger.info("[{}] Recovered {} receipts for status {} with ids: {}",
-                context.getFunctionName(), receiptList.size(), statusType, receiptList);
+                context.getFunctionName(), receiptList.size(), statusType, idList);
         return receiptList;
     }
 
