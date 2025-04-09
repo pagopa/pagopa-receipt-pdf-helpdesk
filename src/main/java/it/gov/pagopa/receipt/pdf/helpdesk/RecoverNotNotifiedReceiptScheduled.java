@@ -65,12 +65,7 @@ public class RecoverNotNotifiedReceiptScheduled {
             List<Receipt> receiptList = receiptMassiveRestore(ReceiptStatusType.IO_ERROR_TO_NOTIFY, receiptCosmosService);
             receiptList.addAll(receiptMassiveRestore(ReceiptStatusType.GENERATED, receiptCosmosService));
 
-            if (receiptList.isEmpty()) {
-                logger.info("[{}] No Receipt to notify", context.getFunctionName());
-            }
-
             documentReceipts.setValue(receiptList);
-
         }
 
     }

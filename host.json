@@ -18,12 +18,31 @@
     }
   },
   "logging": {
-    "fileLoggingMode": "always",
+    "fileLoggingMode": "debugOnly",
     "logLevel": {
-      "default": "Information",
+      "default": "None",
       "Host.Results": "Error",
-      "Function": "Information",
-      "Host.Aggregator": "Trace"
+      "Function.GetCart": "Information",
+      "Function.GetReceipt": "Information",
+      "Function.GetReceiptByOrganizationFiscalCodeAndIUV": "Information",
+      "Function.GetReceiptError": "Information",
+      "Function.GetReceiptMessage": "Information",
+      "Function.GetReceiptPdf": "Information",
+      "Function.ReceiptToReviewed": "Information",
+      "Function.RecoverFailedCart": "Information",
+      "Function.RecoverFailedCartMassive": "Information",
+      "Function.CartNotSentRecoverScheduled": "Information",
+      "Function.RecoverFailedReceipt": "Information",
+      "Function.RecoverFailedReceiptMassive": "Information",
+      "Function.RecoverFailedReceiptScheduled": "Information",
+      "Function.RecoverNotNotifiedReceipt": "Information",
+      "Function.RecoverNotNotifiedReceiptMassive": "Information",
+      "Function.RecoverNotNotifiedTimerTriggerProcessor": "Information",
+      "Function.RegenerateReceiptFunc": "Information",
+      "Microsoft": "Information",
+      "Worker": "Information",
+      "Host.Aggregator": "Error",
+      "Host": "Error"
     },
     "applicationInsights": {
       "samplingSettings": {
