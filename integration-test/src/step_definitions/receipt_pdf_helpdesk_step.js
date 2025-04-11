@@ -324,7 +324,6 @@ Given('a cart with id {string} and status {string} stored into cart datastore', 
 
 When("recoverFailedCart API is called with cartId {string}", async function (id) {
     responseAPI = await postRecoverFailedCart(id);
-    console.log(responseAPI);
 });
 
 Then("the cart with id {string} is retrieved from datastore", async function (id) {
