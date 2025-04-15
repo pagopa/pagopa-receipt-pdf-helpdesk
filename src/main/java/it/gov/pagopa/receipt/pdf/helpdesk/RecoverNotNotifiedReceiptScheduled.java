@@ -67,12 +67,7 @@ public class RecoverNotNotifiedReceiptScheduled {
             receiptList.addAll(process(context, ReceiptStatusType.IO_ERROR_TO_NOTIFY));
             receiptList.addAll(process(context, ReceiptStatusType.GENERATED));
 
-            if (receiptList.isEmpty()) {
-                logger.info("[{}] No Receipt to notify", context.getFunctionName());
-            }
-
             documentReceipts.setValue(receiptList);
-
         }
 
     }

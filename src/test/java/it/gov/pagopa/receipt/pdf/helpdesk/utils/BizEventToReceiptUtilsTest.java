@@ -3,6 +3,7 @@ package it.gov.pagopa.receipt.pdf.helpdesk.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpStatus;
+
 import it.gov.pagopa.receipt.pdf.helpdesk.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptQueueClientImpl;
@@ -23,6 +24,7 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -205,6 +207,18 @@ class BizEventToReceiptUtilsTest {
     	Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, mock(ExecutionContext.class), logger);
     	assertEquals(true, result);
         assertEquals(1, totalNotice);
+    }
+    
+    @Test
+    void invalidBizEventPartOfPaymentCartTest() throws IOException {
+    	environmentVariables.set("ECOMMERCE_FILTER_ENABLED", "true");
+    	
+    	BizEvent bizEvent = ObjectMapperUtils.readModelFromFile("biz-events/bizEvent.json", BizEvent.class);
+    	
+    	boolean result = BizEventToReceiptUtils.isBizEventInvalid(bizEvent, mock(ExecutionContext.class), logger);
+    	Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, mock(ExecutionContext.class), logger);
+    	assertEquals(true, result);
+        assertEquals(2, totalNotice);
     }
 
     private BizEvent generateValidBizEvent(boolean withoutRemittanceInformation, boolean withTransferList) {
