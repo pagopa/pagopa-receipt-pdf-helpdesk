@@ -45,8 +45,6 @@ microservice-chart:
     servicePort: 8080
   serviceAccount:
     name: "receipts-workload-identity"
-  azure:
-    workloadIdentityClientId: <workload-identity-client-id-set-automatically-by-gha>
   podAnnotations: {}
   podSecurityContext:
     seccompProfile:
@@ -56,10 +54,10 @@ microservice-chart:
   resources:
     requests:
       memory: "1Gi"
-      cpu: "250m"
+      cpu: "300m"
     limits:
       memory: "1.5Gi"
-      cpu: "400m"
+      cpu: "500m"
   autoscaling:
     enable: true
     minReplica: 1

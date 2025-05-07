@@ -45,8 +45,6 @@ microservice-chart:
     servicePort: 8080
   serviceAccount:
     name: "receipts-workload-identity"
-  azure:
-    workloadIdentityClientId: <workload-identity-client-id-set-automatically-by-gha>
   podAnnotations: {}
   podSecurityContext:
     seccompProfile:
@@ -58,7 +56,7 @@ microservice-chart:
       memory: "768Mi"
       cpu: "300m"
     limits:
-      memory: "1512Mi"
+      memory: "1.5Gi"
       cpu: "500m"
   autoscaling:
     enable: true
@@ -161,20 +159,3 @@ microservice-chart:
                   - user
   canaryDelivery:
     create: false
-    ingress:
-      create: false
-      canary:
-        type: header
-        headerName: X-Canary
-        headerValue: canary
-        weightPercent: 0
-    service:
-      create: false
-    deployment:
-      create: false
-      image:
-        repository: ghcr.io/pagopa/pagopa-receipt-pdf-helpdesk
-        tag: "1.0.4"
-        pullPolicy: Always
-      envConfig:
-      envSecret:

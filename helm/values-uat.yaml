@@ -45,8 +45,6 @@ microservice-chart:
     servicePort: 8080
   serviceAccount:
     name: "receipts-workload-identity"
-  azure:
-    workloadIdentityClientId: <workload-identity-client-id-set-automatically-by-gha>
   podAnnotations: {}
   podSecurityContext:
     seccompProfile:
