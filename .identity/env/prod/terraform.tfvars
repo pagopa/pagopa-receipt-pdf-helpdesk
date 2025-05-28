@@ -14,5 +14,5 @@ tags = {
 github_repository_environment = {
   protected_branches     = false
   custom_branch_policies = true
-  reviewers_teams        = ["pagopa-tech"]
+  reviewers_teams        = ["pagopa-team-core"]
 }
