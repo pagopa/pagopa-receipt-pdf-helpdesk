@@ -36,7 +36,7 @@ public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault(
-            "ECOMMERCE_FILTER_ENABLED", "false"));
+            "ECOMMERCE_FILTER_ENABLED", "true"));
     private static final String ECOMMERCE = "CHECKOUT";
 
     private static final List<String> listOrigin;

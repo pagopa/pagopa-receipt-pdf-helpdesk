@@ -59,7 +59,7 @@ class BizEventToReceiptUtilsTest {
     private ReceiptQueueClientImpl queueClient;
     @SystemStub
     private EnvironmentVariables environmentVariables = new EnvironmentVariables(
-            "AUTHENTICATED_CHANNELS", AUTHENTICATED_CHANNELS);
+            "AUTHENTICATED_CHANNELS", AUTHENTICATED_CHANNELS, "ECOMMERCE_FILTER_ENABLED", "true");
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtilsTest.class);
 
@@ -228,7 +228,6 @@ class BizEventToReceiptUtilsTest {
     
     @Test
     void eCommerceAndTotalNoticeTest() throws PDVTokenizerException, JsonProcessingException {
-    	environmentVariables.set("ECOMMERCE_FILTER_ENABLED", "true");
     	BizEvent bizEvent = BizEvent.builder()
     			.eventStatus(BizEventStatusType.DONE)
     			.transactionDetails(TransactionDetails.builder().info(InfoTransaction.builder().clientId("CHECKOUT").build()).user(User.builder().fiscalCode(DEBTOR_FISCAL_CODE).build()).build())
@@ -243,7 +242,6 @@ class BizEventToReceiptUtilsTest {
     
     @Test
     void invalidBizEventPartOfPaymentCartTest() throws IOException {
-    	environmentVariables.set("ECOMMERCE_FILTER_ENABLED", "true");
     	
     	BizEvent bizEvent = ObjectMapperUtils.readModelFromFile("biz-events/bizEvent.json", BizEvent.class);
     	
