@@ -10,6 +10,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.UserType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
@@ -42,7 +43,7 @@ public class BizEventToReceiptUtils {
     private static final List<String> listUnwantedRemittanceInfo;
 
     static {
-        listOrigin = Arrays.asList(System.getenv().getOrDefault("LIST_VALID_ORIGINS", "IO").split(","));
+        listOrigin = Arrays.asList(System.getenv().getOrDefault("LIST_VALID_ORIGINS", "IO,CHECKOUT").split(","));
         listUnwantedRemittanceInfo = Arrays.asList(System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(","));
     }
 
@@ -474,16 +475,33 @@ public class BizEventToReceiptUtils {
         numberFormat.setMinimumFractionDigits(2);
         return numberFormat.format(valueToFormat);
     }
-
+    
     public static boolean isFromAuthenticatedOrigin(BizEvent bizEvent) {
-        return bizEvent.getTransactionDetails() != null &&
-                ((bizEvent.getTransactionDetails().getTransaction() != null &&
-                        bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                        listOrigin.contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())) ||
-                        (bizEvent.getTransactionDetails().getInfo() != null &&
-                                bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
-                                listOrigin.contains(bizEvent.getTransactionDetails().getInfo().getClientId())
-                        ));
+        if (bizEvent.getTransactionDetails() == null) {
+            return false;
+        }
+
+        var transactionDetails = bizEvent.getTransactionDetails();
+        var transaction = transactionDetails.getTransaction();
+        var info = transactionDetails.getInfo();
+        var user = transactionDetails.getUser();
+
+        String origin = (transaction != null) ? transaction.getOrigin() : null;
+        String clientId = (info != null) ? info.getClientId() : null;
+        UserType userType = (user != null) ? user.getType() : null;
+
+        boolean originMatches = origin != null && listOrigin.contains(origin);
+        boolean clientIdMatches = clientId != null && listOrigin.contains(clientId);
+
+        boolean isCheckoutOrigin = ECOMMERCE.equalsIgnoreCase(origin);
+        boolean isCheckoutClientId = ECOMMERCE.equalsIgnoreCase(clientId);
+        boolean isRegisteredUser = UserType.REGISTERED.equals(userType);
+
+        if ((isCheckoutOrigin || isCheckoutClientId) && !isRegisteredUser) {
+            return false;
+        }
+
+        return originMatches || clientIdMatches;
     }
 
     public static boolean isValidFiscalCode(String fiscalCode) {

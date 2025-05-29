@@ -9,6 +9,7 @@ import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.*;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.enumeration.UserType;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PDVTokenizerException;
@@ -47,7 +48,7 @@ class BizEventToReceiptUtilsTest {
     public static final String TRANSFER_AMOUNT_HIGHEST = "10000.00";
     public static final String TRANSFER_AMOUNT_MEDIUM = "20.00";
     public static final String TRANSFER_AMOUNT_LOWEST = "10.00";
-    public static final String AUTHENTICATED_CHANNELS = "IO,OTHER VALID ORIGIN,ANOTHER VALID";
+    public static final String AUTHENTICATED_CHANNELS = "IO,OTHER VALID ORIGIN,ANOTHER VALID,CHECKOUT";
     @Mock
     private PDVTokenizerServiceRetryWrapper pdvTokenizerServiceMock;
     @Mock
@@ -58,7 +59,7 @@ class BizEventToReceiptUtilsTest {
     private ReceiptQueueClientImpl queueClient;
     @SystemStub
     private EnvironmentVariables environmentVariables = new EnvironmentVariables(
-            "AUTHENTICATED_CHANNELS", AUTHENTICATED_CHANNELS);
+            "AUTHENTICATED_CHANNELS", AUTHENTICATED_CHANNELS, "ECOMMERCE_FILTER_ENABLED", "true");
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtilsTest.class);
 
@@ -154,7 +155,23 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo(), receiptService, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo(null, null), receiptService, logger);
+
+        assertEquals(EVENT_ID, receipt.getEventId());
+        assertNotNull(receipt.getId());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, receipt.getEventData().getPayerFiscalCode());
+    }
+    
+    @Test
+    void createReceiptSuccessWithCheckoutChannelOriginInTransactionInfo() throws PDVTokenizerException, JsonProcessingException {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
+
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.REGISTERED), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -170,6 +187,21 @@ class BizEventToReceiptUtilsTest {
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithoutChannelOrigin(), receiptService, logger);
+
+        assertEquals(EVENT_ID, receipt.getEventId());
+        assertNotNull(receipt.getId());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
+        assertNull(receipt.getEventData().getPayerFiscalCode());
+    }
+    
+    @Test
+    void payerReceiptNotGeneratedWithUserNotRegistered() throws PDVTokenizerException, JsonProcessingException {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
+
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.GUEST), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -196,7 +228,6 @@ class BizEventToReceiptUtilsTest {
     
     @Test
     void eCommerceAndTotalNoticeTest() throws PDVTokenizerException, JsonProcessingException {
-    	environmentVariables.set("ECOMMERCE_FILTER_ENABLED", "true");
     	BizEvent bizEvent = BizEvent.builder()
     			.eventStatus(BizEventStatusType.DONE)
     			.transactionDetails(TransactionDetails.builder().info(InfoTransaction.builder().clientId("CHECKOUT").build()).user(User.builder().fiscalCode(DEBTOR_FISCAL_CODE).build()).build())
@@ -211,7 +242,6 @@ class BizEventToReceiptUtilsTest {
     
     @Test
     void invalidBizEventPartOfPaymentCartTest() throws IOException {
-    	environmentVariables.set("ECOMMERCE_FILTER_ENABLED", "true");
     	
     	BizEvent bizEvent = ObjectMapperUtils.readModelFromFile("biz-events/bizEvent.json", BizEvent.class);
     	
@@ -268,7 +298,7 @@ class BizEventToReceiptUtilsTest {
         return item;
     }
 
-    private BizEvent generateValidBizEventWithChannelOriginInTransactionInfo() {
+    private BizEvent generateValidBizEventWithChannelOriginInTransactionInfo(String validChannel, UserType userType) {
         BizEvent item = new BizEvent();
 
         Payer payer = new Payer();
@@ -277,11 +307,17 @@ class BizEventToReceiptUtilsTest {
         debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
 
         TransactionDetails transactionDetails = new TransactionDetails();
+        if (userType != null) {
+			User user = new User();
+			user.setFiscalCode(PAYER_FISCAL_CODE);
+			user.setType(userType);
+			transactionDetails.setUser(user);
+		}
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transactionDetails.setTransaction(transaction);
         InfoTransaction infoTransaction = new InfoTransaction();
-        infoTransaction.setClientId(VALID_IO_CHANNEL);
+        infoTransaction.setClientId(validChannel == null ? VALID_IO_CHANNEL : validChannel);
         transactionDetails.setInfo(infoTransaction);
 
         PaymentInfo paymentInfo = new PaymentInfo();
