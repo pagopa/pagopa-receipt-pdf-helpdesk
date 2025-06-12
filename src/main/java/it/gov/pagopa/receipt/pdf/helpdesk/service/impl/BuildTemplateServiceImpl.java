@@ -2,6 +2,10 @@ package it.gov.pagopa.receipt.pdf.helpdesk.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.Info;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.InfoTransaction;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.TransactionDetails;
+import it.gov.pagopa.receipt.pdf.helpdesk.entity.event.WalletItem;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.helpdesk.exception.PdfJsonMappingException;
@@ -33,6 +37,7 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
     private static final String REF_TYPE_NOTICE = "codiceAvviso";
     private static final String REF_TYPE_IUV = "IUV";
 
+    private static final String PAYMENT_METHOD_NAME_KEY = "PAYMENT_METHOD_NAME_MAP";
     private static final String BRAND_LOGO_MAP_ENV_KEY = "BRAND_LOGO_MAP";
     private static final String PSP_CONFIG_FILE_JSON_FILE_NAME = "psp_config_file.json";
     private static final String RECEIPT_DATE_FORMAT = "dd MMMM yyyy, HH:mm:ss";
@@ -41,11 +46,23 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
      * Hide from public usage.
      */
 
+    private static final Map<String, String> paymentMethodNameMap;
     private static final Map<String, String> brandLogoMap;
     private static final Map<String, Object> pspMap;
     public static final String MODEL_TYPE_IUV = "1";
     public static final String MODEL_TYPE_NOTICE = "2";
     public static final String DEBTOR_ANONIMO_CF = "ANONIMO";
+
+    public static final String WISP_REGEX = "^351.*";
+
+    static {
+        try {
+            paymentMethodNameMap = ObjectMapperUtils.mapString(System.getenv().get(PAYMENT_METHOD_NAME_KEY), Map.class);
+        } catch (JsonProcessingException e) {
+            throw new PdfJsonMappingException(e);
+        }
+
+    }
 
     static {
         try {
@@ -197,19 +214,33 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
     }
 
     private String getPaymentMethodName(BizEvent event) {
-        if (
-                event.getTransactionDetails() != null &&
-                        event.getTransactionDetails().getWallet() != null &&
-                        event.getTransactionDetails().getWallet().getInfo() != null &&
-                        event.getTransactionDetails().getWallet().getInfo().getBrand() != null
-        ) {
-            return event.getTransactionDetails().getWallet().getInfo().getBrand();
+        String paymentMethodType = Optional.ofNullable(event.getTransactionDetails())
+                .map(TransactionDetails::getWallet)
+                .map(WalletItem::getInfo)
+                .map(Info::getType)
+                .or(() -> Optional.ofNullable(event.getTransactionDetails())
+                        .map(TransactionDetails::getInfo)
+                        .map(InfoTransaction::getType))
+                .orElse(null);
+        return paymentMethodNameMap.getOrDefault(paymentMethodType, null);
         }
-        return null;
+
+    private String getPaymentMethod(BizEvent event) {
+        return Optional.ofNullable(event.getTransactionDetails())
+                .map(TransactionDetails::getWallet)
+                .map(WalletItem::getInfo)
+                .map(Info::getBrand)
+                .or(() -> Optional.ofNullable(event.getTransactionDetails())
+                        .map(TransactionDetails::getInfo)
+                        .map(InfoTransaction::getBrand))
+                .orElse(null);
     }
 
     private String getPaymentMethodLogo(BizEvent event) {
-        return brandLogoMap.getOrDefault(getPaymentMethodName(event), null);
+        return Optional.ofNullable(event.getTransactionDetails())
+                .map(TransactionDetails::getInfo)
+                .map(InfoTransaction::getBrandLogo)
+                .orElseGet(() -> brandLogoMap.getOrDefault(getPaymentMethod(event), null));
     }
 
     private String getPaymentMethodAccountHolder(BizEvent event) {
@@ -257,7 +288,10 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
 
     private String getRefNumberType(BizEvent event) throws TemplateDataMappingException {
         if (event.getDebtorPosition() != null && event.getDebtorPosition().getModelType() != null) {
-            if (event.getDebtorPosition().getModelType().equals(MODEL_TYPE_IUV)) {
+            if (event.getDebtorPosition().getModelType().equals(MODEL_TYPE_IUV) || (
+                    event.getDebtorPosition().getNoticeNumber() != null &&
+                            event.getDebtorPosition().getNoticeNumber().matches(WISP_REGEX) &&
+                            event.getDebtorPosition().getIuv() != null) ) {
                 return REF_TYPE_IUV;
             }
             if (event.getDebtorPosition().getModelType().equals(MODEL_TYPE_NOTICE)) {
@@ -269,7 +303,10 @@ public class BuildTemplateServiceImpl implements BuildTemplateService {
 
     private String getRefNumberValue(BizEvent event) throws TemplateDataMappingException {
         if (event.getDebtorPosition() != null && event.getDebtorPosition().getModelType() != null) {
-            if (event.getDebtorPosition().getModelType().equals(MODEL_TYPE_IUV) && event.getDebtorPosition().getIuv() != null) {
+            if ((event.getDebtorPosition().getModelType().equals(MODEL_TYPE_IUV) || (
+                    event.getDebtorPosition().getNoticeNumber() != null &&
+                            event.getDebtorPosition().getNoticeNumber().matches(WISP_REGEX))) &&
+                            event.getDebtorPosition().getIuv() != null) {
                 return event.getDebtorPosition().getIuv();
             }
             if (event.getDebtorPosition().getModelType().equals(MODEL_TYPE_NOTICE) && event.getDebtorPosition().getNoticeNumber() != null) {
