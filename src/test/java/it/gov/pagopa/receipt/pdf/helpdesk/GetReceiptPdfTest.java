@@ -44,13 +44,13 @@ class GetReceiptPdfTest {
     private AutoCloseable closeable;
 
     @BeforeEach
-    public void openMocks() {
+    void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
         sut = spy(new GetReceiptPdf(receiptBlobClient));
     }
 
     @AfterEach
-    public void releaseMocks() throws Exception {
+    void releaseMocks() throws Exception {
         closeable.close();
     }
 

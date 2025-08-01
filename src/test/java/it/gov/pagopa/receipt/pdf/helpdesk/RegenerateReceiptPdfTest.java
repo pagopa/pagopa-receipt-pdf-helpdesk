@@ -266,7 +266,7 @@ class RegenerateReceiptPdfTest {
         
         Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
         MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
-        when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        when(BizEventToReceiptUtils.createReceipt(any(), any(), any(), any())).thenReturn(createdReceipt);
         when(BizEventToReceiptUtils.getTotalNotice(any(), any(), any())).thenReturn(1);
         when(BizEventToReceiptUtils.isReceiptStatusValid(any())).thenReturn(true);
         
@@ -329,7 +329,7 @@ class RegenerateReceiptPdfTest {
         
         Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, 0);
         MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
-        when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        when(BizEventToReceiptUtils.createReceipt(any(), any(), any(), any())).thenReturn(createdReceipt);
         when(BizEventToReceiptUtils.getTotalNotice(any(), any(), any())).thenReturn(2);
         when(BizEventToReceiptUtils.isReceiptStatusValid(any())).thenReturn(true);
 
@@ -360,7 +360,7 @@ class RegenerateReceiptPdfTest {
         
         Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
         MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
-        when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        when(BizEventToReceiptUtils.createReceipt(any(), any(), any(), any())).thenReturn(createdReceipt);
         when(BizEventToReceiptUtils.getTotalNotice(any(), any(), any())).thenReturn(1);
         when(BizEventToReceiptUtils.isReceiptStatusValid(any())).thenReturn(true);
         
@@ -391,7 +391,7 @@ class RegenerateReceiptPdfTest {
         
         Receipt createdReceipt = buildNewCreatedReceiptWithStatus(ReceiptStatusType.INSERTED, numRetry);
         MockedStatic<BizEventToReceiptUtils> mockedStaticBizEventToReceiptUtils = mockStatic(BizEventToReceiptUtils.class);
-        when(BizEventToReceiptUtils.createReceipt(any(), any(), any())).thenReturn(createdReceipt);
+        when(BizEventToReceiptUtils.createReceipt(any(), any(), any(), any())).thenReturn(createdReceipt);
         when(BizEventToReceiptUtils.getTotalNotice(any(), any(), any())).thenReturn(1);
         // not valid receipt
         when(BizEventToReceiptUtils.isReceiptStatusValid(any())).thenReturn(false);
