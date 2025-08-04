@@ -4,9 +4,11 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
+import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
@@ -265,6 +267,18 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
             return queryResponse.iterator().next();
         }
         throw new IoMessageNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
+    }
+    
+    @Override
+    public CosmosItemResponse<Object> deleteReceipt(Receipt receipt)  {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        return cosmosContainer.deleteItem(
+        	    receipt.getId(),
+        	    new PartitionKey(receipt.getId()),
+        	    new CosmosItemRequestOptions()
+        	);
     }
 
 }

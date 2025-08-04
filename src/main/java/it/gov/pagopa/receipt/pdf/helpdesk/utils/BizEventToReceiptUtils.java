@@ -22,7 +22,6 @@ import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverCartResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.helpdesk.service.ReceiptCosmosService;
-
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
@@ -89,7 +88,7 @@ public class BizEventToReceiptUtils {
                 receipt = receiptCosmosService.getReceipt(eventId);
             } catch (ReceiptNotFoundException e) {
                 receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
-                        bizEventToReceiptService, null, logger);
+                        bizEventToReceiptService, logger);
                 EventData eventData = receipt.getEventData();
                 if (isCart) {
                     AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
@@ -179,11 +178,11 @@ public class BizEventToReceiptUtils {
      * @param service  implementation of the BizEventToReceipt service to use
      * @return generated instance of Receipt
      */
-    public static Receipt createReceipt(BizEvent bizEvent, BizEventToReceiptService service, String receiptId, Logger logger) {
+    public static Receipt createReceipt(BizEvent bizEvent, BizEventToReceiptService service, Logger logger) {
         Receipt receipt = new Receipt();
 
         // Insert biz-event data into receipt
-        receipt.setId(receiptId == null || receiptId.isBlank() ? bizEvent.getId() + UUID.randomUUID(): receiptId);
+        receipt.setId(bizEvent.getId() + UUID.randomUUID());
         receipt.setEventId(bizEvent.getId());
 
         EventData eventData = new EventData();

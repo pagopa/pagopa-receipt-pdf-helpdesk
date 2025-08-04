@@ -71,7 +71,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, false), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, false), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -88,7 +88,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, true), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, true), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -106,7 +106,7 @@ class BizEventToReceiptUtilsTest {
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
         BizEvent bizEvent = generateValidBizEvent(false, true);
         bizEvent.getPaymentInfo().setRemittanceInformation(INVALID_REMITTANCE_INFORMATION);
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -123,7 +123,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(true, false), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(true, false), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -139,7 +139,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, false), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, false), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -155,7 +155,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo(null, null), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo(null, null), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -171,7 +171,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.REGISTERED), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.REGISTERED), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -186,7 +186,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithoutChannelOrigin(), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithoutChannelOrigin(), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -201,7 +201,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.GUEST), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.GUEST), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
@@ -217,7 +217,7 @@ class BizEventToReceiptUtilsTest {
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, queueClient, bizEventCosmosClientMock, receiptCosmosClient);
 
-        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, false), receiptService, null, logger);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, false), receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
