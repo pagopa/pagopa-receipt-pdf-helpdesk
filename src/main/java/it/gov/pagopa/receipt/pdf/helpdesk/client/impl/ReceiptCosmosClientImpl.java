@@ -145,8 +145,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        //return cosmosContainer.createItem(receipt);
-        return cosmosContainer.upsertItem(receipt);
+        return cosmosContainer.createItem(receipt);
     }
 
     /**
