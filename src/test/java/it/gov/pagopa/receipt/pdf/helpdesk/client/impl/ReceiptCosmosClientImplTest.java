@@ -3,6 +3,9 @@ package it.gov.pagopa.receipt.pdf.helpdesk.client.impl;
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.models.CosmosItemRequestOptions;
+import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.helpdesk.entity.receipt.Receipt;
@@ -241,5 +244,24 @@ class ReceiptCosmosClientImplTest {
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
         assertThrows(IoMessageNotFoundException.class, () -> client.getIoMessage("an invalid receipt id"));
+    }
+    
+    @Test
+    void deleteReceiptSuccess() {
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+        CosmosItemResponse<Object> mockResponse = mock(CosmosItemResponse.class);
+
+        Receipt receipt = new Receipt();
+        receipt.setId(RECEIPT_ID);
+
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockContainer.deleteItem(eq(RECEIPT_ID), any(PartitionKey.class), any(CosmosItemRequestOptions.class)))
+                .thenReturn(mockResponse);
+
+        CosmosItemResponse<Object> response = assertDoesNotThrow(() -> client.deleteReceipt(receipt));
+
+        assertEquals(mockResponse, response);
     }
 }
