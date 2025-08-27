@@ -101,7 +101,7 @@ public class RegenerateReceiptPdf {
 
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        if (eventId != null) {
+        if (!StringUtils.isBlank(eventId)) {
         		
         	BizEvent bizEvent = null;
         	List<BizEvent> listBizEvent = new ArrayList<>();
@@ -114,26 +114,23 @@ public class RegenerateReceiptPdf {
 
                 if (isCart) {
                     listBizEvent = bizEventToReceiptService.getCartBizEvents(eventId);
-                    bizEvent = listBizEvent.get(0);
+                    bizEvent = listBizEvent.isEmpty() ? null : listBizEvent.get(0);
                 } else {
                     bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
                 }
                 
                 //Try to Retrieve receipt's data from CosmosDB
                 Receipt receipt = getReceipt(context, bizEvent, receiptCosmosClient, logger);
-                //If the receipt exists --> regeneration of the PDF file for the receipt
-                return this.generateAndSavePDF(request, documentdb, context, isCart, bizEvent, listBizEvent, receipt);
+                
+                //If the receipt exists --> delete it and regenerate the receipt with the related PDF files
+                if(receiptCosmosClient.deleteReceipt(receipt).getStatusCode() == 204) {
+                	return regenerateAll(request, documentdb, context, isCart, bizEvent, listBizEvent);
+                }
                 
             } catch (ReceiptNotFoundException | BizEventNotFoundException exception) {
             	if (exception.getClass().equals(ReceiptNotFoundException.class)) {
             		//If the receipt does not exist --> regeneration of the receipt and the related PDF file
-            		HttpResponseMessage response = this.generateAndSaveReceipt(request, context, bizEvent);
-            		if (HttpStatus.OK.equals(response.getStatus())) {
-            			Receipt receipt = (Receipt) response.getBody();
-            			return this.generateAndSavePDF(request, documentdb, context, isCart, bizEvent, listBizEvent, receipt);
-            		} else {
-            			return response;
-            		}
+            		return regenerateAll(request, documentdb, context, isCart, bizEvent, listBizEvent);
 
             	} else if (exception.getClass().equals(BizEventNotFoundException.class)) {
                 	logger.error(exception.getMessage(), exception);
@@ -389,6 +386,23 @@ public class RegenerateReceiptPdf {
                     receipt.getMdAttachPayer() != null && receipt.getMdAttachPayer().getUrl() != null;
         }
         return hasAllAttachments;
+    }
+    
+    private HttpResponseMessage regenerateAll(
+            HttpRequestMessage<Optional<String>> request,
+            OutputBinding<Receipt> documentdb,
+            ExecutionContext context,
+            boolean isCart,
+            BizEvent bizEvent,
+            List<BizEvent> listBizEvent) {
+
+        HttpResponseMessage response = this.generateAndSaveReceipt(request, context, bizEvent);
+        if (HttpStatus.OK.equals(response.getStatus())) {
+            Receipt receipt = (Receipt) response.getBody();
+            return this.generateAndSavePDF(request, documentdb, context, isCart, bizEvent, listBizEvent, receipt);
+        } else {
+            return response;
+        }
     }
 
 }

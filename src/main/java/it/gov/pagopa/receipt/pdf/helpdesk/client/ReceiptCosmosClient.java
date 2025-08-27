@@ -56,4 +56,6 @@ public interface ReceiptCosmosClient {
     Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(String continuationToken, Integer pageSize);
 
     IOMessage getIoMessage(String messageId) throws IoMessageNotFoundException;
+    
+    CosmosItemResponse<Object> deleteReceipt(Receipt receipt);
 }
