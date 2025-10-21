@@ -43,7 +43,7 @@ public class BizEventToReceiptUtils {
     private static final List<String> listUnwantedRemittanceInfo;
 
     static {
-        listOrigin = Arrays.asList(System.getenv().getOrDefault("LIST_VALID_ORIGINS", "IO,CHECKOUT,WISP").split(","));
+        listOrigin = Arrays.asList(System.getenv().getOrDefault("LIST_VALID_ORIGINS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
         listUnwantedRemittanceInfo = Arrays.asList(System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(","));
     }
 
